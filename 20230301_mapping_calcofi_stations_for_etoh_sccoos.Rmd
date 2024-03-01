@@ -1,0 +1,407 @@
+---
+title: "CalCOFI Tow Plotting"
+author: "Zack Gold"
+date: "2024-03-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE}
+library(tidyverse)
+library(here)
+library(sf)
+library(devtools)
+library(nationalparkcolors)
+library(knitr)
+library("rnaturalearth")
+library("rnaturalearthdata")
+library("readxl")
+library(parzer)
+library(lubridate)
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+```
+
+```{r,echo=FALSE, hide=TRUE, warnings=FALSE,message = FALSE}
+
+tow_type <- read_csv(here("erddap_calcofi","erdCalCOFItowtyp_151f_ab30_5792.csv"))
+
+tow_data <- read_csv(here("erddap_calcofi","erdCalCOFItows_8411_77f5_5500.csv"))
+
+tow_data %>% 
+  left_join(tow_type) %>% 
+  slice(-1) %>% 
+  mutate(., time=ymd_hms(time),
+         year= year(time),
+        month= month(time),
+        season = case_when(month < 3 ~"Winter",
+                           month < 6 ~"Spring",
+                           month < 8 ~"Summer",
+                           month < 12 ~"Fall",
+                           TRUE ~"Winter")) %>% 
+  mutate(., latitude= as.numeric(latitude),
+         longitude = as.numeric(longitude),
+         Lon_deg_r=round(longitude,1),
+          Lat_deg_r=round(latitude,1)) %>% 
+  mutate(., site= str_c(line,"_",station),
+         year_site = str_c(year,":",line,"_",station),
+         year_season_site = str_c(year,":",season,line,"_",station)) %>% 
+  filter(., year > 1995) %>% 
+  filter(., year != 1997) %>% 
+  filter(., tow_type =="CB") %>% 
+  filter(., season %in% c("Spring", "Fall")) %>% 
+  filter(., Lat_deg_r > 31) %>% 
+  filter(., Lat_deg_r < 35) %>% 
+  filter(., !line %in% c(76.7, 70.0,73.3))-> calcofi_tows
+
+calcofi_tows %>%  
+  group_by(`site`) %>% 
+  count() %>% 
+  arrange(desc(n)) %>% 
+  filter(., n > 5) -> unique_stations_to_keep
+
+calcofi_tows %>% 
+  filter(., site %in% unique_stations_to_keep$site) -> calcofi_tows
+
+```
+
+# General Statistics
+```{r, warnings=FALSE,echo=FALSE, hide=TRUE, warnings=FALSE,message = FALSE}
+#make some colors
+
+
+pal <- park_palette("Denali", 5)
+pal2 <- park_palette("Yellowstone", 5)
+
+pal3 <- park_palette("Arches", 5)
+pal4 <- park_palette("Hawaii", 5)
+```
+
+
+
+### Unique Samples, Cruises, and Sites:
+```{r,echo=FALSE}
+
+calcofi_tows %>% 
+dplyr::summarise(n_distinct(`year_site`), n_distinct(cruise), n_distinct(`site`), n_distinct(`year_season_site`)) %>%  kable()
+
+```
+
+## Depth Distribution of Samples:
+
+```{r,echo=FALSE,warning=FALSE}
+my_binwidth <- 1
+
+calcofi_tows %>%  
+  group_by(`site`,season) %>% 
+  ggplot(., aes(x=`site`))+
+  geom_histogram(binwidth = my_binwidth, colour= "black", fill = pal[1], stat = "count") +theme_bw()  +xlab("Number of Samples") + ylab("Count") + facet_grid(.~season) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+
+```
+
+
+## Heatmap of Sampling Intensity
+```{r,echo=FALSE,warning=FALSE, fig.height= 8, fig.width= 12}
+
+calcofi_tows %>% 
+  select(line,station, year, season) %>% 
+  mutate(., line= as.character(line),
+         station=as.character(station)) %>% 
+  group_by(line,station, season) %>% 
+  count() %>% 
+  mutate(., `Distinct Years Sample`=n) %>% 
+  mutate(., site= str_c(line,"_",station)) %>% 
+  ggplot(., aes(x=`Distinct Years Sample`, y= site, color=`Distinct Years Sample`, fill=`Distinct Years Sample`)) +geom_tile() +facet_grid(.~season) +scale_color_viridis_c() +scale_fill_viridis_c()
+
+
+```
+  
+
+
+
+
+# Map of All Relevant Stations
+```{r,echo=FALSE,warning=FALSE, fig.height= 8, fig.width= 12}
+
+min_lat <- min(calcofi_tows$Lat_deg_r)
+max_lat <- max(calcofi_tows$Lat_deg_r)
+
+min_lon <- min(calcofi_tows$Lon_deg_r)
+max_lon <- max(calcofi_tows$Lon_deg_r)
+
+calcofi_tows$year <- as.character(calcofi_tows$year)
+
+calcofi_tows %>% 
+  select(year, season, site) %>% 
+  group_by(site, season) %>% 
+  count() -> group_by_site
+
+calcofi_tows %>% 
+  dplyr::select(site, season, Lat_deg_r, Lon_deg_r) %>% 
+  distinct() -> lat_lot_back
+
+lat_lot_back %>% 
+  group_by(site, season) %>% 
+  slice(1) ->lat_lot_back
+
+group_by_site %>% 
+  left_join(lat_lot_back) -> group_by_site
+
+ggplot(data = world) +
+    geom_sf() +
+    geom_point(data = group_by_site, aes(x = Lon_deg_r, y = Lat_deg_r, size=n,colour=n),alpha=0.6 ) +
+    coord_sf(xlim = c(min_lon-1, max_lon+1), ylim = c(min_lat-0.5, max_lat+0.5), expand = FALSE) +theme_bw() +xlab("Longitude") +ylab("Latitude") +facet_grid(.~season) +scale_colour_viridis_c(option = "magma", direction=-1) 
+#+ geom_text(data = group_by_site, aes(x = Lon_deg_r, y = Lat_deg_r, label=site),size = 4)
+
+```
+
+# Subset 1 Coastal More Recent
+## Only Choose Stations East of 120W from 2010-2019
+n=529 tows x2 seasons
+```{r,echo=FALSE,warning=FALSE, fig.height= 8, fig.width= 12}
+
+calcofi_tows %>% 
+  filter(., year > 2009) %>% 
+   filter(., year < 2021) %>% 
+  filter(., Lon_deg_r > -120.1) -> calcofi_tows_a1
+
+
+calcofi_tows_a1 %>% 
+dplyr::summarise(n_distinct(`year_season_site`),n_distinct(`year_site`), n_distinct(cruise), n_distinct(`site`))  %>%  kable()
+```
+
+```{r}
+calcofi_tows_a1 %>% 
+  select(year, season, site) %>% 
+  group_by(site, season) %>% 
+  count() -> group_by_site_f_a1
+
+group_by_site_f_a1 %>% 
+  left_join(lat_lot_back) -> group_by_site_f_a1
+
+
+```
+
+```{r}
+
+min_lat <- min(group_by_site_f_a1$Lat_deg_r)
+max_lat <- max(group_by_site_f_a1$Lat_deg_r)
+
+min_lon <- min(group_by_site_f_a1$Lon_deg_r)
+max_lon <- max(group_by_site_f_a1$Lon_deg_r)
+
+
+ggplot(data = world) +
+    geom_sf() +
+    geom_point(data = group_by_site_f_a1, aes(x = Lon_deg_r, y = Lat_deg_r, size=n,colour=n),alpha=0.6 ) +
+    coord_sf(xlim = c(min_lon-1, max_lon+1), ylim = c(min_lat-0.5, max_lat+0.5), expand = FALSE) +theme_bw() +xlab("Longitude") +ylab("Latitude") +facet_grid(.~season) +scale_colour_viridis_c(option = "magma", direction=-1)
+
+```
+
+# Subset 2 Coastal Full Time
+## Only Choose Coastal Stations 1996-2023
+n=921 tows x2 seasons
+```{r,echo=FALSE,warning=FALSE, fig.height= 8, fig.width= 12}
+
+subset_2_specific_stations = c( 
+  "93.4_26.4", "93.3_26.7", "93.3_28",   "93.3_30",   "93.3_35",   "93.3_40",   
+  "90_45"    ,"90_37"   ,  "90_35"  ,   "90_30"   ,  "90_28"   , "90_27.7", "86.7_33"   ,"86.7_35" ,  "86.7_40" ,  "86.7_45" , "86.7_50" ,  
+  "83.3_42" ,  "83.3_40.6" ,    "83.3_39.4",
+"88.5_30.1",
+"85.4_35.8",
+"86.8_32.5",
+"91.7_26.4")
+
+calcofi_tows %>% 
+  filter(., site %in% subset_2_specific_stations)  -> calcofi_tows_a2
+
+
+calcofi_tows_a2 %>% 
+dplyr::summarise(n_distinct(`year_season_site`),n_distinct(`year_site`), n_distinct(cruise), n_distinct(`site`))  %>%  kable()
+```
+
+```{r}
+calcofi_tows_a2 %>% 
+  select(year, season, site) %>% 
+  group_by(site, season) %>% 
+  count() -> group_by_site_f_a2
+
+group_by_site_f_a2 %>% 
+  left_join(lat_lot_back) -> group_by_site_f_a2
+
+
+```
+
+```{r}
+
+min_lat <- min(group_by_site_f_a2$Lat_deg_r)
+max_lat <- max(group_by_site_f_a2$Lat_deg_r)
+
+min_lon <- min(group_by_site_f_a2$Lon_deg_r)
+max_lon <- max(group_by_site_f_a2$Lon_deg_r)
+
+
+ggplot(data = world) +
+    geom_sf() +
+    geom_point(data = group_by_site_f_a2, aes(x = Lon_deg_r, y = Lat_deg_r, size=n,colour=n),alpha=0.6 ) +
+    coord_sf(xlim = c(min_lon-1, max_lon+1), ylim = c(min_lat-0.5, max_lat+0.5), expand = FALSE) +theme_bw() +xlab("Longitude") +ylab("Latitude") +facet_grid(.~season) +scale_colour_viridis_c(option = "magma", direction=-1)  
+
+```
+
+# Subset 3 Wider Coastal Grid Full Time
+## Only Choose Coastal Stations 1996-2023
+n=782 tows x2 seasons
+```{r,echo=FALSE,warning=FALSE, fig.height= 8, fig.width= 12}
+
+subset_3_specific_stations = c( "80_50.5"  ,   "80_60"   ,
+"81.7_43.5", "81.8_46.9",
+"83.3_39.4",   "83.3_51",   "83.3_60",  
+"85.4_35.8",    "86.7_35",  "86.7_40", "86.7_60",
+"86.8_32.5",
+"88.5_30.1",
+"90_27.7" , "90_35" ,  "90_45",  "90_60", 
+"91.7_26.4", "93.3_28",    "93.3_35" ,  "93.3_45",  "93.4_26.4")
+
+calcofi_tows %>% 
+  filter(., site %in% subset_3_specific_stations)  -> calcofi_tows_a3
+
+
+calcofi_tows_a3 %>% 
+dplyr::summarise(n_distinct(`year_season_site`),n_distinct(`year_site`), n_distinct(cruise), n_distinct(`site`))  %>%  kable()
+```
+
+```{r}
+calcofi_tows_a3 %>% 
+  select(year, season, site) %>% 
+  group_by(site, season) %>% 
+  count() -> group_by_site_f_a3
+
+group_by_site_f_a3 %>% 
+  left_join(lat_lot_back) -> group_by_site_f_a3
+
+
+```
+
+```{r}
+
+min_lat <- min(group_by_site_f_a3$Lat_deg_r)
+max_lat <- max(group_by_site_f_a3$Lat_deg_r)
+
+min_lon <- min(group_by_site_f_a3$Lon_deg_r)
+max_lon <- max(group_by_site_f_a3$Lon_deg_r)
+
+
+ggplot(data = world) +
+    geom_sf() +
+    geom_point(data = group_by_site_f_a3, aes(x = Lon_deg_r, y = Lat_deg_r, size=n,colour=n),alpha=0.6 ) +
+    coord_sf(xlim = c(min_lon-1, max_lon+1), ylim = c(min_lat-0.5, max_lat+0.5), expand = FALSE) +theme_bw() +xlab("Longitude") +ylab("Latitude") +facet_grid(.~season) +scale_colour_viridis_c(option = "magma", direction=-1)  
+
+```
+
+# Subset 4 Narrow Coastal Grid Full Time
+## Only Choose Coastal Stations 1996-2023
+n=750 tows x2 seasons
+```{r,echo=FALSE,warning=FALSE, fig.height= 8, fig.width= 12}
+
+subset_3_specific_stations = c( "80_50.5"  ,   "80_50.5"   ,
+"81.7_43.5", "81.8_46.9",
+"83.3_39.4",   "83.3_51",   "83.3_40.6",  
+"85.4_35.8",    "86.7_35",  "86.7_40", "86.7_33",
+"86.8_32.5",
+"88.5_30.1",
+"90_27.7" , "90_35" ,  "90_45",  "90_30", 
+"91.7_26.4", "93.3_28",    "93.3_35" ,  "93.3_30",  "93.4_26.4")
+
+calcofi_tows %>% 
+  filter(., site %in% subset_3_specific_stations)  -> calcofi_tows_a4
+
+
+calcofi_tows_a4 %>% 
+dplyr::summarise(n_distinct(`year_season_site`),n_distinct(`year_site`), n_distinct(cruise), n_distinct(`site`))  %>%  kable()
+```
+
+```{r}
+calcofi_tows_a4 %>% 
+  select(year, season, site) %>% 
+  group_by(site, season) %>% 
+  count() -> group_by_site_f_a4
+
+group_by_site_f_a4 %>% 
+  left_join(lat_lot_back) -> group_by_site_f_a4
+
+
+```
+
+```{r}
+
+min_lat <- min(group_by_site_f_a4$Lat_deg_r)
+max_lat <- max(group_by_site_f_a4$Lat_deg_r)
+
+min_lon <- min(group_by_site_f_a4$Lon_deg_r)
+max_lon <- max(group_by_site_f_a4$Lon_deg_r)
+
+
+ggplot(data = world) +
+    geom_sf() +
+    geom_point(data = group_by_site_f_a4, aes(x = Lon_deg_r, y = Lat_deg_r, size=n,colour=n),alpha=0.6 ) +
+    coord_sf(xlim = c(min_lon-1, max_lon+1), ylim = c(min_lat-0.5, max_lat+0.5), expand = FALSE) +theme_bw() +xlab("Longitude") +ylab("Latitude") +facet_grid(.~season) +scale_colour_viridis_c(option = "magma", direction=-1)  
+
+```
+
+# Subset 5 Narrow Southern Coastal Grid Full Time
+## Only Choose Coastal Stations 1996-2023
+n=750 tows x2 seasons
+```{r,echo=FALSE,warning=FALSE, fig.height= 8, fig.width= 12}
+
+subset_3_specific_stations = c( 
+"86.7_33",    "86.7_35","85.4_35.8",  "86.7_40" ,"86.7_45","86.7_50",
+"86.8_32.5",
+"88.5_30.1",
+"90_27.7" , "90_28", "90_30", "90_35" , "90_37", "90_45",   
+"91.7_26.4", "93.4_26.4","93.3_28",  "93.3_30",  "93.3_35" ,  "93.3_40" )
+
+calcofi_tows %>% 
+  filter(., site %in% subset_3_specific_stations)  -> calcofi_tows_a5
+
+
+calcofi_tows_a5 %>% 
+dplyr::summarise(n_distinct(`year_season_site`),n_distinct(`year_site`), n_distinct(cruise), n_distinct(`site`))  %>%  kable()
+```
+
+```{r}
+calcofi_tows_a5 %>% 
+  select(year, season, site) %>% 
+  group_by(site, season) %>% 
+  count() -> group_by_site_f_a5
+
+group_by_site_f_a5 %>% 
+  left_join(lat_lot_back) -> group_by_site_f_a5
+
+
+```
+
+```{r}
+
+min_lat <- min(group_by_site_f_a5$Lat_deg_r)
+max_lat <- max(group_by_site_f_a5$Lat_deg_r)
+
+min_lon <- min(group_by_site_f_a5$Lon_deg_r)
+max_lon <- max(group_by_site_f_a5$Lon_deg_r)
+
+
+ggplot(data = world) +
+    geom_sf() +
+    geom_point(data = group_by_site_f_a5, aes(x = Lon_deg_r, y = Lat_deg_r, size=n,colour=n),alpha=0.6 ) +
+    coord_sf(xlim = c(min_lon-1, max_lon+1), ylim = c(min_lat-0.5, max_lat+0.5), expand = FALSE) +theme_bw() +xlab("Longitude") +ylab("Latitude") +facet_grid(.~season) +scale_colour_viridis_c(option = "magma", direction=-1)  
+
+```
+
+
+
+

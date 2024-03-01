@@ -1,0 +1,12 @@
+tow_type,description
+,
+C1,"CalCOFI One Meter Oblique Tow (0.8 m^2 mouth area, 1-m diameter) "
+C2,"CalCOFI Two Meter Oblique Tow (2-m^2 mouth area, 1.6-m diameter)"
+CB,"CalCOFI Oblique Bongo Tow (0.4 m^2 mouth area, 0.71-m diameter)"
+CV,CalCOFI Vertical Egg Tow (ring net with 0.25m^2 mouth)
+DC,Oblique tow to 600 m using the CB net (historically used to sample sablefish)
+M1,Multiple Opening Closing Nets Environmental Sensor System (1 m^2 mouth)
+M2,Multiple Opening Closing Nets Environmental Sensor System (3 m^2 mouth)
+MB,Marmap Oblique Bongo (2-ft diameter)
+MT,Twin Winged Continuous-Flow Surface Tow
+PV,Paired Tows of CalCOFI Vertical Egg Net
