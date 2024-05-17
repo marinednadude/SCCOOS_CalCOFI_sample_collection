@@ -1,0 +1,142 @@
+---
+title: "Species Index Mapper"
+author: "Zack Gold"
+date: "2024-05-06"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(here)
+library(readxl)
+library("rnaturalearth")
+library("rnaturalearthdata")
+library(sf)
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+```
+
+```{r}
+
+BTEDB_tax <- read_xlsx(here("knb-lter-cce.313.1","BTEDB_tax.xlsx"))
+
+BTEDB_tax %>% 
+  mutate(., Ohman_tax=str_remove(Ohman_tax,"_Abundance")) %>% 
+  separate(Ohman_tax, into=c("Genus","species","phase","type"), sep="_") %>% 
+  mutate(., type = replace_na(type, "")) %>% 
+  mutate(ID_Microscopy=str_c(Genus,species, sep=" "), 
+         Phase=str_c(phase,type,sep="-")) %>% 
+  dplyr::select(ID_Microscopy, Phase) %>%  distinct() -> visual_tax_names
+
+
+  
+```
+
+```{r}
+BTEDB <- read.csv(here("knb-lter-cce.313.1","BTEDB_Abundances.csv"))
+
+BTEDB %>% 
+  mutate(., Date = as.Date(Date),
+        TowBegin= as.POSIXct(TowBegin, format = "%Y-%m-%d %H:%M:%S"),
+        TowEnd= as.POSIXct(TowEnd,  format = "%Y-%m-%d %H:%M:%S")) %>% 
+  pivot_longer(cols=`Euphausia_brevis_adult_Abundance`:`Thysanopoda_pectinata_juvenile_Abundance`,names_to = "Ohman_tax", values_to = "Count_permsq2") %>% 
+  filter(., Date > "1996-01-01") %>% 
+  separate(Ohman_tax, into=c("Genus","species","phase","type"), sep="_", remove = F) %>% 
+  mutate(., type = replace_na(type, "")) %>% 
+  mutate(ID_Microscopy=str_c(Genus,species, sep=" "), 
+         Phase=str_c(phase,type,sep="-")) %>% 
+     mutate(., year= year(Date),
+        month= month(Date), 
+        season = case_when(month < 3 ~"Winter",
+                           month < 6 ~"Spring",
+                           month < 9 ~"Summer",
+                           month < 12 ~"Fall",
+                           TRUE ~"Winter")) %>% 
+  mutate(., Latitude= as.numeric(Latitude),
+         Longitude = as.numeric(Longitude),
+         Lon_deg_r=round(Longitude,1),
+          Lat_deg_r=round(Latitude,1)) %>% 
+  mutate(., site= str_c(Line,"_",Station),
+         year_site = str_c(year,":",Line,"_",Station),
+         year_season_site = str_c(year,":",season,Line,"_",Station)) %>% 
+  filter(., Lat_deg_r > 27) %>% 
+  filter(., Lat_deg_r < 40) -> long_microscopy
+```
+
+```{r}
+
+long_microscopy %>% 
+  dplyr::select(year, season, site) %>% 
+  distinct() %>% 
+  group_by(site, season) %>% 
+  count() -> group_by_site_all
+
+min_lat <- min(long_microscopy$Lat_deg_r)
+max_lat <- max(long_microscopy$Lat_deg_r)
+
+min_lon <- min(long_microscopy$Lon_deg_r)
+max_lon <- max(long_microscopy$Lon_deg_r)
+
+long_microscopy %>% 
+  dplyr::select(site, season, Lat_deg_r, Lon_deg_r) %>% 
+  distinct() -> lat_lot_back_all
+
+lat_lot_back_all %>% 
+  group_by(site, season) %>% 
+  slice(1) ->lat_lot_back_all
+
+group_by_site_all %>% 
+  left_join(lat_lot_back_all) -> group_by_site_all
+  
+  ggplot(data = world) +
+   geom_sf() +
+    geom_point(data=group_by_site_all, aes(x = Lon_deg_r, y = Lat_deg_r, size=n,colour=n),alpha=0.6 ) +
+    coord_sf(xlim = c(min_lon-1, max_lon+1), ylim = c(min_lat-0.5, max_lat+0.5), expand = FALSE) +theme_bw() +xlab("Longitude") +ylab("Latitude") +facet_grid(.~season) +scale_colour_viridis_c(option = "magma", direction=-1) 
+```
+
+```{r}
+
+long_microscopy %>% 
+  filter(., str_detect(Ohman_tax,"adult")) %>% 
+  filter(., season=="Spring")-> adult_data
+
+min_lat <- min(adult_data$Lat_deg_r)
+max_lat <- max(adult_data$Lat_deg_r)
+
+min_lon <- min(adult_data$Lon_deg_r)
+max_lon <- max(adult_data$Lon_deg_r)
+
+adult_data %>% 
+  filter(.,ID_Microscopy == "Euphausia pacifica") -> eup
+
+  ggplot(data = world) +
+   geom_sf() +
+    geom_point(data=eup, aes(x = Lon_deg_r, y = Lat_deg_r,colour=log10(Count_permsq2)),alpha=0.6 ) +
+    coord_sf(xlim = c(min_lon-1, max_lon+1), ylim = c(min_lat-0.5, max_lat+0.5), expand = FALSE) +theme_bw() +xlab("Longitude") +ylab("Latitude") +facet_wrap(ID_Microscopy~year) +scale_colour_viridis_c(option = "magma", direction=-1) 
+```
+
+
+
+```{r}
+
+Micoscropy_data %>% 
+  ggplot(aes(x=Date, y=log10(Count_permsq2), color=ID_Microscopy)) +geom_point() +facet_wrap(Site~.)
+
+```
+
+```{r}
+
+Micoscropy_data %>% 
+  filter(., Count_permsq2 >0) %>% 
+  ungroup() %>% 
+  count(ID_Microscopy) %>% 
+  arrange(desc(`n`)) %>% 
+  filter(., n> 10) -> abundant_species
+  
+  
+Micoscropy_data %>% 
+  filter(., ID_Microscopy %in% abundant_species$ID_Microscopy) %>% 
+  ggplot(aes(x=Date, y=log10(Count_permsq2), color=ID_Microscopy)) +geom_point() +facet_wrap(Site~.)
+
+```c

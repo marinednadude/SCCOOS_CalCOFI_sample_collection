@@ -1,0 +1,8 @@
+Manifest file for knb-lter-cce.313.1.zip created on Mon May 06 05:32:41 UTC 2024
+BTEDB_Abundances.csv (4678424 bytes)
+BTEDB_Coverage_1951-2020.pdf (24887 bytes)
+BTEDB_Size_To_Phase_Table.pdf (58616 bytes)
+BTEDB_station_region_map_Cen_and_S.png (162329 bytes)
+knb-lter-cce.313.1.xml (183769 bytes)
+knb-lter-cce.313.1.txt (93070 bytes)
+knb-lter-cce.313.1.report.xml (94340 bytes)

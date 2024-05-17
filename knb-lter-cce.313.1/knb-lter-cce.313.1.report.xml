@@ -1,0 +1,954 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<qr:qualityReport
+  xmlns="eml://ecoinformatics.org/qualityReport"
+  xmlns:qr="eml://ecoinformatics.org/qualityReport"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="eml://ecoinformatics.org/qualityReport https://raw.githubusercontent.com/PASTAplus/PASTA/master/DataPackageManager/WebRoot/xml/qualityReportSchema.xsd"
+  >
+  <creationDate>2022-07-11T14:03:50</creationDate>
+  <packageId>knb-lter-cce.313.1</packageId>
+  <includeSystem>lter</includeSystem>
+  <includeSystem>knb</includeSystem>
+  <datasetReport>
+    <qualityCheck qualityType="metadata" system="lter" statusType="error" >
+      <identifier>packageIdPattern</identifier>
+      <name>packageId pattern matches "scope.identifier.revision"</name>
+      <description>Check against LTER requirements for scope.identifier.revision</description>
+      <expected>'scope.n.m', where 'n' and 'm' are integers and 'scope' is one of an allowed set of values</expected>
+      <found>knb-lter-cce.313.1</found>
+      <status>valid</status>
+      <explanation></explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="lter" statusType="error" >
+      <identifier>emlVersion</identifier>
+      <name>EML version 2.1.0 or beyond</name>
+      <description>Check the EML document declaration for version 2.1.0 or higher</description>
+      <expected>eml://ecoinformatics.org/eml-2.1.0 or higher</expected>
+      <found>https://eml.ecoinformatics.org/eml-2.2.0</found>
+      <status>valid</status>
+      <explanation>Validity of this quality report is dependent on this check being valid.</explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="knb" statusType="error" >
+      <identifier>schemaValid</identifier>
+      <name>Document is schema-valid EML</name>
+      <description>Check document schema validity</description>
+      <expected>schema-valid</expected>
+      <found>Document validated for namespace: 'https://eml.ecoinformatics.org/eml-2.2.0'</found>
+      <status>valid</status>
+      <explanation>Validity of this quality report is dependent on this check being valid.</explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="knb" statusType="error" >
+      <identifier>parserValid</identifier>
+      <name>Document is EML parser-valid</name>
+      <description>Check document using the EML IDs and references parser</description>
+      <expected>Validates with the EML IDs and references parser</expected>
+      <found>EML IDs and references parser succeeded</found>
+      <status>valid</status>
+      <explanation>Validity of this quality report is dependent on this check being valid.</explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="lter" statusType="error" >
+      <identifier>schemaValidDereferenced</identifier>
+      <name>Dereferenced document is schema-valid EML</name>
+      <description>References are dereferenced, and the resulting file validated</description>
+      <expected>schema-valid</expected>
+      <found>Dereferenced document validated for namespace: 'https://eml.ecoinformatics.org/eml-2.2.0'</found>
+      <status>valid</status>
+      <explanation>Validity of this quality report is dependent on this check being valid.</explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="lter" statusType="warn" >
+      <identifier>keywordPresent</identifier>
+      <name>keyword element is present</name>
+      <description>Checks to see if at least one keyword is present</description>
+      <expected>Presence of one or more keyword elements</expected>
+      <found>6 'keyword' element(s) found</found>
+      <status>valid</status>
+      <explanation></explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="lter" statusType="warn" >
+      <identifier>methodsElementPresent</identifier>
+      <name>A 'methods' element is present</name>
+      <description>All datasets should contain a 'methods' element, at a minimum a link to a separate methods doc.</description>
+      <expected>presence of 'methods' at one or more xpaths.</expected>
+      <found>1 'methods' element(s) found</found>
+      <status>valid</status>
+      <explanation></explanation>
+      <suggestion></suggestion>
+      <reference>EML Best Practices, p. 28</reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="lter" statusType="warn" >
+      <identifier>coveragePresent</identifier>
+      <name>coverage element is present</name>
+      <description>At least one coverage element should be present in a dataset.</description>
+      <expected>At least one of geographicCoverage, taxonomicCoverage, or temporalCoverage is present in the EML.</expected>
+      <found>1 'coverage' element(s) found</found>
+      <status>valid</status>
+      <explanation></explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="lter" statusType="info" >
+      <identifier>geographicCoveragePresent</identifier>
+      <name>geographicCoverage is present</name>
+      <description>Check that geographicCoverage exists in EML at the dataset level, or at least one entity's level, or at least one attribute's level.</description>
+      <expected>geographicCoverage at least at the dataset level.</expected>
+      <found>1 'geographicCoverage' element(s) found</found>
+      <status>info</status>
+      <explanation>Many but not all datasets are appropriate to have spatial coverage.</explanation>
+      <suggestion>If sampling EML is used within methods, does that obviate geographicCoverage? Or should those sites be repeated or referenced?</suggestion>
+      <reference>EML Best Practices v.2, p. 22-23. "One geographicCoverage element should be included, whose boundingCoordinates describe the extent of the data....Additional geographicCoverage elements may be entered at the dataset level if there are significant distances between study sites and it would be confusing if they were grouped into one bounding box." 6 decimal places.</reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="lter" statusType="info" >
+      <identifier>taxonomicCoveragePresent</identifier>
+      <name>taxonomicCoverage is present</name>
+      <description>Check that taxonomicCoverage exists in EML at the dataset level, or at least one entity's level, or at least one attribute's level.</description>
+      <expected>taxonomicCoverage at least at the dataset level.</expected>
+      <found>1 'taxonomicCoverage' element(s) found</found>
+      <status>info</status>
+      <explanation>Only when taxa are pertinent to the dataset will they have taxonomicCoverage.</explanation>
+      <suggestion>Could search title, abstract, keywords for any taxonomic name (huge). Could search keywordType="taxonomic".</suggestion>
+      <reference>EML Best Practices v.2, p. 25</reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="lter" statusType="info" >
+      <identifier>temporalCoveragePresent</identifier>
+      <name>temporalCoverage is present</name>
+      <description>Check that temporalCoverage exists in EML at the dataset level, or at least one entity's level, or at least one attribute's level.</description>
+      <expected>temporalCoverage at least at the dataset level.</expected>
+      <found>1 'temporalCoverage' element(s) found</found>
+      <status>info</status>
+      <explanation>LTER wants to search datasets by time; the best place to search is the dataset level temporal coverage.</explanation>
+      <suggestion>Most datasets have a temporal range.</suggestion>
+      <reference>EML Best Practices v.2, p. 24</reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="lter" statusType="error" >
+      <identifier>pastaDoiAbsent</identifier>
+      <name>An alternateIdentifier with a DOI system attribute that looks like it is generated by PASTA should not be present</name>
+      <description>Reject the data package if it contains an alternateIdentifier DOI that looks like PASTA generated it.</description>
+      <expected>No PASTA DOIs are expected to be found in the uploaded data package</expected>
+      <found>No PASTA DOI alternateIdentifier elements found</found>
+      <status>valid</status>
+      <explanation>PASTA DOI values might appear in an uploaded data package (by various mechanisms). PASTA will assign a DOI after the upload has completed successfully, so an initial one should not be there.</explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="lter" statusType="warn" >
+      <identifier>titleLength</identifier>
+      <name>Dataset title length is at 5 least words.</name>
+      <description>If the title is shorter than 5 words, it might be insufficient. Title word count between 7 and 20 including prepositions and numbers.</description>
+      <expected>Between 7 and 20 words</expected>
+      <found>11 words found.</found>
+      <status>valid</status>
+      <explanation></explanation>
+      <suggestion></suggestion>
+      <reference>EML Best Practices, v.2, p. 13</reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="lter" statusType="warn" >
+      <identifier>fundingPresence</identifier>
+      <name>check to see if funding element is present</name>
+      <description>Checks to see if the funding element is included.</description>
+      <expected>the funding element is expected to be included</expected>
+      <found>National Science Foundation</found>
+      <status>valid</status>
+      <explanation></explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="lter" statusType="warn" >
+      <identifier>datasetAbstractLength</identifier>
+      <name>Dataset abstract element is a minimum of 20 words</name>
+      <description>Check the length of a dataset abstract and warn if less than 20 words.</description>
+      <expected>An abstract is 20 words or more.</expected>
+      <found>140 words found.</found>
+      <status>valid</status>
+      <explanation></explanation>
+      <suggestion></suggestion>
+      <reference>EML Best Practices</reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="lter" statusType="error" >
+      <identifier>duplicateEntityName</identifier>
+      <name>There are no duplicate entity names</name>
+      <description>Checks that content is not duplicated by other entityName elements in the document</description>
+      <expected>entityName is not a duplicate within the document</expected>
+      <found>No duplicates found</found>
+      <status>valid</status>
+      <explanation>Data Manager requires a non-empty, non-duplicate entityName value for every entity</explanation>
+      <suggestion>Declare a non-empty entityName and ensure that there are no duplicate entityName values in the document</suggestion>
+      <reference></reference>
+    </qualityCheck>
+  </datasetReport>
+  <entityReport>
+    <entityName>Brinton and Townsend Euphausiid Abundance Data</entityName>
+    <qualityCheck qualityType="metadata" system="knb" statusType="warn" >
+      <identifier>entityNameLength</identifier>
+      <name>Length of entityName is not excessive (less than 100 char)</name>
+      <description>length of entity name is less than 100 characters</description>
+      <expected>entityName value is 100 characters or less</expected>
+      <found>46</found>
+      <status>valid</status>
+      <explanation></explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="lter" statusType="warn" >
+      <identifier>entityDescriptionPresent</identifier>
+      <name>An entity description is present</name>
+      <description>Check for presence of an entity description.</description>
+      <expected>EML Best practices pp. 32-33, "...should have enough information for a user..."</expected>
+      <found>true</found>
+      <status>valid</status>
+      <explanation>With entityName sometimes serving as a file name rather than a title, it is important to be very descriptive here.</explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="knb" statusType="info" >
+      <identifier>numHeaderLinesPresent</identifier>
+      <name>'numHeaderLines' element is present</name>
+      <description>Check for presence of the 'numHeaderLines' element.</description>
+      <expected>Document contains 'numHeaderLines' element.</expected>
+      <found>'numHeaderLines' element: 1</found>
+      <status>info</status>
+      <explanation></explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="knb" statusType="info" >
+      <identifier>numFooterLinesPresent</identifier>
+      <name>'numFooterLines' element is present</name>
+      <description>Check for presence of the 'numFooterLines' element.</description>
+      <expected>Document contains 'numFooterLines' element.</expected>
+      <found>No 'numFooterLines' element found</found>
+      <status>info</status>
+      <explanation>If data file contains footer lines, 'numFooterLines' must be specified.</explanation>
+      <suggestion>Add 'numFooterLines' element if needed.</suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="knb" statusType="error" >
+      <identifier>fieldDelimiterValid</identifier>
+      <name>Field delimiter is a single character</name>
+      <description>Field delimiters should be one character only</description>
+      <expected>A single character is expected</expected>
+      <found>,</found>
+      <status>valid</status>
+      <explanation>A valid fieldDelimiter value was found</explanation>
+      <suggestion></suggestion>
+      <reference>http://knb.ecoinformatics.org/software/eml/eml-2.1.0/eml-physical.html#fieldDelimiter</reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="knb" statusType="warn" >
+      <identifier>recordDelimiterPresent</identifier>
+      <name>Record delimiter is present</name>
+      <description>Check presence of record delimiter. Check that the record delimiter is one of the suggested values.</description>
+      <expected>A record delimiter from a list of suggested values: \n, \r, \r\n, #x0A, #x0D, #x0D#x0A</expected>
+      <found>\n</found>
+      <status>valid</status>
+      <explanation>A valid recordDelimiter value was found</explanation>
+      <suggestion></suggestion>
+      <reference>http://knb.ecoinformatics.org/software/eml/eml-2.1.0/eml-physical.html#recordDelimiter</reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="knb" statusType="warn" >
+      <identifier>numberOfRecordsPresence</identifier>
+      <name>Is the numberOfRecords element present?</name>
+      <description>Warn the user if the numberOfRecords check is not present</description>
+      <expected>A number of records element is expected for this entity</expected>
+      <found>numberOfRecords element found</found>
+      <status>valid</status>
+      <explanation>This is a valuable check that we have the correct table.</explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="knb" statusType="warn" >
+      <identifier>entitySizePresence</identifier>
+      <name>Check for presence of an entity size element</name>
+      <description>Look for entity size element as a prep for checking congruence, and if not present, generate a warn. Note that to be most useful (i.e, to check congruence), entity size should contain the most precise measure of size, which is "byte" (the default unit); however, the presence or name of the entity size unit is NOT checked.</description>
+      <expected>Entity size is present. If unit="byte" or unit is omitted (default = byte), then congruence can be checked.</expected>
+      <found>Found entity size element with value of 4678424 and size unit specified as 'byte'.</found>
+      <status>valid</status>
+      <explanation>Examining the entity size is prep for checking congruence. Including the element is best practice, and if not present, a warn is generated. To be most useful, entity size should contain the most precise measure of size, which is "byte" (the default unit).</explanation>
+      <suggestion>Include an entity size in bytes</suggestion>
+      <reference> Example success: knb-lter-sbc.3.12. Example of size in units other than byte: knb-lter-mcr.6.56.</reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="lter" statusType="warn" >
+      <identifier>integrityChecksumPresence</identifier>
+      <name>A physical/authentication element is present and specifies a method attribute with a value of MD5 or SHA-1</name>
+      <description>Check for presence of a physical/authentication element containing a checksum or hash value for an integrity check (e.g. MD5, SHA-1). Warn if an entity does not have a physical/authentication element, or if none of the physical/authentication elements specify a method attribute with a value of MD5 or SHA-1.</description>
+      <expected>At least one physical/authentication element with a method attribute specifying MD5 or SHA-1 and containing a checksum or hash value that can be used to perform an integrity check on the data.</expected>
+      <found>true</found>
+      <status>valid</status>
+      <explanation>PASTA will use this value to check the integrity of the data it downloads from your site. In addition, PASTA is planning to compare the contributor-supplied checksum/hash value documented 
+      in the physical/authentication element to the checksum/hash value of this entity downloaded from previous revisions of this data package. If PASTA already has a copy of this entity, it will be able 
+      to avoid an unnecessary download of the entity from your site, resulting in faster processing of the new data package revision when you update it in PASTA.</explanation>
+      <suggestion>Add a physical/authentication element and store the entity checksum or hash value in it using a method such as MD5 or SHA-1.</suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="knb" statusType="warn" >
+      <identifier>dateTimeFormatString</identifier>
+      <name>dateTime/formatString specified in metadata is from a preferred set of values</name>
+      <description>Certain features of dateTime data formats are preferred, eg, ISO 8601, 4-digit years. 
+      This check looks at metadata to see if the dateTime format is in that preferred list.</description>
+      <expected>A formatString value that is a member of the preferred set is expected.</expected>
+      <found>YYYY-MM-DD</found>
+      <status>valid</status>
+      <explanation>A preferred format string was found.</explanation>
+      <suggestion>Modify the dateTime/formatString, selecting from among the preferred values one that best matches the data format</suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="knb" statusType="warn" >
+      <identifier>dateTimeFormatString</identifier>
+      <name>dateTime/formatString specified in metadata is from a preferred set of values</name>
+      <description>Certain features of dateTime data formats are preferred, eg, ISO 8601, 4-digit years. 
+      This check looks at metadata to see if the dateTime format is in that preferred list.</description>
+      <expected>A formatString value that is a member of the preferred set is expected.</expected>
+      <found>YYYY-MM-DD hh:mm:ss</found>
+      <status>valid</status>
+      <explanation>A preferred format string was found.</explanation>
+      <suggestion>Modify the dateTime/formatString, selecting from among the preferred values one that best matches the data format</suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="knb" statusType="warn" >
+      <identifier>dateTimeFormatString</identifier>
+      <name>dateTime/formatString specified in metadata is from a preferred set of values</name>
+      <description>Certain features of dateTime data formats are preferred, eg, ISO 8601, 4-digit years. 
+      This check looks at metadata to see if the dateTime format is in that preferred list.</description>
+      <expected>A formatString value that is a member of the preferred set is expected.</expected>
+      <found>YYYY-MM-DD hh:mm:ss</found>
+      <status>valid</status>
+      <explanation>A preferred format string was found.</explanation>
+      <suggestion>Modify the dateTime/formatString, selecting from among the preferred values one that best matches the data format</suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="knb" statusType="warn" >
+      <identifier>attributeNamesUnique</identifier>
+      <name>Attribute names are unique</name>
+      <description>Checks if attributeName values are unique in the table. Not required by EML.</description>
+      <expected>Unique attribute names.</expected>
+      <found>true</found>
+      <status>valid</status>
+      <explanation>A good table does not have duplicate column names.</explanation>
+      <suggestion></suggestion>
+      <reference>EML Best Practices</reference>
+    </qualityCheck>
+    <qualityCheck qualityType="data" system="knb" statusType="info" >
+      <identifier>displayDownloadData</identifier>
+      <name>Display downloaded data</name>
+      <description>Display the first kilobyte of data that is downloaded</description>
+      <expected>Up to one kilobyte of data should be displayed</expected>
+      <found><![CDATA[
+RowNumber,Cruise,Ship,Date,Region,Line,Station,MaxDepth,Latitude,Longitude,TowBegin,TowEnd,Euphausia_brevis_adult_Abundance,Euphausia_brevis_calyptopis_Abundance,Euphausia_brevis_furcilia_Abundance,Euphausia_brevis_juvenile_Abundance,Euphausia_diomedeae_adult_Abundance,Euphausia_distinguenda_adult_Abundance,Euphausia_distinguenda_furcilia_Abundance,Euphausia_distinguenda_juvenile_Abundance,Euphausia_eximia_adult_Abundance,Euphausia_eximia_calyptopis_Abundance,Euphausia_eximia_calyptopis_C2_Abundance,Euphausia_eximia_calyptopis_C3_Abundance,Euphausia_eximia_damaged_Abundance,Euphausia_eximia_furcilia_Abundance,Euphausia_eximia_furcilia_F1_Abundance,Euphausia_eximia_furcilia_F2_Abundance,Euphausia_eximia_furcilia_F3_Abundance,Euphausia_eximia_furcilia_F4_Abundance,Euphausia_eximia_furcilia_F5_Abundance,Euphausia_eximia_furcilia_F6_Abundance,Euphausia_eximia_juvenile_Abundance,Euphausia_eximia_larvae_Abundance,Euphausia_gibboides_adult_Abundance,Euphausia_gibboides_calyptopis_Abundance,Euphausia_gibboides_calypt]]></found>
+      <status>info</status>
+      <explanation></explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="congruency" system="knb" statusType="error" >
+      <identifier>urlReturnsData</identifier>
+      <name>URL returns data</name>
+      <description>Checks whether a URL returns data. Unless the URL is specified to be function="information", the URL should return the resource for download.</description>
+      <expected>A data entity that matches the metadata</expected>
+      <found>true</found>
+      <status>valid</status>
+      <explanation></explanation>
+      <suggestion></suggestion>
+      <reference>http://knb.ecoinformatics.org/software/eml/eml-2.1.0/eml-resource.html#UrlType</reference>
+    </qualityCheck>
+    <qualityCheck qualityType="congruency" system="knb" statusType="error" >
+      <identifier>onlineURLs</identifier>
+      <name>Online URLs are live</name>
+      <description>Check that online URLs return something</description>
+      <expected>true</expected>
+      <found>true</found>
+      <status>valid</status>
+      <explanation>Succeeded in accessing URL: <![CDATA[https://portal.edirepository.org/nis/data/CCE-upload-2022-07-11-1657569741559/BTEDB_Abundances.csv]]></explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="congruency" system="lter" statusType="error" >
+      <identifier>integrityChecksum</identifier>
+      <name>Compare the metadata checksum for an entity to the checksum of the downloaded entity</name>
+      <description>Two possible responses: valid if checksums match; error if checksums do not match.</description>
+      <expected>3e7b7cf338c4c9cb5a5e8d4196a979e8</expected>
+      <found>3e7b7cf338c4c9cb5a5e8d4196a979e8</found>
+      <status>valid</status>
+      <explanation>Matching checksums will ensure data integrity during upload to the repository.</explanation>
+      <suggestion>If the found integrity hash value does not match the expected integrity hash value, there may have been a loss of integrity in the data download. Check that the hash method and hash value documented in the metadata are the correct values.</suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="congruency" system="knb" statusType="error" >
+      <identifier>entitySizeCongruence</identifier>
+      <name>Check that the entity size in the Level 0 metadata matches the one PASTA+ generates.</name>
+      <description>Compare raw file size of file to [entity]/physical/size element in metadata. Return error if not matching.</description>
+      <expected>4678424</expected>
+      <found>4678424</found>
+      <status>valid</status>
+      <explanation>Examining the entity size is a method for checking that this is the correct entity.</explanation>
+      <suggestion>Check the entity size.</suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="knb" statusType="error" >
+      <identifier>databaseTableCreated</identifier>
+      <name>Database table created</name>
+      <description>Status of creating a database table</description>
+      <expected>A database table is expected to be generated from the EML attributes.</expected>
+      <found>A database table was generated from the attributes description</found>
+      <status>valid</status>
+      <explanation><![CDATA[CREATE TABLE Brinton_and_Townsend_Euphausii("RowNumber" BIGINT,"Cruise" TEXT,"Ship" TEXT,"Date" TIMESTAMP,"Region" TEXT,"Line" FLOAT,"Station" TEXT,"MaxDepth" FLOAT,"Latitude" FLOAT,"Longitude" FLOAT,"TowBegin" TIMESTAMP,"TowEnd" TIMESTAMP,"Euphausia_brevis_adult_Abundance" FLOAT,"Euphausia_brevis_calyptopis_Abundance" FLOAT,"Euphausia_brevis_furcilia_Abundance" FLOAT,"Euphausia_brevis_juvenile_Abundance" FLOAT,"Euphausia_diomedeae_adult_Abundance" FLOAT,"Euphausia_distinguenda_adult_Abundance" FLOAT,"Euphausia_distinguenda_furcilia_Abundance" FLOAT,"Euphausia_distinguenda_juvenile_Abundance" FLOAT,"Euphausia_eximia_adult_Abundance" FLOAT,"Euphausia_eximia_calyptopis_Abundance" FLOAT,"Euphausia_eximia_calyptopis_C2_Abundance" FLOAT,"Euphausia_eximia_calyptopis_C3_Abundance" FLOAT,"Euphausia_eximia_damaged_Abundance" FLOAT,"Euphausia_eximia_furcilia_Abundance" FLOAT,"Euphausia_eximia_furcilia_F1_Abundance" FLOAT,"Euphausia_eximia_furcilia_F2_Abundance" FLOAT,"Euphausia_eximia_furcilia_F3_Abundance" FLOAT,"Euphausia_eximia_furcilia_F4_Abundance" FLOAT,"Euphausia_eximia_furcilia_F5_Abundance" FLOAT,"Euphausia_eximia_furcilia_F6_Abundance" FLOAT,"Euphausia_eximia_juvenile_Abundance" FLOAT,"Euphausia_eximia_larvae_Abundance" FLOAT,"Euphausia_gibboides_adult_Abundance" FLOAT,"Euphausia_gibboides_calyptopis_Abundance" FLOAT,"Euphausia_gibboides_calyptopis_C1_Abundance" FLOAT,"Euphausia_gibboides_calyptopis_C2_Abundance" FLOAT,"Euphausia_gibboides_calyptopis_C3_Abundance" FLOAT,"Euphausia_gibboides_damaged_Abundance" FLOAT,"Euphausia_gibboides_furcilia_Abundance" FLOAT,"Euphausia_gibboides_furcilia_F1_Abundance" FLOAT,"Euphausia_gibboides_furcilia_F2_Abundance" FLOAT,"Euphausia_gibboides_furcilia_F3_Abundance" FLOAT,"Euphausia_gibboides_furcilia_F4_Abundance" FLOAT,"Euphausia_gibboides_furcilia_F5_Abundance" FLOAT,"Euphausia_gibboides_furcilia_F6_Abundance" FLOAT,"Euphausia_gibboides_juvenile_Abundance" FLOAT,"Euphausia_gibboides_larvae_Abundance" FLOAT,"Euphausia_hemigibba_adult_Abundance" FLOAT,"Euphausia_hemigibba_calyptopis_Abundance" FLOAT,"Euphausia_hemigibba_furcilia_Abundance" FLOAT,"Euphausia_hemigibba_juvenile_Abundance" FLOAT,"Euphausia_lamelligera_adult_Abundance" FLOAT,"Euphausia_mutica_adult_Abundance" FLOAT,"Euphausia_mutica_calyptopis_Abundance" FLOAT,"Euphausia_mutica_furcilia_Abundance" FLOAT,"Euphausia_mutica_juvenile_Abundance" FLOAT,"Euphausia_pacifica_adult_Abundance" FLOAT,"Euphausia_pacifica_calyptopis_Abundance" FLOAT,"Euphausia_pacifica_calyptopis_C1_Abundance" FLOAT,"Euphausia_pacifica_calyptopis_C2_Abundance" FLOAT,"Euphausia_pacifica_calyptopis_C3_Abundance" FLOAT,"Euphausia_pacifica_damaged_Abundance" FLOAT,"Euphausia_pacifica_furcilia_Abundance" FLOAT,"Euphausia_pacifica_furcilia_F1_Abundance" FLOAT,"Euphausia_pacifica_furcilia_F2_Abundance" FLOAT,"Euphausia_pacifica_furcilia_F3_Abundance" FLOAT,"Euphausia_pacifica_furcilia_F4_Abundance" FLOAT,"Euphausia_pacifica_furcilia_F5_Abundance" FLOAT,"Euphausia_pacifica_furcilia_F6_Abundance" FLOAT,"Euphausia_pacifica_furcilia_F7_Abundance" FLOAT,"Euphausia_pacifica_juvenile_Abundance" FLOAT,"Euphausia_pacifica_larvae_Abundance" FLOAT,"Euphausia_pacifica_metanauplius_Abundance" FLOAT,"Euphausia_recurva_adult_Abundance" FLOAT,"Euphausia_recurva_calyptopis_Abundance" FLOAT,"Euphausia_recurva_calyptopis_C1_Abundance" FLOAT,"Euphausia_recurva_calyptopis_C2_Abundance" FLOAT,"Euphausia_recurva_calyptopis_C3_Abundance" FLOAT,"Euphausia_recurva_damaged_Abundance" FLOAT,"Euphausia_recurva_furcilia_Abundance" FLOAT,"Euphausia_recurva_furcilia_F1_Abundance" FLOAT,"Euphausia_recurva_furcilia_F2_Abundance" FLOAT,"Euphausia_recurva_furcilia_F3_Abundance" FLOAT,"Euphausia_recurva_furcilia_F4_Abundance" FLOAT,"Euphausia_recurva_furcilia_F5_Abundance" FLOAT,"Euphausia_recurva_furcilia_F6_Abundance" FLOAT,"Euphausia_recurva_juvenile_Abundance" FLOAT,"Euphausia_recurva_metanauplius_Abundance" FLOAT,"Euphausia_tenera_adult_Abundance" FLOAT,"Euphausia_tenera_furcilia_Abundance" FLOAT,"Euphausia_tenera_juvenile_Abundance" FLOAT,"Nematobrachion_boopis_adult_Abundance" FLOAT,"Nematobrachion_boopis_furcilia_Abundance" FLOAT,"Nematobrachion_boopis_juvenile_Abundance" FLOAT,"Nematobrachion_flexipes_adult_Abundance" FLOAT,"Nematobrachion_flexipes_calyptopis_Abundance" FLOAT,"Nematobrachion_flexipes_furcilia_Abundance" FLOAT,"Nematobrachion_flexipes_juvenile_Abundance" FLOAT,"Nematobrachion_flexipes_larvae_Abundance" FLOAT,"Nematoscelis_atlantica_adult_Abundance" FLOAT,"Nematoscelis_atlantica_calyptopis_Abundance" FLOAT,"Nematoscelis_atlantica_furcilia_Abundance" FLOAT,"Nematoscelis_atlantica_juvenile_Abundance" FLOAT,"Nematoscelis_difficilis_adult_Abundance" FLOAT,"Nematoscelis_difficilis_calyptopis_Abundance" FLOAT,"Nematoscelis_difficilis_calyptopis_C1_Abundance" FLOAT,"Nematoscelis_difficilis_calyptopis_C2_Abundance" FLOAT,"Nematoscelis_difficilis_calyptopis_C3_Abundance" FLOAT,"Nematoscelis_difficilis_damaged_Abundance" FLOAT,"Nematoscelis_difficilis_furcilia_Abundance" FLOAT,"Nematoscelis_difficilis_furcilia_F1_Abundance" FLOAT,"Nematoscelis_difficilis_furcilia_F2_Abundance" FLOAT,"Nematoscelis_difficilis_furcilia_F3_Abundance" FLOAT,"Nematoscelis_difficilis_juvenile_Abundance" FLOAT,"Nematoscelis_difficilis_larvae_Abundance" FLOAT,"Nematoscelis_difficilis_metanauplius_Abundance" FLOAT,"Nematoscelis_gracilis_adult_Abundance" FLOAT,"Nematoscelis_gracilis_furcilia_Abundance" FLOAT,"Nematoscelis_gracilis_juvenile_Abundance" FLOAT,"Nematoscelis_microps_adult_Abundance" FLOAT,"Nematoscelis_microps_juvenile_Abundance" FLOAT,"Nematoscelis_tenella_adult_Abundance" FLOAT,"Nematoscelis_tenella_calyptopis_Abundance" FLOAT,"Nematoscelis_tenella_furcilia_Abundance" FLOAT,"Nematoscelis_tenella_juvenile_Abundance" FLOAT,"Nematoscelis_tenella_larvae_Abundance" FLOAT,"Nyctiphanes_simplex_adult_Abundance" FLOAT,"Nyctiphanes_simplex_calyptopis_Abundance" FLOAT,"Nyctiphanes_simplex_calyptopis_C1_Abundance" FLOAT,"Nyctiphanes_simplex_calyptopis_C2_Abundance" FLOAT,"Nyctiphanes_simplex_calyptopis_C3_Abundance" FLOAT,"Nyctiphanes_simplex_damaged_Abundance" FLOAT,"Nyctiphanes_simplex_furcilia_Abundance" FLOAT,"Nyctiphanes_simplex_furcilia_F1_Abundance" FLOAT,"Nyctiphanes_simplex_furcilia_F2_Abundance" FLOAT,"Nyctiphanes_simplex_furcilia_F3_Abundance" FLOAT,"Nyctiphanes_simplex_furcilia_F4_Abundance" FLOAT,"Nyctiphanes_simplex_furcilia_F5_Abundance" FLOAT,"Nyctiphanes_simplex_furcilia_F6_Abundance" FLOAT,"Nyctiphanes_simplex_juvenile_Abundance" FLOAT,"Nyctiphanes_simplex_larvae_Abundance" FLOAT,"Nyctiphanes_simplex_metanauplius_Abundance" FLOAT,"Stylocheiron_abbreviatum_adult_Abundance" FLOAT,"Stylocheiron_abbreviatum_calyptopis_Abundance" FLOAT,"Stylocheiron_abbreviatum_furcilia_Abundance" FLOAT,"Stylocheiron_abbreviatum_juvenile_Abundance" FLOAT,"Stylocheiron_abbreviatum_larvae_Abundance" FLOAT,"Stylocheiron_affine_adult_Abundance" FLOAT,"Stylocheiron_affine_calyptopis_Abundance" FLOAT,"Stylocheiron_affine_furcilia_Abundance" FLOAT,"Stylocheiron_affine_juvenile_Abundance" FLOAT,"Stylocheiron_carinatum_adult_Abundance" FLOAT,"Stylocheiron_carinatum_calyptopis_Abundance" FLOAT,"Stylocheiron_carinatum_furcilia_Abundance" FLOAT,"Stylocheiron_carinatum_juvenile_Abundance" FLOAT,"Stylocheiron_elongatum_adult_Abundance" FLOAT,"Stylocheiron_elongatum_calyptopis_Abundance" FLOAT,"Stylocheiron_elongatum_furcilia_Abundance" FLOAT,"Stylocheiron_elongatum_juvenile_Abundance" FLOAT,"Stylocheiron_longicorne_adult_Abundance" FLOAT,"Stylocheiron_longicorne_calyptopis_Abundance" FLOAT,"Stylocheiron_longicorne_furcilia_Abundance" FLOAT,"Stylocheiron_longicorne_juvenile_Abundance" FLOAT,"Stylocheiron_longicorne_larvae_Abundance" FLOAT,"Stylocheiron_maximum_adult_Abundance" FLOAT,"Stylocheiron_maximum_calyptopis_Abundance" FLOAT,"Stylocheiron_maximum_furcilia_Abundance" FLOAT,"Stylocheiron_maximum_juvenile_Abundance" FLOAT,"Stylocheiron_maximum_larvae_Abundance" FLOAT,"Stylocheiron_suhmi_adult_Abundance" FLOAT,"Stylocheiron_suhmi_calyptopis_Abundance" FLOAT,"Stylocheiron_suhmi_furcilia_Abundance" FLOAT,"Stylocheiron_suhmi_juvenile_Abundance" FLOAT,"Tessarabrachion_oculatum_calyptopis_Abundance" FLOAT,"Tessarabrachion_oculatum_furcilia_Abundance" FLOAT,"Tessarabrachion_oculatum_juvenile_Abundance" FLOAT,"Thysanoessa_gregaria_adult_Abundance" FLOAT,"Thysanoessa_gregaria_calyptopis_Abundance" FLOAT,"Thysanoessa_gregaria_calyptopis_C1_Abundance" FLOAT,"Thysanoessa_gregaria_calyptopis_C2_Abundance" FLOAT,"Thysanoessa_gregaria_calyptopis_C3_Abundance" FLOAT,"Thysanoessa_gregaria_damaged_Abundance" FLOAT,"Thysanoessa_gregaria_furcilia_Abundance" FLOAT,"Thysanoessa_gregaria_furcilia_F1_Abundance" FLOAT,"Thysanoessa_gregaria_furcilia_F2_Abundance" FLOAT,"Thysanoessa_gregaria_furcilia_F3_Abundance" FLOAT,"Thysanoessa_gregaria_furcilia_F4_Abundance" FLOAT,"Thysanoessa_gregaria_furcilia_F5_Abundance" FLOAT,"Thysanoessa_gregaria_furcilia_F6_Abundance" FLOAT,"Thysanoessa_gregaria_juvenile_Abundance" FLOAT,"Thysanoessa_gregaria_larvae_Abundance" FLOAT,"Thysanoessa_longipes_adult_Abundance" FLOAT,"Thysanoessa_longipes_calyptopis_Abundance" FLOAT,"Thysanoessa_longipes_furcilia_Abundance" FLOAT,"Thysanoessa_longipes_juvenile_Abundance" FLOAT,"Thysanoessa_spinifera_adult_Abundance" FLOAT,"Thysanoessa_spinifera_calyptopis_Abundance" FLOAT,"Thysanoessa_spinifera_calyptopis_C1_Abundance" FLOAT,"Thysanoessa_spinifera_calyptopis_C2_Abundance" FLOAT,"Thysanoessa_spinifera_calyptopis_C3_Abundance" FLOAT,"Thysanoessa_spinifera_damaged_Abundance" FLOAT,"Thysanoessa_spinifera_furcilia_Abundance" FLOAT,"Thysanoessa_spinifera_furcilia_F1_Abundance" FLOAT,"Thysanoessa_spinifera_furcilia_F2_Abundance" FLOAT,"Thysanoessa_spinifera_furcilia_F3_Abundance" FLOAT,"Thysanoessa_spinifera_furcilia_F4_Abundance" FLOAT,"Thysanoessa_spinifera_furcilia_F5_Abundance" FLOAT,"Thysanoessa_spinifera_furcilia_F6_Abundance" FLOAT,"Thysanoessa_spinifera_juvenile_Abundance" FLOAT,"Thysanoessa_spinifera_larvae_Abundance" FLOAT,"Thysanoessa_spinifera_metanauplius_Abundance" FLOAT,"Thysanopoda_astylata_adult_Abundance" FLOAT,"Thysanopoda_astylata_calyptopis_Abundance" FLOAT,"Thysanopoda_astylata_furcilia_Abundance" FLOAT,"Thysanopoda_astylata_juvenile_Abundance" FLOAT,"Thysanopoda_astylata_larvae_Abundance" FLOAT,"Thysanopoda_cornuta_furcilia_Abundance" FLOAT,"Thysanopoda_egregia_calyptopis_Abundance" FLOAT,"Thysanopoda_egregia_furcilia_Abundance" FLOAT,"Thysanopoda_egregia_juvenile_Abundance" FLOAT,"Thysanopoda_monacantha_adult_Abundance" FLOAT,"Thysanopoda_monacantha_calyptopis_Abundance" FLOAT,"Thysanopoda_monacantha_furcilia_Abundance" FLOAT,"Thysanopoda_monacantha_juvenile_Abundance" FLOAT,"Thysanopoda_obtusifrons_adult_Abundance" FLOAT,"Thysanopoda_obtusifrons_calyptopis_Abundance" FLOAT,"Thysanopoda_obtusifrons_furcilia_Abundance" FLOAT,"Thysanopoda_obtusifrons_juvenile_Abundance" FLOAT,"Thysanopoda_orientalis_adult_Abundance" FLOAT,"Thysanopoda_orientalis_calyptopis_Abundance" FLOAT,"Thysanopoda_orientalis_furcilia_Abundance" FLOAT,"Thysanopoda_orientalis_juvenile_Abundance" FLOAT,"Thysanopoda_pectinata_calyptopis_Abundance" FLOAT,"Thysanopoda_pectinata_furcilia_Abundance" FLOAT,"Thysanopoda_pectinata_juvenile_Abundance" FLOAT);]]></explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="congruency" system="knb" statusType="warn" >
+      <identifier>examineRecordDelimiter</identifier>
+      <name>Data are examined and possible record delimiters are displayed</name>
+      <description>If no record delimiter was specified, we assume that \r\n is the delimiter. Search the first row for other record delimiters and see if other delimiters are found.</description>
+      <expected>No other potential record delimiters expected in the first row.</expected>
+      <found>No other potential record delimiters were detected. A valid record delimiter was previously detected</found>
+      <status>valid</status>
+      <explanation></explanation>
+      <suggestion></suggestion>
+      <reference>http://knb.ecoinformatics.org/software/eml/eml-2.1.0/eml-physical.html#recordDelimiter</reference>
+    </qualityCheck>
+    <qualityCheck qualityType="data" system="knb" statusType="info" >
+      <identifier>displayFirstInsertRow</identifier>
+      <name>Display first insert row</name>
+      <description>Display the first row of data values to be inserted into the database table</description>
+      <expected>The first row of data values should be displayed</expected>
+      <found><![CDATA[1, CALCOFI 5101, CREST, 1951-01-17, SC, 90, 60, 137, 32.400, -119.900, 1951-01-17 20:11:00, 1951-01-17 20:36:00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.844, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.844, 0, 0, 0, 0, 0, 0, 0, 0, 0.844, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5.064, 0, 0, 0.844, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3.376, 0, 0, 0, 2.532, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.844, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.688, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5.064, 0, 0, 2.532, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 17.722, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.844, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]></found>
+      <status>info</status>
+      <explanation></explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="congruency" system="knb" statusType="error" >
+      <identifier>onlineURLs</identifier>
+      <name>Online URLs are live</name>
+      <description>Check that online URLs return something</description>
+      <expected>true</expected>
+      <found>true</found>
+      <status>valid</status>
+      <explanation>Succeeded in accessing URL: <![CDATA[file:///pasta/data1/knb-lter-cce.313.1/4b562b1423bd4ea8f2d03fbd009403aa]]></explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="congruency" system="knb" statusType="error" >
+      <identifier>tooFewFields</identifier>
+      <name>Data does not have fewer fields than metadata attributes</name>
+      <description>Compare number of fields specified in metadata to number of fields found in a data record</description>
+      <expected></expected>
+      <found>No errors detected</found>
+      <status>valid</status>
+      <explanation></explanation>
+      <suggestion></suggestion>
+      <reference>http://knb.ecoinformatics.org/software/eml/eml-2.1.0/eml-physical.html#dataFormat</reference>
+    </qualityCheck>
+    <qualityCheck qualityType="congruency" system="knb" statusType="error" >
+      <identifier>tooManyFields</identifier>
+      <name>Data does not have more fields than metadata attributes</name>
+      <description>Compare number of fields specified in metadata to number of fields found in a data record</description>
+      <expected></expected>
+      <found>No errors detected</found>
+      <status>valid</status>
+      <explanation></explanation>
+      <suggestion></suggestion>
+      <reference>http://knb.ecoinformatics.org/software/eml/eml-2.1.0/eml-physical.html#dataFormat</reference>
+    </qualityCheck>
+    <qualityCheck qualityType="congruency" system="knb" statusType="warn" >
+      <identifier>dataLoadStatus</identifier>
+      <name>Data can be loaded into the database</name>
+      <description>Status of loading the data table into a database</description>
+      <expected>No errors expected during data loading or data loading was not attempted for this data entity</expected>
+      <found>The data table loaded successfully into a database</found>
+      <status>valid</status>
+      <explanation></explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="congruency" system="knb" statusType="warn" >
+      <identifier>numberOfRecords</identifier>
+      <name>Number of records in metadata matches number of rows loaded</name>
+      <description>Compare number of records specified in metadata to number of records found in data</description>
+      <expected>7482</expected>
+      <found>7482</found>
+      <status>valid</status>
+      <explanation>The expected number of records (7482) was found in the data table.</explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="congruency" system="lter" statusType="info" >
+      <identifier>headerRowAttributeNames</identifier>
+      <name>Header row is displayed alongside attribute names</name>
+      <description>Compare the content of the data header row to the content of EML attribute names.</description>
+      <expected>No expectation, information only</expected>
+      <found><![CDATA[*** HEADER ROWS ***
+RowNumber,Cruise,Ship,Date,Region,Line,Station,MaxDepth,Latitude,Longitude,TowBegin,TowEnd,Euphausia_brevis_adult_Abundance,Euphausia_brevis_calyptopis_Abundance,Euphausia_brevis_furcilia_Abundance,Euphausia_brevis_juvenile_Abundance,Euphausia_diomedeae_adult_Abundance,Euphausia_distinguenda_adult_Abundance,Euphausia_distinguenda_furcilia_Abundance,Euphausia_distinguenda_juvenile_Abundance,Euphausia_eximia_adult_Abundance,Euphausia_eximia_calyptopis_Abundance,Euphausia_eximia_calyptopis_C2_Abundance,Euphausia_eximia_calyptopis_C3_Abundance,Euphausia_eximia_damaged_Abundance,Euphausia_eximia_furcilia_Abundance,Euphausia_eximia_furcilia_F1_Abundance,Euphausia_eximia_furcilia_F2_Abundance,Euphausia_eximia_furcilia_F3_Abundance,Euphausia_eximia_furcilia_F4_Abundance,Euphausia_eximia_furcilia_F5_Abundance,Euphausia_eximia_furcilia_F6_Abundance,Euphausia_eximia_juvenile_Abundance,Euphausia_eximia_larvae_Abundance,Euphausia_gibboides_adult_Abundance,Euphausia_gibboides_calyptopis_Abundance,Euphausia_gibboides_calyptopis_C1_Abundance,Euphausia_gibboides_calyptopis_C2_Abundance,Euphausia_gibboides_calyptopis_C3_Abundance,Euphausia_gibboides_damaged_Abundance,Euphausia_gibboides_furcilia_Abundance,Euphausia_gibboides_furcilia_F1_Abundance,Euphausia_gibboides_furcilia_F2_Abundance,Euphausia_gibboides_furcilia_F3_Abundance,Euphausia_gibboides_furcilia_F4_Abundance,Euphausia_gibboides_furcilia_F5_Abundance,Euphausia_gibboides_furcilia_F6_Abundance,Euphausia_gibboides_juvenile_Abundance,Euphausia_gibboides_larvae_Abundance,Euphausia_hemigibba_adult_Abundance,Euphausia_hemigibba_calyptopis_Abundance,Euphausia_hemigibba_furcilia_Abundance,Euphausia_hemigibba_juvenile_Abundance,Euphausia_lamelligera_adult_Abundance,Euphausia_mutica_adult_Abundance,Euphausia_mutica_calyptopis_Abundance,Euphausia_mutica_furcilia_Abundance,Euphausia_mutica_juvenile_Abundance,Euphausia_pacifica_adult_Abundance,Euphausia_pacifica_calyptopis_Abundance,Euphausia_pacifica_calyptopis_C1_Abundance,Euphausia_pacifica_calyptopis_C2_Abundance,Euphausia_pacifica_calyptopis_C3_Abundance,Euphausia_pacifica_damaged_Abundance,Euphausia_pacifica_furcilia_Abundance,Euphausia_pacifica_furcilia_F1_Abundance,Euphausia_pacifica_furcilia_F2_Abundance,Euphausia_pacifica_furcilia_F3_Abundance,Euphausia_pacifica_furcilia_F4_Abundance,Euphausia_pacifica_furcilia_F5_Abundance,Euphausia_pacifica_furcilia_F6_Abundance,Euphausia_pacifica_furcilia_F7_Abundance,Euphausia_pacifica_juvenile_Abundance,Euphausia_pacifica_larvae_Abundance,Euphausia_pacifica_metanauplius_Abundance,Euphausia_recurva_adult_Abundance,Euphausia_recurva_calyptopis_Abundance,Euphausia_recurva_calyptopis_C1_Abundance,Euphausia_recurva_calyptopis_C2_Abundance,Euphausia_recurva_calyptopis_C3_Abundance,Euphausia_recurva_damaged_Abundance,Euphausia_recurva_furcilia_Abundance,Euphausia_recurva_furcilia_F1_Abundance,Euphausia_recurva_furcilia_F2_Abundance,Euphausia_recurva_furcilia_F3_Abundance,Euphausia_recurva_furcilia_F4_Abundance,Euphausia_recurva_furcilia_F5_Abundance,Euphausia_recurva_furcilia_F6_Abundance,Euphausia_recurva_juvenile_Abundance,Euphausia_recurva_metanauplius_Abundance,Euphausia_tenera_adult_Abundance,Euphausia_tenera_furcilia_Abundance,Euphausia_tenera_juvenile_Abundance,Nematobrachion_boopis_adult_Abundance,Nematobrachion_boopis_furcilia_Abundance,Nematobrachion_boopis_juvenile_Abundance,Nematobrachion_flexipes_adult_Abundance,Nematobrachion_flexipes_calyptopis_Abundance,Nematobrachion_flexipes_furcilia_Abundance,Nematobrachion_flexipes_juvenile_Abundance,Nematobrachion_flexipes_larvae_Abundance,Nematoscelis_atlantica_adult_Abundance,Nematoscelis_atlantica_calyptopis_Abundance,Nematoscelis_atlantica_furcilia_Abundance,Nematoscelis_atlantica_juvenile_Abundance,Nematoscelis_difficilis_adult_Abundance,Nematoscelis_difficilis_calyptopis_Abundance,Nematoscelis_difficilis_calyptopis_C1_Abundance,Nematoscelis_difficilis_calyptopis_C2_Abundance,Nematoscelis_difficilis_calyptopis_C3_Abundance,Nematoscelis_difficilis_damaged_Abundance,Nematoscelis_difficilis_furcilia_Abundance,Nematoscelis_difficilis_furcilia_F1_Abundance,Nematoscelis_difficilis_furcilia_F2_Abundance,Nematoscelis_difficilis_furcilia_F3_Abundance,Nematoscelis_difficilis_juvenile_Abundance,Nematoscelis_difficilis_larvae_Abundance,Nematoscelis_difficilis_metanauplius_Abundance,Nematoscelis_gracilis_adult_Abundance,Nematoscelis_gracilis_furcilia_Abundance,Nematoscelis_gracilis_juvenile_Abundance,Nematoscelis_microps_adult_Abundance,Nematoscelis_microps_juvenile_Abundance,Nematoscelis_tenella_adult_Abundance,Nematoscelis_tenella_calyptopis_Abundance,Nematoscelis_tenella_furcilia_Abundance,Nematoscelis_tenella_juvenile_Abundance,Nematoscelis_tenella_larvae_Abundance,Nyctiphanes_simplex_adult_Abundance,Nyctiphanes_simplex_calyptopis_Abundance,Nyctiphanes_simplex_calyptopis_C1_Abundance,Nyctiphanes_simplex_calyptopis_C2_Abundance,Nyctiphanes_simplex_calyptopis_C3_Abundance,Nyctiphanes_simplex_damaged_Abundance,Nyctiphanes_simplex_furcilia_Abundance,Nyctiphanes_simplex_furcilia_F1_Abundance,Nyctiphanes_simplex_furcilia_F2_Abundance,Nyctiphanes_simplex_furcilia_F3_Abundance,Nyctiphanes_simplex_furcilia_F4_Abundance,Nyctiphanes_simplex_furcilia_F5_Abundance,Nyctiphanes_simplex_furcilia_F6_Abundance,Nyctiphanes_simplex_juvenile_Abundance,Nyctiphanes_simplex_larvae_Abundance,Nyctiphanes_simplex_metanauplius_Abundance,Stylocheiron_abbreviatum_adult_Abundance,Stylocheiron_abbreviatum_calyptopis_Abundance,Stylocheiron_abbreviatum_furcilia_Abundance,Stylocheiron_abbreviatum_juvenile_Abundance,Stylocheiron_abbreviatum_larvae_Abundance,Stylocheiron_affine_adult_Abundance,Stylocheiron_affine_calyptopis_Abundance,Stylocheiron_affine_furcilia_Abundance,Stylocheiron_affine_juvenile_Abundance,Stylocheiron_carinatum_adult_Abundance,Stylocheiron_carinatum_calyptopis_Abundance,Stylocheiron_carinatum_furcilia_Abundance,Stylocheiron_carinatum_juvenile_Abundance,Stylocheiron_elongatum_adult_Abundance,Stylocheiron_elongatum_calyptopis_Abundance,Stylocheiron_elongatum_furcilia_Abundance,Stylocheiron_elongatum_juvenile_Abundance,Stylocheiron_longicorne_adult_Abundance,Stylocheiron_longicorne_calyptopis_Abundance,Stylocheiron_longicorne_furcilia_Abundance,Stylocheiron_longicorne_juvenile_Abundance,Stylocheiron_longicorne_larvae_Abundance,Stylocheiron_maximum_adult_Abundance,Stylocheiron_maximum_calyptopis_Abundance,Stylocheiron_maximum_furcilia_Abundance,Stylocheiron_maximum_juvenile_Abundance,Stylocheiron_maximum_larvae_Abundance,Stylocheiron_suhmi_adult_Abundance,Stylocheiron_suhmi_calyptopis_Abundance,Stylocheiron_suhmi_furcilia_Abundance,Stylocheiron_suhmi_juvenile_Abundance,Tessarabrachion_oculatum_calyptopis_Abundance,Tessarabrachion_oculatum_furcilia_Abundance,Tessarabrachion_oculatum_juvenile_Abundance,Thysanoessa_gregaria_adult_Abundance,Thysanoessa_gregaria_calyptopis_Abundance,Thysanoessa_gregaria_calyptopis_C1_Abundance,Thysanoessa_gregaria_calyptopis_C2_Abundance,Thysanoessa_gregaria_calyptopis_C3_Abundance,Thysanoessa_gregaria_damaged_Abundance,Thysanoessa_gregaria_furcilia_Abundance,Thysanoessa_gregaria_furcilia_F1_Abundance,Thysanoessa_gregaria_furcilia_F2_Abundance,Thysanoessa_gregaria_furcilia_F3_Abundance,Thysanoessa_gregaria_furcilia_F4_Abundance,Thysanoessa_gregaria_furcilia_F5_Abundance,Thysanoessa_gregaria_furcilia_F6_Abundance,Thysanoessa_gregaria_juvenile_Abundance,Thysanoessa_gregaria_larvae_Abundance,Thysanoessa_longipes_adult_Abundance,Thysanoessa_longipes_calyptopis_Abundance,Thysanoessa_longipes_furcilia_Abundance,Thysanoessa_longipes_juvenile_Abundance,Thysanoessa_spinifera_adult_Abundance,Thysanoessa_spinifera_calyptopis_Abundance,Thysanoessa_spinifera_calyptopis_C1_Abundance,Thysanoessa_spinifera_calyptopis_C2_Abundance,Thysanoessa_spinifera_calyptopis_C3_Abundance,Thysanoessa_spinifera_damaged_Abundance,Thysanoessa_spinifera_furcilia_Abundance,Thysanoessa_spinifera_furcilia_F1_Abundance,Thysanoessa_spinifera_furcilia_F2_Abundance,Thysanoessa_spinifera_furcilia_F3_Abundance,Thysanoessa_spinifera_furcilia_F4_Abundance,Thysanoessa_spinifera_furcilia_F5_Abundance,Thysanoessa_spinifera_furcilia_F6_Abundance,Thysanoessa_spinifera_juvenile_Abundance,Thysanoessa_spinifera_larvae_Abundance,Thysanoessa_spinifera_metanauplius_Abundance,Thysanopoda_astylata_adult_Abundance,Thysanopoda_astylata_calyptopis_Abundance,Thysanopoda_astylata_furcilia_Abundance,Thysanopoda_astylata_juvenile_Abundance,Thysanopoda_astylata_larvae_Abundance,Thysanopoda_cornuta_furcilia_Abundance,Thysanopoda_egregia_calyptopis_Abundance,Thysanopoda_egregia_furcilia_Abundance,Thysanopoda_egregia_juvenile_Abundance,Thysanopoda_monacantha_adult_Abundance,Thysanopoda_monacantha_calyptopis_Abundance,Thysanopoda_monacantha_furcilia_Abundance,Thysanopoda_monacantha_juvenile_Abundance,Thysanopoda_obtusifrons_adult_Abundance,Thysanopoda_obtusifrons_calyptopis_Abundance,Thysanopoda_obtusifrons_furcilia_Abundance,Thysanopoda_obtusifrons_juvenile_Abundance,Thysanopoda_orientalis_adult_Abundance,Thysanopoda_orientalis_calyptopis_Abundance,Thysanopoda_orientalis_furcilia_Abundance,Thysanopoda_orientalis_juvenile_Abundance,Thysanopoda_pectinata_calyptopis_Abundance,Thysanopoda_pectinata_furcilia_Abundance,Thysanopoda_pectinata_juvenile_Abundance
+*** ATTRIBUTE LIST ***
+RowNumber,Cruise,Ship,Date,Region,Line,Station,MaxDepth,Latitude,Longitude,TowBegin,TowEnd,Euphausia_brevis_adult_Abundance,Euphausia_brevis_calyptopis_Abundance,Euphausia_brevis_furcilia_Abundance,Euphausia_brevis_juvenile_Abundance,Euphausia_diomedeae_adult_Abundance,Euphausia_distinguenda_adult_Abundance,Euphausia_distinguenda_furcilia_Abundance,Euphausia_distinguenda_juvenile_Abundance,Euphausia_eximia_adult_Abundance,Euphausia_eximia_calyptopis_Abundance,Euphausia_eximia_calyptopis_C2_Abundance,Euphausia_eximia_calyptopis_C3_Abundance,Euphausia_eximia_damaged_Abundance,Euphausia_eximia_furcilia_Abundance,Euphausia_eximia_furcilia_F1_Abundance,Euphausia_eximia_furcilia_F2_Abundance,Euphausia_eximia_furcilia_F3_Abundance,Euphausia_eximia_furcilia_F4_Abundance,Euphausia_eximia_furcilia_F5_Abundance,Euphausia_eximia_furcilia_F6_Abundance,Euphausia_eximia_juvenile_Abundance,Euphausia_eximia_larvae_Abundance,Euphausia_gibboides_adult_Abundance,Euphausia_gibboides_calyptopis_Abundance,Euphausia_gibboides_calyptopis_C1_Abundance,Euphausia_gibboides_calyptopis_C2_Abundance,Euphausia_gibboides_calyptopis_C3_Abundance,Euphausia_gibboides_damaged_Abundance,Euphausia_gibboides_furcilia_Abundance,Euphausia_gibboides_furcilia_F1_Abundance,Euphausia_gibboides_furcilia_F2_Abundance,Euphausia_gibboides_furcilia_F3_Abundance,Euphausia_gibboides_furcilia_F4_Abundance,Euphausia_gibboides_furcilia_F5_Abundance,Euphausia_gibboides_furcilia_F6_Abundance,Euphausia_gibboides_juvenile_Abundance,Euphausia_gibboides_larvae_Abundance,Euphausia_hemigibba_adult_Abundance,Euphausia_hemigibba_calyptopis_Abundance,Euphausia_hemigibba_furcilia_Abundance,Euphausia_hemigibba_juvenile_Abundance,Euphausia_lamelligera_adult_Abundance,Euphausia_mutica_adult_Abundance,Euphausia_mutica_calyptopis_Abundance,Euphausia_mutica_furcilia_Abundance,Euphausia_mutica_juvenile_Abundance,Euphausia_pacifica_adult_Abundance,Euphausia_pacifica_calyptopis_Abundance,Euphausia_pacifica_calyptopis_C1_Abundance,Euphausia_pacifica_calyptopis_C2_Abundance,Euphausia_pacifica_calyptopis_C3_Abundance,Euphausia_pacifica_damaged_Abundance,Euphausia_pacifica_furcilia_Abundance,Euphausia_pacifica_furcilia_F1_Abundance,Euphausia_pacifica_furcilia_F2_Abundance,Euphausia_pacifica_furcilia_F3_Abundance,Euphausia_pacifica_furcilia_F4_Abundance,Euphausia_pacifica_furcilia_F5_Abundance,Euphausia_pacifica_furcilia_F6_Abundance,Euphausia_pacifica_furcilia_F7_Abundance,Euphausia_pacifica_juvenile_Abundance,Euphausia_pacifica_larvae_Abundance,Euphausia_pacifica_metanauplius_Abundance,Euphausia_recurva_adult_Abundance,Euphausia_recurva_calyptopis_Abundance,Euphausia_recurva_calyptopis_C1_Abundance,Euphausia_recurva_calyptopis_C2_Abundance,Euphausia_recurva_calyptopis_C3_Abundance,Euphausia_recurva_damaged_Abundance,Euphausia_recurva_furcilia_Abundance,Euphausia_recurva_furcilia_F1_Abundance,Euphausia_recurva_furcilia_F2_Abundance,Euphausia_recurva_furcilia_F3_Abundance,Euphausia_recurva_furcilia_F4_Abundance,Euphausia_recurva_furcilia_F5_Abundance,Euphausia_recurva_furcilia_F6_Abundance,Euphausia_recurva_juvenile_Abundance,Euphausia_recurva_metanauplius_Abundance,Euphausia_tenera_adult_Abundance,Euphausia_tenera_furcilia_Abundance,Euphausia_tenera_juvenile_Abundance,Nematobrachion_boopis_adult_Abundance,Nematobrachion_boopis_furcilia_Abundance,Nematobrachion_boopis_juvenile_Abundance,Nematobrachion_flexipes_adult_Abundance,Nematobrachion_flexipes_calyptopis_Abundance,Nematobrachion_flexipes_furcilia_Abundance,Nematobrachion_flexipes_juvenile_Abundance,Nematobrachion_flexipes_larvae_Abundance,Nematoscelis_atlantica_adult_Abundance,Nematoscelis_atlantica_calyptopis_Abundance,Nematoscelis_atlantica_furcilia_Abundance,Nematoscelis_atlantica_juvenile_Abundance,Nematoscelis_difficilis_adult_Abundance,Nematoscelis_difficilis_calyptopis_Abundance,Nematoscelis_difficilis_calyptopis_C1_Abundance,Nematoscelis_difficilis_calyptopis_C2_Abundance,Nematoscelis_difficilis_calyptopis_C3_Abundance,Nematoscelis_difficilis_damaged_Abundance,Nematoscelis_difficilis_furcilia_Abundance,Nematoscelis_difficilis_furcilia_F1_Abundance,Nematoscelis_difficilis_furcilia_F2_Abundance,Nematoscelis_difficilis_furcilia_F3_Abundance,Nematoscelis_difficilis_juvenile_Abundance,Nematoscelis_difficilis_larvae_Abundance,Nematoscelis_difficilis_metanauplius_Abundance,Nematoscelis_gracilis_adult_Abundance,Nematoscelis_gracilis_furcilia_Abundance,Nematoscelis_gracilis_juvenile_Abundance,Nematoscelis_microps_adult_Abundance,Nematoscelis_microps_juvenile_Abundance,Nematoscelis_tenella_adult_Abundance,Nematoscelis_tenella_calyptopis_Abundance,Nematoscelis_tenella_furcilia_Abundance,Nematoscelis_tenella_juvenile_Abundance,Nematoscelis_tenella_larvae_Abundance,Nyctiphanes_simplex_adult_Abundance,Nyctiphanes_simplex_calyptopis_Abundance,Nyctiphanes_simplex_calyptopis_C1_Abundance,Nyctiphanes_simplex_calyptopis_C2_Abundance,Nyctiphanes_simplex_calyptopis_C3_Abundance,Nyctiphanes_simplex_damaged_Abundance,Nyctiphanes_simplex_furcilia_Abundance,Nyctiphanes_simplex_furcilia_F1_Abundance,Nyctiphanes_simplex_furcilia_F2_Abundance,Nyctiphanes_simplex_furcilia_F3_Abundance,Nyctiphanes_simplex_furcilia_F4_Abundance,Nyctiphanes_simplex_furcilia_F5_Abundance,Nyctiphanes_simplex_furcilia_F6_Abundance,Nyctiphanes_simplex_juvenile_Abundance,Nyctiphanes_simplex_larvae_Abundance,Nyctiphanes_simplex_metanauplius_Abundance,Stylocheiron_abbreviatum_adult_Abundance,Stylocheiron_abbreviatum_calyptopis_Abundance,Stylocheiron_abbreviatum_furcilia_Abundance,Stylocheiron_abbreviatum_juvenile_Abundance,Stylocheiron_abbreviatum_larvae_Abundance,Stylocheiron_affine_adult_Abundance,Stylocheiron_affine_calyptopis_Abundance,Stylocheiron_affine_furcilia_Abundance,Stylocheiron_affine_juvenile_Abundance,Stylocheiron_carinatum_adult_Abundance,Stylocheiron_carinatum_calyptopis_Abundance,Stylocheiron_carinatum_furcilia_Abundance,Stylocheiron_carinatum_juvenile_Abundance,Stylocheiron_elongatum_adult_Abundance,Stylocheiron_elongatum_calyptopis_Abundance,Stylocheiron_elongatum_furcilia_Abundance,Stylocheiron_elongatum_juvenile_Abundance,Stylocheiron_longicorne_adult_Abundance,Stylocheiron_longicorne_calyptopis_Abundance,Stylocheiron_longicorne_furcilia_Abundance,Stylocheiron_longicorne_juvenile_Abundance,Stylocheiron_longicorne_larvae_Abundance,Stylocheiron_maximum_adult_Abundance,Stylocheiron_maximum_calyptopis_Abundance,Stylocheiron_maximum_furcilia_Abundance,Stylocheiron_maximum_juvenile_Abundance,Stylocheiron_maximum_larvae_Abundance,Stylocheiron_suhmi_adult_Abundance,Stylocheiron_suhmi_calyptopis_Abundance,Stylocheiron_suhmi_furcilia_Abundance,Stylocheiron_suhmi_juvenile_Abundance,Tessarabrachion_oculatum_calyptopis_Abundance,Tessarabrachion_oculatum_furcilia_Abundance,Tessarabrachion_oculatum_juvenile_Abundance,Thysanoessa_gregaria_adult_Abundance,Thysanoessa_gregaria_calyptopis_Abundance,Thysanoessa_gregaria_calyptopis_C1_Abundance,Thysanoessa_gregaria_calyptopis_C2_Abundance,Thysanoessa_gregaria_calyptopis_C3_Abundance,Thysanoessa_gregaria_damaged_Abundance,Thysanoessa_gregaria_furcilia_Abundance,Thysanoessa_gregaria_furcilia_F1_Abundance,Thysanoessa_gregaria_furcilia_F2_Abundance,Thysanoessa_gregaria_furcilia_F3_Abundance,Thysanoessa_gregaria_furcilia_F4_Abundance,Thysanoessa_gregaria_furcilia_F5_Abundance,Thysanoessa_gregaria_furcilia_F6_Abundance,Thysanoessa_gregaria_juvenile_Abundance,Thysanoessa_gregaria_larvae_Abundance,Thysanoessa_longipes_adult_Abundance,Thysanoessa_longipes_calyptopis_Abundance,Thysanoessa_longipes_furcilia_Abundance,Thysanoessa_longipes_juvenile_Abundance,Thysanoessa_spinifera_adult_Abundance,Thysanoessa_spinifera_calyptopis_Abundance,Thysanoessa_spinifera_calyptopis_C1_Abundance,Thysanoessa_spinifera_calyptopis_C2_Abundance,Thysanoessa_spinifera_calyptopis_C3_Abundance,Thysanoessa_spinifera_damaged_Abundance,Thysanoessa_spinifera_furcilia_Abundance,Thysanoessa_spinifera_furcilia_F1_Abundance,Thysanoessa_spinifera_furcilia_F2_Abundance,Thysanoessa_spinifera_furcilia_F3_Abundance,Thysanoessa_spinifera_furcilia_F4_Abundance,Thysanoessa_spinifera_furcilia_F5_Abundance,Thysanoessa_spinifera_furcilia_F6_Abundance,Thysanoessa_spinifera_juvenile_Abundance,Thysanoessa_spinifera_larvae_Abundance,Thysanoessa_spinifera_metanauplius_Abundance,Thysanopoda_astylata_adult_Abundance,Thysanopoda_astylata_calyptopis_Abundance,Thysanopoda_astylata_furcilia_Abundance,Thysanopoda_astylata_juvenile_Abundance,Thysanopoda_astylata_larvae_Abundance,Thysanopoda_cornuta_furcilia_Abundance,Thysanopoda_egregia_calyptopis_Abundance,Thysanopoda_egregia_furcilia_Abundance,Thysanopoda_egregia_juvenile_Abundance,Thysanopoda_monacantha_adult_Abundance,Thysanopoda_monacantha_calyptopis_Abundance,Thysanopoda_monacantha_furcilia_Abundance,Thysanopoda_monacantha_juvenile_Abundance,Thysanopoda_obtusifrons_adult_Abundance,Thysanopoda_obtusifrons_calyptopis_Abundance,Thysanopoda_obtusifrons_furcilia_Abundance,Thysanopoda_obtusifrons_juvenile_Abundance,Thysanopoda_orientalis_adult_Abundance,Thysanopoda_orientalis_calyptopis_Abundance,Thysanopoda_orientalis_furcilia_Abundance,Thysanopoda_orientalis_juvenile_Abundance,Thysanopoda_pectinata_calyptopis_Abundance,Thysanopoda_pectinata_furcilia_Abundance,Thysanopoda_pectinata_juvenile_Abundance]]></found>
+      <status>info</status>
+      <explanation></explanation>
+      <suggestion>Customer should evaluate the findings</suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="congruency" system="lter" statusType="warn" >
+      <identifier>dateFormatMatches</identifier>
+      <name>Date format in metadata matches data</name>
+      <description>dateTime/formatString in attribute metadata is from the preferred list, and the data matches. A non-match generates only a warn.</description>
+      <expected>Format string is preferred, and all data values match the format string</expected>
+      <found>Data values matched the specified formatString.</found>
+      <status>valid</status>
+      <explanation></explanation>
+      <suggestion>Dates should be consistently formatted and match the formatString in metadata.</suggestion>
+      <reference></reference>
+    </qualityCheck>
+  </entityReport>
+  <entityReport>
+    <entityName>BTEDB_Coverage_1951-2020</entityName>
+    <qualityCheck qualityType="metadata" system="knb" statusType="warn" >
+      <identifier>entityNameLength</identifier>
+      <name>Length of entityName is not excessive (less than 100 char)</name>
+      <description>length of entity name is less than 100 characters</description>
+      <expected>entityName value is 100 characters or less</expected>
+      <found>24</found>
+      <status>valid</status>
+      <explanation></explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="lter" statusType="warn" >
+      <identifier>entityDescriptionPresent</identifier>
+      <name>An entity description is present</name>
+      <description>Check for presence of an entity description.</description>
+      <expected>EML Best practices pp. 32-33, "...should have enough information for a user..."</expected>
+      <found>true</found>
+      <status>valid</status>
+      <explanation>With entityName sometimes serving as a file name rather than a title, it is important to be very descriptive here.</explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="knb" statusType="info" >
+      <identifier>numHeaderLinesPresent</identifier>
+      <name>'numHeaderLines' element is present</name>
+      <description>Check for presence of the 'numHeaderLines' element.</description>
+      <expected>Document contains 'numHeaderLines' element.</expected>
+      <found>No 'numHeaderLines' element found</found>
+      <status>info</status>
+      <explanation>If data file contains header lines, 'numHeaderLines' must be specified.</explanation>
+      <suggestion>Add 'numHeaderLines' element if needed.</suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="knb" statusType="info" >
+      <identifier>numFooterLinesPresent</identifier>
+      <name>'numFooterLines' element is present</name>
+      <description>Check for presence of the 'numFooterLines' element.</description>
+      <expected>Document contains 'numFooterLines' element.</expected>
+      <found>No 'numFooterLines' element found</found>
+      <status>info</status>
+      <explanation>If data file contains footer lines, 'numFooterLines' must be specified.</explanation>
+      <suggestion>Add 'numFooterLines' element if needed.</suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="knb" statusType="error" >
+      <identifier>fieldDelimiterValid</identifier>
+      <name>Field delimiter is a single character</name>
+      <description>Field delimiters should be one character only</description>
+      <expected>A single character is expected</expected>
+      <found>null</found>
+      <status>info</status>
+      <explanation>A fieldDelimiter value is not checked for binary entities or entities with an externally defined format</explanation>
+      <suggestion></suggestion>
+      <reference>http://knb.ecoinformatics.org/software/eml/eml-2.1.0/eml-physical.html#fieldDelimiter</reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="knb" statusType="warn" >
+      <identifier>recordDelimiterPresent</identifier>
+      <name>Record delimiter is present</name>
+      <description>Check presence of record delimiter. Check that the record delimiter is one of the suggested values.</description>
+      <expected>A record delimiter from a list of suggested values: \n, \r, \r\n, #x0A, #x0D, #x0D#x0A</expected>
+      <found>null</found>
+      <status>info</status>
+      <explanation>A recordDelimiter value is not checked for binary entities or entities with an externally defined format</explanation>
+      <suggestion></suggestion>
+      <reference>http://knb.ecoinformatics.org/software/eml/eml-2.1.0/eml-physical.html#recordDelimiter</reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="knb" statusType="warn" >
+      <identifier>entitySizePresence</identifier>
+      <name>Check for presence of an entity size element</name>
+      <description>Look for entity size element as a prep for checking congruence, and if not present, generate a warn. Note that to be most useful (i.e, to check congruence), entity size should contain the most precise measure of size, which is "byte" (the default unit); however, the presence or name of the entity size unit is NOT checked.</description>
+      <expected>Entity size is present. If unit="byte" or unit is omitted (default = byte), then congruence can be checked.</expected>
+      <found>Found entity size element with value of 24887 and size unit specified as 'byte'.</found>
+      <status>valid</status>
+      <explanation>Examining the entity size is prep for checking congruence. Including the element is best practice, and if not present, a warn is generated. To be most useful, entity size should contain the most precise measure of size, which is "byte" (the default unit).</explanation>
+      <suggestion>Include an entity size in bytes</suggestion>
+      <reference> Example success: knb-lter-sbc.3.12. Example of size in units other than byte: knb-lter-mcr.6.56.</reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="lter" statusType="warn" >
+      <identifier>integrityChecksumPresence</identifier>
+      <name>A physical/authentication element is present and specifies a method attribute with a value of MD5 or SHA-1</name>
+      <description>Check for presence of a physical/authentication element containing a checksum or hash value for an integrity check (e.g. MD5, SHA-1). Warn if an entity does not have a physical/authentication element, or if none of the physical/authentication elements specify a method attribute with a value of MD5 or SHA-1.</description>
+      <expected>At least one physical/authentication element with a method attribute specifying MD5 or SHA-1 and containing a checksum or hash value that can be used to perform an integrity check on the data.</expected>
+      <found>true</found>
+      <status>valid</status>
+      <explanation>PASTA will use this value to check the integrity of the data it downloads from your site. In addition, PASTA is planning to compare the contributor-supplied checksum/hash value documented 
+      in the physical/authentication element to the checksum/hash value of this entity downloaded from previous revisions of this data package. If PASTA already has a copy of this entity, it will be able 
+      to avoid an unnecessary download of the entity from your site, resulting in faster processing of the new data package revision when you update it in PASTA.</explanation>
+      <suggestion>Add a physical/authentication element and store the entity checksum or hash value in it using a method such as MD5 or SHA-1.</suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="data" system="knb" statusType="info" >
+      <identifier>displayDownloadData</identifier>
+      <name>Display downloaded data</name>
+      <description>Display the first kilobyte of data that is downloaded</description>
+      <expected>Up to one kilobyte of data should be displayed</expected>
+      <found>Cannot display NON-PLAIN TEXT DATA</found>
+      <status>info</status>
+      <explanation></explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="congruency" system="knb" statusType="error" >
+      <identifier>urlReturnsData</identifier>
+      <name>URL returns data</name>
+      <description>Checks whether a URL returns data. Unless the URL is specified to be function="information", the URL should return the resource for download.</description>
+      <expected>A data entity that matches the metadata</expected>
+      <found>true</found>
+      <status>valid</status>
+      <explanation></explanation>
+      <suggestion></suggestion>
+      <reference>http://knb.ecoinformatics.org/software/eml/eml-2.1.0/eml-resource.html#UrlType</reference>
+    </qualityCheck>
+    <qualityCheck qualityType="congruency" system="knb" statusType="error" >
+      <identifier>onlineURLs</identifier>
+      <name>Online URLs are live</name>
+      <description>Check that online URLs return something</description>
+      <expected>true</expected>
+      <found>true</found>
+      <status>valid</status>
+      <explanation>Succeeded in accessing URL: <![CDATA[https://portal.edirepository.org/nis/data/CCE-upload-2022-07-11-1657569741559/BTEDB_Coverage_1951-2020.pdf]]></explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="congruency" system="lter" statusType="error" >
+      <identifier>integrityChecksum</identifier>
+      <name>Compare the metadata checksum for an entity to the checksum of the downloaded entity</name>
+      <description>Two possible responses: valid if checksums match; error if checksums do not match.</description>
+      <expected>c611cf00a541a0cf852f2080cdca2713</expected>
+      <found>c611cf00a541a0cf852f2080cdca2713</found>
+      <status>valid</status>
+      <explanation>Matching checksums will ensure data integrity during upload to the repository.</explanation>
+      <suggestion>If the found integrity hash value does not match the expected integrity hash value, there may have been a loss of integrity in the data download. Check that the hash method and hash value documented in the metadata are the correct values.</suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="congruency" system="knb" statusType="error" >
+      <identifier>entitySizeCongruence</identifier>
+      <name>Check that the entity size in the Level 0 metadata matches the one PASTA+ generates.</name>
+      <description>Compare raw file size of file to [entity]/physical/size element in metadata. Return error if not matching.</description>
+      <expected>24887</expected>
+      <found>24887</found>
+      <status>valid</status>
+      <explanation>Examining the entity size is a method for checking that this is the correct entity.</explanation>
+      <suggestion>Check the entity size.</suggestion>
+      <reference></reference>
+    </qualityCheck>
+  </entityReport>
+  <entityReport>
+    <entityName>BTEDB_Size_To_Phase_Table</entityName>
+    <qualityCheck qualityType="metadata" system="knb" statusType="warn" >
+      <identifier>entityNameLength</identifier>
+      <name>Length of entityName is not excessive (less than 100 char)</name>
+      <description>length of entity name is less than 100 characters</description>
+      <expected>entityName value is 100 characters or less</expected>
+      <found>25</found>
+      <status>valid</status>
+      <explanation></explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="lter" statusType="warn" >
+      <identifier>entityDescriptionPresent</identifier>
+      <name>An entity description is present</name>
+      <description>Check for presence of an entity description.</description>
+      <expected>EML Best practices pp. 32-33, "...should have enough information for a user..."</expected>
+      <found>true</found>
+      <status>valid</status>
+      <explanation>With entityName sometimes serving as a file name rather than a title, it is important to be very descriptive here.</explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="knb" statusType="info" >
+      <identifier>numHeaderLinesPresent</identifier>
+      <name>'numHeaderLines' element is present</name>
+      <description>Check for presence of the 'numHeaderLines' element.</description>
+      <expected>Document contains 'numHeaderLines' element.</expected>
+      <found>No 'numHeaderLines' element found</found>
+      <status>info</status>
+      <explanation>If data file contains header lines, 'numHeaderLines' must be specified.</explanation>
+      <suggestion>Add 'numHeaderLines' element if needed.</suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="knb" statusType="info" >
+      <identifier>numFooterLinesPresent</identifier>
+      <name>'numFooterLines' element is present</name>
+      <description>Check for presence of the 'numFooterLines' element.</description>
+      <expected>Document contains 'numFooterLines' element.</expected>
+      <found>No 'numFooterLines' element found</found>
+      <status>info</status>
+      <explanation>If data file contains footer lines, 'numFooterLines' must be specified.</explanation>
+      <suggestion>Add 'numFooterLines' element if needed.</suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="knb" statusType="error" >
+      <identifier>fieldDelimiterValid</identifier>
+      <name>Field delimiter is a single character</name>
+      <description>Field delimiters should be one character only</description>
+      <expected>A single character is expected</expected>
+      <found>null</found>
+      <status>info</status>
+      <explanation>A fieldDelimiter value is not checked for binary entities or entities with an externally defined format</explanation>
+      <suggestion></suggestion>
+      <reference>http://knb.ecoinformatics.org/software/eml/eml-2.1.0/eml-physical.html#fieldDelimiter</reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="knb" statusType="warn" >
+      <identifier>recordDelimiterPresent</identifier>
+      <name>Record delimiter is present</name>
+      <description>Check presence of record delimiter. Check that the record delimiter is one of the suggested values.</description>
+      <expected>A record delimiter from a list of suggested values: \n, \r, \r\n, #x0A, #x0D, #x0D#x0A</expected>
+      <found>null</found>
+      <status>info</status>
+      <explanation>A recordDelimiter value is not checked for binary entities or entities with an externally defined format</explanation>
+      <suggestion></suggestion>
+      <reference>http://knb.ecoinformatics.org/software/eml/eml-2.1.0/eml-physical.html#recordDelimiter</reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="knb" statusType="warn" >
+      <identifier>entitySizePresence</identifier>
+      <name>Check for presence of an entity size element</name>
+      <description>Look for entity size element as a prep for checking congruence, and if not present, generate a warn. Note that to be most useful (i.e, to check congruence), entity size should contain the most precise measure of size, which is "byte" (the default unit); however, the presence or name of the entity size unit is NOT checked.</description>
+      <expected>Entity size is present. If unit="byte" or unit is omitted (default = byte), then congruence can be checked.</expected>
+      <found>Found entity size element with value of 58616 and size unit specified as 'byte'.</found>
+      <status>valid</status>
+      <explanation>Examining the entity size is prep for checking congruence. Including the element is best practice, and if not present, a warn is generated. To be most useful, entity size should contain the most precise measure of size, which is "byte" (the default unit).</explanation>
+      <suggestion>Include an entity size in bytes</suggestion>
+      <reference> Example success: knb-lter-sbc.3.12. Example of size in units other than byte: knb-lter-mcr.6.56.</reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="lter" statusType="warn" >
+      <identifier>integrityChecksumPresence</identifier>
+      <name>A physical/authentication element is present and specifies a method attribute with a value of MD5 or SHA-1</name>
+      <description>Check for presence of a physical/authentication element containing a checksum or hash value for an integrity check (e.g. MD5, SHA-1). Warn if an entity does not have a physical/authentication element, or if none of the physical/authentication elements specify a method attribute with a value of MD5 or SHA-1.</description>
+      <expected>At least one physical/authentication element with a method attribute specifying MD5 or SHA-1 and containing a checksum or hash value that can be used to perform an integrity check on the data.</expected>
+      <found>true</found>
+      <status>valid</status>
+      <explanation>PASTA will use this value to check the integrity of the data it downloads from your site. In addition, PASTA is planning to compare the contributor-supplied checksum/hash value documented 
+      in the physical/authentication element to the checksum/hash value of this entity downloaded from previous revisions of this data package. If PASTA already has a copy of this entity, it will be able 
+      to avoid an unnecessary download of the entity from your site, resulting in faster processing of the new data package revision when you update it in PASTA.</explanation>
+      <suggestion>Add a physical/authentication element and store the entity checksum or hash value in it using a method such as MD5 or SHA-1.</suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="data" system="knb" statusType="info" >
+      <identifier>displayDownloadData</identifier>
+      <name>Display downloaded data</name>
+      <description>Display the first kilobyte of data that is downloaded</description>
+      <expected>Up to one kilobyte of data should be displayed</expected>
+      <found>Cannot display NON-PLAIN TEXT DATA</found>
+      <status>info</status>
+      <explanation></explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="congruency" system="knb" statusType="error" >
+      <identifier>urlReturnsData</identifier>
+      <name>URL returns data</name>
+      <description>Checks whether a URL returns data. Unless the URL is specified to be function="information", the URL should return the resource for download.</description>
+      <expected>A data entity that matches the metadata</expected>
+      <found>true</found>
+      <status>valid</status>
+      <explanation></explanation>
+      <suggestion></suggestion>
+      <reference>http://knb.ecoinformatics.org/software/eml/eml-2.1.0/eml-resource.html#UrlType</reference>
+    </qualityCheck>
+    <qualityCheck qualityType="congruency" system="knb" statusType="error" >
+      <identifier>onlineURLs</identifier>
+      <name>Online URLs are live</name>
+      <description>Check that online URLs return something</description>
+      <expected>true</expected>
+      <found>true</found>
+      <status>valid</status>
+      <explanation>Succeeded in accessing URL: <![CDATA[https://portal.edirepository.org/nis/data/CCE-upload-2022-07-11-1657569741559/BTEDB_Size_To_Phase_Table.pdf]]></explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="congruency" system="lter" statusType="error" >
+      <identifier>integrityChecksum</identifier>
+      <name>Compare the metadata checksum for an entity to the checksum of the downloaded entity</name>
+      <description>Two possible responses: valid if checksums match; error if checksums do not match.</description>
+      <expected>ddade7fc9e41c98d2a9b89e3a3d02310</expected>
+      <found>ddade7fc9e41c98d2a9b89e3a3d02310</found>
+      <status>valid</status>
+      <explanation>Matching checksums will ensure data integrity during upload to the repository.</explanation>
+      <suggestion>If the found integrity hash value does not match the expected integrity hash value, there may have been a loss of integrity in the data download. Check that the hash method and hash value documented in the metadata are the correct values.</suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="congruency" system="knb" statusType="error" >
+      <identifier>entitySizeCongruence</identifier>
+      <name>Check that the entity size in the Level 0 metadata matches the one PASTA+ generates.</name>
+      <description>Compare raw file size of file to [entity]/physical/size element in metadata. Return error if not matching.</description>
+      <expected>58616</expected>
+      <found>58616</found>
+      <status>valid</status>
+      <explanation>Examining the entity size is a method for checking that this is the correct entity.</explanation>
+      <suggestion>Check the entity size.</suggestion>
+      <reference></reference>
+    </qualityCheck>
+  </entityReport>
+  <entityReport>
+    <entityName>BTEDB_station_region_map_Cen_and_S</entityName>
+    <qualityCheck qualityType="metadata" system="knb" statusType="warn" >
+      <identifier>entityNameLength</identifier>
+      <name>Length of entityName is not excessive (less than 100 char)</name>
+      <description>length of entity name is less than 100 characters</description>
+      <expected>entityName value is 100 characters or less</expected>
+      <found>34</found>
+      <status>valid</status>
+      <explanation></explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="lter" statusType="warn" >
+      <identifier>entityDescriptionPresent</identifier>
+      <name>An entity description is present</name>
+      <description>Check for presence of an entity description.</description>
+      <expected>EML Best practices pp. 32-33, "...should have enough information for a user..."</expected>
+      <found>true</found>
+      <status>valid</status>
+      <explanation>With entityName sometimes serving as a file name rather than a title, it is important to be very descriptive here.</explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="knb" statusType="info" >
+      <identifier>numHeaderLinesPresent</identifier>
+      <name>'numHeaderLines' element is present</name>
+      <description>Check for presence of the 'numHeaderLines' element.</description>
+      <expected>Document contains 'numHeaderLines' element.</expected>
+      <found>No 'numHeaderLines' element found</found>
+      <status>info</status>
+      <explanation>If data file contains header lines, 'numHeaderLines' must be specified.</explanation>
+      <suggestion>Add 'numHeaderLines' element if needed.</suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="knb" statusType="info" >
+      <identifier>numFooterLinesPresent</identifier>
+      <name>'numFooterLines' element is present</name>
+      <description>Check for presence of the 'numFooterLines' element.</description>
+      <expected>Document contains 'numFooterLines' element.</expected>
+      <found>No 'numFooterLines' element found</found>
+      <status>info</status>
+      <explanation>If data file contains footer lines, 'numFooterLines' must be specified.</explanation>
+      <suggestion>Add 'numFooterLines' element if needed.</suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="knb" statusType="error" >
+      <identifier>fieldDelimiterValid</identifier>
+      <name>Field delimiter is a single character</name>
+      <description>Field delimiters should be one character only</description>
+      <expected>A single character is expected</expected>
+      <found>null</found>
+      <status>info</status>
+      <explanation>A fieldDelimiter value is not checked for binary entities or entities with an externally defined format</explanation>
+      <suggestion></suggestion>
+      <reference>http://knb.ecoinformatics.org/software/eml/eml-2.1.0/eml-physical.html#fieldDelimiter</reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="knb" statusType="warn" >
+      <identifier>recordDelimiterPresent</identifier>
+      <name>Record delimiter is present</name>
+      <description>Check presence of record delimiter. Check that the record delimiter is one of the suggested values.</description>
+      <expected>A record delimiter from a list of suggested values: \n, \r, \r\n, #x0A, #x0D, #x0D#x0A</expected>
+      <found>null</found>
+      <status>info</status>
+      <explanation>A recordDelimiter value is not checked for binary entities or entities with an externally defined format</explanation>
+      <suggestion></suggestion>
+      <reference>http://knb.ecoinformatics.org/software/eml/eml-2.1.0/eml-physical.html#recordDelimiter</reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="knb" statusType="warn" >
+      <identifier>entitySizePresence</identifier>
+      <name>Check for presence of an entity size element</name>
+      <description>Look for entity size element as a prep for checking congruence, and if not present, generate a warn. Note that to be most useful (i.e, to check congruence), entity size should contain the most precise measure of size, which is "byte" (the default unit); however, the presence or name of the entity size unit is NOT checked.</description>
+      <expected>Entity size is present. If unit="byte" or unit is omitted (default = byte), then congruence can be checked.</expected>
+      <found>Found entity size element with value of 162329 and size unit specified as 'byte'.</found>
+      <status>valid</status>
+      <explanation>Examining the entity size is prep for checking congruence. Including the element is best practice, and if not present, a warn is generated. To be most useful, entity size should contain the most precise measure of size, which is "byte" (the default unit).</explanation>
+      <suggestion>Include an entity size in bytes</suggestion>
+      <reference> Example success: knb-lter-sbc.3.12. Example of size in units other than byte: knb-lter-mcr.6.56.</reference>
+    </qualityCheck>
+    <qualityCheck qualityType="metadata" system="lter" statusType="warn" >
+      <identifier>integrityChecksumPresence</identifier>
+      <name>A physical/authentication element is present and specifies a method attribute with a value of MD5 or SHA-1</name>
+      <description>Check for presence of a physical/authentication element containing a checksum or hash value for an integrity check (e.g. MD5, SHA-1). Warn if an entity does not have a physical/authentication element, or if none of the physical/authentication elements specify a method attribute with a value of MD5 or SHA-1.</description>
+      <expected>At least one physical/authentication element with a method attribute specifying MD5 or SHA-1 and containing a checksum or hash value that can be used to perform an integrity check on the data.</expected>
+      <found>true</found>
+      <status>valid</status>
+      <explanation>PASTA will use this value to check the integrity of the data it downloads from your site. In addition, PASTA is planning to compare the contributor-supplied checksum/hash value documented 
+      in the physical/authentication element to the checksum/hash value of this entity downloaded from previous revisions of this data package. If PASTA already has a copy of this entity, it will be able 
+      to avoid an unnecessary download of the entity from your site, resulting in faster processing of the new data package revision when you update it in PASTA.</explanation>
+      <suggestion>Add a physical/authentication element and store the entity checksum or hash value in it using a method such as MD5 or SHA-1.</suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="data" system="knb" statusType="info" >
+      <identifier>displayDownloadData</identifier>
+      <name>Display downloaded data</name>
+      <description>Display the first kilobyte of data that is downloaded</description>
+      <expected>Up to one kilobyte of data should be displayed</expected>
+      <found>Cannot display NON-PLAIN TEXT DATA</found>
+      <status>info</status>
+      <explanation></explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="congruency" system="knb" statusType="error" >
+      <identifier>urlReturnsData</identifier>
+      <name>URL returns data</name>
+      <description>Checks whether a URL returns data. Unless the URL is specified to be function="information", the URL should return the resource for download.</description>
+      <expected>A data entity that matches the metadata</expected>
+      <found>true</found>
+      <status>valid</status>
+      <explanation></explanation>
+      <suggestion></suggestion>
+      <reference>http://knb.ecoinformatics.org/software/eml/eml-2.1.0/eml-resource.html#UrlType</reference>
+    </qualityCheck>
+    <qualityCheck qualityType="congruency" system="knb" statusType="error" >
+      <identifier>onlineURLs</identifier>
+      <name>Online URLs are live</name>
+      <description>Check that online URLs return something</description>
+      <expected>true</expected>
+      <found>true</found>
+      <status>valid</status>
+      <explanation>Succeeded in accessing URL: <![CDATA[https://portal.edirepository.org/nis/data/CCE-upload-2022-07-11-1657569741559/BTEDB_station_region_map_Cen_and_S.png]]></explanation>
+      <suggestion></suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="congruency" system="lter" statusType="error" >
+      <identifier>integrityChecksum</identifier>
+      <name>Compare the metadata checksum for an entity to the checksum of the downloaded entity</name>
+      <description>Two possible responses: valid if checksums match; error if checksums do not match.</description>
+      <expected>cc8c52826f1b588d078acce205d781b4</expected>
+      <found>cc8c52826f1b588d078acce205d781b4</found>
+      <status>valid</status>
+      <explanation>Matching checksums will ensure data integrity during upload to the repository.</explanation>
+      <suggestion>If the found integrity hash value does not match the expected integrity hash value, there may have been a loss of integrity in the data download. Check that the hash method and hash value documented in the metadata are the correct values.</suggestion>
+      <reference></reference>
+    </qualityCheck>
+    <qualityCheck qualityType="congruency" system="knb" statusType="error" >
+      <identifier>entitySizeCongruence</identifier>
+      <name>Check that the entity size in the Level 0 metadata matches the one PASTA+ generates.</name>
+      <description>Compare raw file size of file to [entity]/physical/size element in metadata. Return error if not matching.</description>
+      <expected>162329</expected>
+      <found>162329</found>
+      <status>valid</status>
+      <explanation>Examining the entity size is a method for checking that this is the correct entity.</explanation>
+      <suggestion>Check the entity size.</suggestion>
+      <reference></reference>
+    </qualityCheck>
+  </entityReport>
+</qr:qualityReport>

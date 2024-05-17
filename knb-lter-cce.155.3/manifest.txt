@@ -1,0 +1,5 @@
+Manifest file for knb-lter-cce.155.3.zip created on Mon May 06 05:35:52 UTC 2024
+table_155.csv (3119 bytes)
+knb-lter-cce.155.3.xml (15107 bytes)
+knb-lter-cce.155.3.txt (7103 bytes)
+knb-lter-cce.155.3.report.xml (23236 bytes)

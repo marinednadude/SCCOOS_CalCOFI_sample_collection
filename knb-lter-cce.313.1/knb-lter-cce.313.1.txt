@@ -1,0 +1,4030 @@
+
+  
+    
+      uid=CCE,o=EDI,dc=edirepository,dc=org
+      all
+    
+    
+      public
+      read
+    
+  
+  
+    doi:10.6073/pasta/4a92a0044bcd1523a4f994ece874a57dCalifornia Current Ecosystem Euphausiid data, Brinton and Townsend Euphausiid Database (BTEDB)
+    
+      Dr. Mark Ohman
+      Scripps Institution of Oceanography
+      mohman@ucsd.edu
+      0000-0001-8136-3695
+    
+    2022-07-11These euphausiid data are generated from samples taken by the CalCOFI (California Cooperative Oceanic Fisheries Investigations) program, starting with the 1951 cruises.  Data are obtained by enumeration of samples by trained microscopists with a high level of taxonomic expertise, beginning with the late Edward Brinton, including Annie Townsend’s assistance starting in the 1970’s, and then by Linsey Sala from 2011 to present.  Only a limited subset of the CalCOFI samples have been enumerated taxonomically, primarily from springtime cruises. Since 2004, taxonomic analysis has been carried out as part of the CCE-LTER (California Current Ecosystem Long-Term Ecological Research) program, supported by the U.S. National Science Foundation.  The primary geographic area analyzed is the Southern California region (CalCOFI lines 77 to 93, inclusive), supplemented by more limited springtime cruises from the Central California region (lines 60 to 73).  Samples are all double oblique samples taken with a bongo net beginning in Dec. 1977 or a ring net prior to that time, nominally from 210-0 m, bottom depth permitting.
+    
+      zooplankton
+      plankton
+      oceanography
+      LTER Controlled Vocabulary
+    
+    
+      CCE LTER
+      California Current Ecosystem
+      euphausiid
+    
+    The consumer of these data (“Data User” herein) has an ethical obligation to cite them appropriately in any publication that results from their use, as follows: "Data originate from the Brinton and Townsend Euphausiid Database of the Pelagic Invertebrate Collection, Scripps Institution of Oceanography. Supported in recent years by NSF grants to M.D. Ohman and the CCE-LTER site." The Data User should realize that these data may be actively used by others for ongoing research and that coordination may be necessary to prevent duplicate publication. The Data User is urged to contact the authors of these data if any questions about methodology or results occur. The Data User shall contact data authors to consider collaboration or co-authorship with the authors. The Data User should realize that misinterpretation of data may occur if used out of context of the original study. While substantial efforts are made to ensure the accuracy of data and associated documentation, complete accuracy of data sets cannot be guaranteed. All data are made available “as is.” The Data User should be aware, however, that data are updated periodically and it is the responsibility of the Data User to check for new versions of the data. The data authors and the repository where these data were obtained shall not be liable for damages resulting from any use or misinterpretation of the data.
+Reprints of any reports, articles, or other publications resulting from use of these data shall be deposited in the Pelagic Invertebrate Collection, Scripps Institution of Oceanography (lsala@ucsd.edu) and the Program Office of the California Current Ecosystem LTER site (rwestlakestorey@ucsd.edu), Scripps Institution of Oceanography.
+    https://doi.org/10.6073/pasta/4a92a0044bcd1523a4f994ece874a57d
+      
+        Southern California and Central California sectors of the California Current System
+        
+          -126.5
+          -112.4
+          37.8
+          22.0
+        
+      
+      
+        
+          
+            1951
+          
+          
+            2020
+          
+        
+      
+      
+        
+          Family
+          Euphausiidae
+        
+      
+    
+    
+      Data will be updated as needed when new samples are analyzed or taxonomic classification changes are required.
+      asNeeded
+    
+    
+      Dr. Mark Ohman
+      Scripps Institution of Oceanography
+      PI/Contact
+      mohman@ucsd.edu
+      0000-0001-8136-3695
+    
+    Environmental Data Initiativeinfo@edirepository.orghttps://edirepository.org0330j0z60Environmental Data Initiative
+      
+        The user should be aware that both the geographic coverage and temporal frequency of CalCOFI cruises have changed since the program was initiated in 1949.  Extreme care should be taken to evaluate these changes prior to generating time series of euphausiid abundance (see: https://calcofi.com/index.php?option=com_content&view=article&id=115&Itemid=520).
+
+Also, the maximum zooplankton sampling depth in the CalCOFI time series increased from 0-70 m (1949-1950) to 0-140 m in 1951, was then maintained at 0-140 m from 1951-1968, then increased to 0-210 m in 1969, where it has remained since (see Ohman and Smith 1995).  A 1-m diameter ring net (0.55 mm mesh) was used from 1949-1976, which was then replaced with a 0.71-m diameter bongo net (0.505 mm mesh) in December 1977 (Ohman and Smith 1995).  Effects of these changes have been analyzed by Brinton and Townsend (1981), Ohman and Smith (1995), and Ohman and Lavaniegos (2002).
+
+Net deployment protocols may be found at https://cce.lternet.edu/data/methods-manual/augmented-cruises/calbobl-net-depolyment.  Currently, a 0.71-m diameter, 0.505-mm mesh bongo net (McGowan and Brown 1966) is lowered to 300 m wire out (nominally to a depth of 210 m, with a 45° wire angle) with the ship underway at 0.5-1.0 m s-1, held at depth for 30 seconds, then retrieved to the surface at a constant rate (20 m min-1).  The starboard side sample analyzed here is preserved in a 1.8% final solution of formaldehyde in seawater, buffered with a saturated solution of sodium tetraborate.  Flow meters are calibrated regularly.  Samples are curated at the Pelagic Invertebrate Collection, Scripps Institution of Oceanography, until analysis. 
+
+Only a subset of CalCOFI samples have been analyzed for euphausiids. Recently, M. Ohman's retrospective studies have focused on interannual variability in springtime cruises, hence more up-to-date temporal coverage is available for springtime cruises than for cruises at other times of year (see Coverage Table at: http://oceaninformatics-dev.ucsd.edu/euphausiid/docs/BTEDBCoverage_20210216.pdf).
+
+The same group of 24 euphausiid species has been identified in all samples analyzed, using consistent morphological criteria. However, the level of resolution of life history phases or size classes has varied over time, according to the goals of the original study. The enumerations in this database were not originally conceived as a continuous time series, but represent a compendium of enumerations from many individual research projects. A table indicating the level of life history or size class resolution for specific cruises may be found in the Coverage Table. For cruises in which samples were identified only by size, the corresponding life history phases have been approximated using the information found in the Size-to-Phase Table.  Most of the samples analyzed are only nighttime samples, to avoid artifacts induced by daytime net avoidance and by Diel Vertical Migration of euphausiids.
+
+Laboratory analysis entails removing appropriate aliquots with a Folsom splitter or Stempel pipette, conducting enumerations under a dissecting microscope to species and either life history phase or size class, then correcting data for appropriate aliquoting factors and volumes of seawater filtered in situ.  The data are expressed as the vertically integrated number of individuals beneath 1 m2 of sea surface, not as volumetric density (number of individuals per m3).   This is done because the maximum sampling depth was less than 210 m in shallow waters, which can generate a bias if volumetric densities are used.  No. m-2 is obtained by multiplying the No. m-3 by the maximum sampling depth. The code for missing values is N/A.  
+
+Brinton E, Townsend AW (1981) A comparison of euphausiid abundances from bongo and 1-M CalCOFI nets. California Cooperative Oceanic Fisheries Investigations Reports 22: 111-125 
+McGowan JA, Brown DM (1966) A new opening-closed paired zooplankton net. University of California Scripps Institution of Oceanography Reference, 66-23
+Ohman MD, Lavaniegos BE (2002) Comparative zooplankton sampling efficiency of a ring net and bongo net with comments on pooling of subsamples. California Cooperative Oceanic Fisheries Investigations Reports 43: 162-173 
+Ohman MD, Smith PE (1995) A comparison of zooplankton sampling methods in the CalCOFI time series. California Cooperative Oceanic Fisheries Investigations Reports 36: 153-158
+      
+    
+    
+      California Current Ecosystem LTER
+      
+        Dr. Mark Ohman
+        Scripps Institution of Oceanography
+        mohman@ucsd.edu
+        0000-0001-8136-3695
+        Principal Investigator
+      
+      
+        National Science Foundation
+        OCE-16-37632
+        LTER: CCE-LTER Phase III: Ecological Transitions in an Eastern Boundary Current Upwelling Ecosystem
+      
+      
+        National Science Foundation
+        OCE-10-26607
+        Ecological Transitions in the California Current Ecosystem: CCE-LTER Phase II
+      
+      
+        National Science Foundation
+        OCE-04-17616
+        LTER: Nonlinear transitions in the California Current Coastal Pelagic Ecosystem
+      
+    
+    
+      Brinton and Townsend Euphausiid Abundance Data
+      Euphausiid data from the California Current System, based upon over 10,000 zooplankton samples from more than 200 cruises, spanning 1951 to the present. In total, 39 species of euphausiids have been identified and enumerated in this region.  Each sample was screened for the same set of species, and zero values represent an absence of a given taxon in the sample.
+      
+        BTEDB_Abundances.csv
+        4678424
+        3e7b7cf338c4c9cb5a5e8d4196a979e8
+        
+          
+            1
+            \n
+            column
+            
+              ,
+              "
+            
+          
+        
+        
+          
+            https://pasta.lternet.edu/package/data/eml/knb-lter-cce/313/1/4b562b1423bd4ea8f2d03fbd009403aa
+          
+        
+      
+      
+        
+          RowNumber
+          RowNumber
+          Sequential numbering of row
+          integer
+          
+            
+              
+                number
+              
+              
+                integer
+              
+            
+          
+        
+        
+          Cruise
+          Cruise
+          Research designation
+          string
+          
+            
+              
+                
+                  Research designation
+                
+              
+            
+          
+          
+            N/A
+            Cruise Name not specified in database
+          
+        
+        
+          Ship
+          Ship
+          Research vessel from which sampling was conducted
+          string
+          
+            
+              
+                
+                  Research vessel from which sampling was conducted
+                
+              
+            
+          
+          
+            N/A
+            Ship name not specified in database
+          
+        
+        
+          Date
+          Date
+          Sampling date (local time)
+          dateTime
+          
+            
+              YYYY-MM-DD
+              
+            
+          
+          
+            N/A
+            date information missing in database
+          
+        
+        
+          Region
+          Region
+          Region of the California Current System from which data are displayed: Southern California (CalCOFI lines 77 to 93) or Central California (CallCOFI lines 60 to 73)
+          string
+          
+            
+              
+                
+                  
+                    CC
+                    Central California
+                  
+                  
+                    SC
+                    Southern California
+                  
+                
+              
+            
+          
+          
+            N/A
+            region information not specified
+          
+        
+        
+          Line
+          Line
+          CalCOFI Line number
+          float
+          
+            
+              
+                number
+              
+              
+                real
+              
+            
+          
+        
+        
+          Station
+          Station
+          CalCOFI Station
+          string
+          
+            
+              
+                
+                  CalCOFI Station
+                
+              
+            
+          
+          
+            N/A
+            station identifier missing
+          
+        
+        
+          MaxDepth
+          MaxDepth
+          Maximum depth of tow
+          float
+          
+            
+              
+                meter
+              
+              
+                real
+              
+            
+          
+          
+            N/A
+            depth not specified 
+          
+        
+        
+          Latitude
+          Latitude
+          Latitude of sampling location
+          float
+          
+            
+              
+                degree
+              
+              
+                real
+              
+            
+          
+        
+        
+          Longitude
+          Longitude
+          Longitude of sampling location
+          float
+          
+            
+              
+                degree
+              
+              
+                real
+              
+            
+          
+          
+            N/A
+            longitude information not specified
+          
+        
+        
+          TowBegin
+          TowBegin
+          Local time of beginning of plankton tow
+          dateTime
+          
+            
+              YYYY-MM-DD hh:mm:ss
+              
+            
+          
+          
+            N/A
+            timestamp not specified
+          
+        
+        
+          TowEnd
+          TowEnd
+          Local time of end of plankton tow
+          dateTime
+          
+            
+              YYYY-MM-DD hh:mm:ss
+              
+            
+          
+          
+            N/A
+            time stamp not specified
+          
+        
+        
+          Euphausia_brevis_adult_Abundance
+          Euphausia_brevis_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_brevis_calyptopis_Abundance
+          Euphausia_brevis_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_brevis_furcilia_Abundance
+          Euphausia_brevis_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_brevis_juvenile_Abundance
+          Euphausia_brevis_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_diomedeae_adult_Abundance
+          Euphausia_diomedeae_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_distinguenda_adult_Abundance
+          Euphausia_distinguenda_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_distinguenda_furcilia_Abundance
+          Euphausia_distinguenda_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_distinguenda_juvenile_Abundance
+          Euphausia_distinguenda_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_eximia_adult_Abundance
+          Euphausia_eximia_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_eximia_calyptopis_Abundance
+          Euphausia_eximia_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_eximia_calyptopis_C2_Abundance
+          Euphausia_eximia_calyptopis_C2_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_eximia_calyptopis_C3_Abundance
+          Euphausia_eximia_calyptopis_C3_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_eximia_damaged_Abundance
+          Euphausia_eximia_damaged_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_eximia_furcilia_Abundance
+          Euphausia_eximia_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_eximia_furcilia_F1_Abundance
+          Euphausia_eximia_furcilia_F1_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_eximia_furcilia_F2_Abundance
+          Euphausia_eximia_furcilia_F2_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_eximia_furcilia_F3_Abundance
+          Euphausia_eximia_furcilia_F3_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_eximia_furcilia_F4_Abundance
+          Euphausia_eximia_furcilia_F4_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_eximia_furcilia_F5_Abundance
+          Euphausia_eximia_furcilia_F5_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_eximia_furcilia_F6_Abundance
+          Euphausia_eximia_furcilia_F6_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_eximia_juvenile_Abundance
+          Euphausia_eximia_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_eximia_larvae_Abundance
+          Euphausia_eximia_larvae_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_gibboides_adult_Abundance
+          Euphausia_gibboides_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_gibboides_calyptopis_Abundance
+          Euphausia_gibboides_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_gibboides_calyptopis_C1_Abundance
+          Euphausia_gibboides_calyptopis_C1_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_gibboides_calyptopis_C2_Abundance
+          Euphausia_gibboides_calyptopis_C2_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_gibboides_calyptopis_C3_Abundance
+          Euphausia_gibboides_calyptopis_C3_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_gibboides_damaged_Abundance
+          Euphausia_gibboides_damaged_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_gibboides_furcilia_Abundance
+          Euphausia_gibboides_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_gibboides_furcilia_F1_Abundance
+          Euphausia_gibboides_furcilia_F1_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_gibboides_furcilia_F2_Abundance
+          Euphausia_gibboides_furcilia_F2_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_gibboides_furcilia_F3_Abundance
+          Euphausia_gibboides_furcilia_F3_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_gibboides_furcilia_F4_Abundance
+          Euphausia_gibboides_furcilia_F4_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_gibboides_furcilia_F5_Abundance
+          Euphausia_gibboides_furcilia_F5_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_gibboides_furcilia_F6_Abundance
+          Euphausia_gibboides_furcilia_F6_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_gibboides_juvenile_Abundance
+          Euphausia_gibboides_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_gibboides_larvae_Abundance
+          Euphausia_gibboides_larvae_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_hemigibba_adult_Abundance
+          Euphausia_hemigibba_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_hemigibba_calyptopis_Abundance
+          Euphausia_hemigibba_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_hemigibba_furcilia_Abundance
+          Euphausia_hemigibba_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_hemigibba_juvenile_Abundance
+          Euphausia_hemigibba_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_lamelligera_adult_Abundance
+          Euphausia_lamelligera_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_mutica_adult_Abundance
+          Euphausia_mutica_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_mutica_calyptopis_Abundance
+          Euphausia_mutica_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_mutica_furcilia_Abundance
+          Euphausia_mutica_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_mutica_juvenile_Abundance
+          Euphausia_mutica_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_pacifica_adult_Abundance
+          Euphausia_pacifica_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_pacifica_calyptopis_Abundance
+          Euphausia_pacifica_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_pacifica_calyptopis_C1_Abundance
+          Euphausia_pacifica_calyptopis_C1_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_pacifica_calyptopis_C2_Abundance
+          Euphausia_pacifica_calyptopis_C2_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_pacifica_calyptopis_C3_Abundance
+          Euphausia_pacifica_calyptopis_C3_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_pacifica_damaged_Abundance
+          Euphausia_pacifica_damaged_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_pacifica_furcilia_Abundance
+          Euphausia_pacifica_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_pacifica_furcilia_F1_Abundance
+          Euphausia_pacifica_furcilia_F1_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_pacifica_furcilia_F2_Abundance
+          Euphausia_pacifica_furcilia_F2_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_pacifica_furcilia_F3_Abundance
+          Euphausia_pacifica_furcilia_F3_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_pacifica_furcilia_F4_Abundance
+          Euphausia_pacifica_furcilia_F4_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_pacifica_furcilia_F5_Abundance
+          Euphausia_pacifica_furcilia_F5_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_pacifica_furcilia_F6_Abundance
+          Euphausia_pacifica_furcilia_F6_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_pacifica_furcilia_F7_Abundance
+          Euphausia_pacifica_furcilia_F7_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_pacifica_juvenile_Abundance
+          Euphausia_pacifica_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_pacifica_larvae_Abundance
+          Euphausia_pacifica_larvae_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_pacifica_metanauplius_Abundance
+          Euphausia_pacifica_metanauplius_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_recurva_adult_Abundance
+          Euphausia_recurva_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_recurva_calyptopis_Abundance
+          Euphausia_recurva_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_recurva_calyptopis_C1_Abundance
+          Euphausia_recurva_calyptopis_C1_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_recurva_calyptopis_C2_Abundance
+          Euphausia_recurva_calyptopis_C2_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_recurva_calyptopis_C3_Abundance
+          Euphausia_recurva_calyptopis_C3_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_recurva_damaged_Abundance
+          Euphausia_recurva_damaged_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_recurva_furcilia_Abundance
+          Euphausia_recurva_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_recurva_furcilia_F1_Abundance
+          Euphausia_recurva_furcilia_F1_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_recurva_furcilia_F2_Abundance
+          Euphausia_recurva_furcilia_F2_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_recurva_furcilia_F3_Abundance
+          Euphausia_recurva_furcilia_F3_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_recurva_furcilia_F4_Abundance
+          Euphausia_recurva_furcilia_F4_Abundance
+          vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_recurva_furcilia_F5_Abundance
+          Euphausia_recurva_furcilia_F5_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_recurva_furcilia_F6_Abundance
+          Euphausia_recurva_furcilia_F6_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_recurva_juvenile_Abundance
+          Euphausia_recurva_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_recurva_metanauplius_Abundance
+          Euphausia_recurva_metanauplius_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_tenera_adult_Abundance
+          Euphausia_tenera_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_tenera_furcilia_Abundance
+          Euphausia_tenera_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Euphausia_tenera_juvenile_Abundance
+          Euphausia_tenera_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematobrachion_boopis_adult_Abundance
+          Nematobrachion_boopis_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematobrachion_boopis_furcilia_Abundance
+          Nematobrachion_boopis_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematobrachion_boopis_juvenile_Abundance
+          Nematobrachion_boopis_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematobrachion_flexipes_adult_Abundance
+          Nematobrachion_flexipes_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematobrachion_flexipes_calyptopis_Abundance
+          Nematobrachion_flexipes_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematobrachion_flexipes_furcilia_Abundance
+          Nematobrachion_flexipes_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematobrachion_flexipes_juvenile_Abundance
+          Nematobrachion_flexipes_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematobrachion_flexipes_larvae_Abundance
+          Nematobrachion_flexipes_larvae_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematoscelis_atlantica_adult_Abundance
+          Nematoscelis_atlantica_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematoscelis_atlantica_calyptopis_Abundance
+          Nematoscelis_atlantica_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematoscelis_atlantica_furcilia_Abundance
+          Nematoscelis_atlantica_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematoscelis_atlantica_juvenile_Abundance
+          Nematoscelis_atlantica_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematoscelis_difficilis_adult_Abundance
+          Nematoscelis_difficilis_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematoscelis_difficilis_calyptopis_Abundance
+          Nematoscelis_difficilis_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematoscelis_difficilis_calyptopis_C1_Abundance
+          Nematoscelis_difficilis_calyptopis_C1_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematoscelis_difficilis_calyptopis_C2_Abundance
+          Nematoscelis_difficilis_calyptopis_C2_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematoscelis_difficilis_calyptopis_C3_Abundance
+          Nematoscelis_difficilis_calyptopis_C3_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematoscelis_difficilis_damaged_Abundance
+          Nematoscelis_difficilis_damaged_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematoscelis_difficilis_furcilia_Abundance
+          Nematoscelis_difficilis_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematoscelis_difficilis_furcilia_F1_Abundance
+          Nematoscelis_difficilis_furcilia_F1_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematoscelis_difficilis_furcilia_F2_Abundance
+          Nematoscelis_difficilis_furcilia_F2_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematoscelis_difficilis_furcilia_F3_Abundance
+          Nematoscelis_difficilis_furcilia_F3_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematoscelis_difficilis_juvenile_Abundance
+          Nematoscelis_difficilis_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematoscelis_difficilis_larvae_Abundance
+          Nematoscelis_difficilis_larvae_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematoscelis_difficilis_metanauplius_Abundance
+          Nematoscelis_difficilis_metanauplius_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematoscelis_gracilis_adult_Abundance
+          Nematoscelis_gracilis_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematoscelis_gracilis_furcilia_Abundance
+          Nematoscelis_gracilis_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematoscelis_gracilis_juvenile_Abundance
+          Nematoscelis_gracilis_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematoscelis_microps_adult_Abundance
+          Nematoscelis_microps_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematoscelis_microps_juvenile_Abundance
+          Nematoscelis_microps_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematoscelis_tenella_adult_Abundance
+          Nematoscelis_tenella_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematoscelis_tenella_calyptopis_Abundance
+          Nematoscelis_tenella_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematoscelis_tenella_furcilia_Abundance
+          Nematoscelis_tenella_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematoscelis_tenella_juvenile_Abundance
+          Nematoscelis_tenella_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nematoscelis_tenella_larvae_Abundance
+          Nematoscelis_tenella_larvae_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nyctiphanes_simplex_adult_Abundance
+          Nyctiphanes_simplex_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nyctiphanes_simplex_calyptopis_Abundance
+          Nyctiphanes_simplex_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nyctiphanes_simplex_calyptopis_C1_Abundance
+          Nyctiphanes_simplex_calyptopis_C1_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nyctiphanes_simplex_calyptopis_C2_Abundance
+          Nyctiphanes_simplex_calyptopis_C2_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nyctiphanes_simplex_calyptopis_C3_Abundance
+          Nyctiphanes_simplex_calyptopis_C3_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nyctiphanes_simplex_damaged_Abundance
+          Nyctiphanes_simplex_damaged_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nyctiphanes_simplex_furcilia_Abundance
+          Nyctiphanes_simplex_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nyctiphanes_simplex_furcilia_F1_Abundance
+          Nyctiphanes_simplex_furcilia_F1_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nyctiphanes_simplex_furcilia_F2_Abundance
+          Nyctiphanes_simplex_furcilia_F2_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nyctiphanes_simplex_furcilia_F3_Abundance
+          Nyctiphanes_simplex_furcilia_F3_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nyctiphanes_simplex_furcilia_F4_Abundance
+          Nyctiphanes_simplex_furcilia_F4_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nyctiphanes_simplex_furcilia_F5_Abundance
+          Nyctiphanes_simplex_furcilia_F5_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nyctiphanes_simplex_furcilia_F6_Abundance
+          Nyctiphanes_simplex_furcilia_F6_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nyctiphanes_simplex_juvenile_Abundance
+          Nyctiphanes_simplex_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nyctiphanes_simplex_larvae_Abundance
+          Nyctiphanes_simplex_larvae_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Nyctiphanes_simplex_metanauplius_Abundance
+          Nyctiphanes_simplex_metanauplius_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_abbreviatum_adult_Abundance
+          Stylocheiron_abbreviatum_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_abbreviatum_calyptopis_Abundance
+          Stylocheiron_abbreviatum_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_abbreviatum_furcilia_Abundance
+          Stylocheiron_abbreviatum_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_abbreviatum_juvenile_Abundance
+          Stylocheiron_abbreviatum_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_abbreviatum_larvae_Abundance
+          Stylocheiron_abbreviatum_larvae_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_affine_adult_Abundance
+          Stylocheiron_affine_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_affine_calyptopis_Abundance
+          Stylocheiron_affine_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_affine_furcilia_Abundance
+          Stylocheiron_affine_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_affine_juvenile_Abundance
+          Stylocheiron_affine_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_carinatum_adult_Abundance
+          Stylocheiron_carinatum_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_carinatum_calyptopis_Abundance
+          Stylocheiron_carinatum_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_carinatum_furcilia_Abundance
+          Stylocheiron_carinatum_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_carinatum_juvenile_Abundance
+          Stylocheiron_carinatum_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_elongatum_adult_Abundance
+          Stylocheiron_elongatum_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_elongatum_calyptopis_Abundance
+          Stylocheiron_elongatum_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_elongatum_furcilia_Abundance
+          Stylocheiron_elongatum_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_elongatum_juvenile_Abundance
+          Stylocheiron_elongatum_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_longicorne_adult_Abundance
+          Stylocheiron_longicorne_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_longicorne_calyptopis_Abundance
+          Stylocheiron_longicorne_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_longicorne_furcilia_Abundance
+          Stylocheiron_longicorne_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_longicorne_juvenile_Abundance
+          Stylocheiron_longicorne_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_longicorne_larvae_Abundance
+          Stylocheiron_longicorne_larvae_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_maximum_adult_Abundance
+          Stylocheiron_maximum_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_maximum_calyptopis_Abundance
+          Stylocheiron_maximum_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_maximum_furcilia_Abundance
+          Stylocheiron_maximum_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_maximum_juvenile_Abundance
+          Stylocheiron_maximum_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_maximum_larvae_Abundance
+          Stylocheiron_maximum_larvae_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_suhmi_adult_Abundance
+          Stylocheiron_suhmi_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_suhmi_calyptopis_Abundance
+          Stylocheiron_suhmi_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_suhmi_furcilia_Abundance
+          Stylocheiron_suhmi_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Stylocheiron_suhmi_juvenile_Abundance
+          Stylocheiron_suhmi_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Tessarabrachion_oculatum_calyptopis_Abundance
+          Tessarabrachion_oculatum_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Tessarabrachion_oculatum_furcilia_Abundance
+          Tessarabrachion_oculatum_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Tessarabrachion_oculatum_juvenile_Abundance
+          Tessarabrachion_oculatum_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_gregaria_adult_Abundance
+          Thysanoessa_gregaria_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_gregaria_calyptopis_Abundance
+          Thysanoessa_gregaria_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_gregaria_calyptopis_C1_Abundance
+          Thysanoessa_gregaria_calyptopis_C1_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_gregaria_calyptopis_C2_Abundance
+          Thysanoessa_gregaria_calyptopis_C2_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_gregaria_calyptopis_C3_Abundance
+          Thysanoessa_gregaria_calyptopis_C3_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_gregaria_damaged_Abundance
+          Thysanoessa_gregaria_damaged_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_gregaria_furcilia_Abundance
+          Thysanoessa_gregaria_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_gregaria_furcilia_F1_Abundance
+          Thysanoessa_gregaria_furcilia_F1_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_gregaria_furcilia_F2_Abundance
+          Thysanoessa_gregaria_furcilia_F2_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_gregaria_furcilia_F3_Abundance
+          Thysanoessa_gregaria_furcilia_F3_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_gregaria_furcilia_F4_Abundance
+          Thysanoessa_gregaria_furcilia_F4_Abundance
+          vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_gregaria_furcilia_F5_Abundance
+          Thysanoessa_gregaria_furcilia_F5_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_gregaria_furcilia_F6_Abundance
+          Thysanoessa_gregaria_furcilia_F6_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_gregaria_juvenile_Abundance
+          Thysanoessa_gregaria_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_gregaria_larvae_Abundance
+          Thysanoessa_gregaria_larvae_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_longipes_adult_Abundance
+          Thysanoessa_longipes_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_longipes_calyptopis_Abundance
+          Thysanoessa_longipes_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_longipes_furcilia_Abundance
+          Thysanoessa_longipes_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_longipes_juvenile_Abundance
+          Thysanoessa_longipes_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_spinifera_adult_Abundance
+          Thysanoessa_spinifera_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_spinifera_calyptopis_Abundance
+          Thysanoessa_spinifera_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_spinifera_calyptopis_C1_Abundance
+          Thysanoessa_spinifera_calyptopis_C1_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_spinifera_calyptopis_C2_Abundance
+          Thysanoessa_spinifera_calyptopis_C2_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_spinifera_calyptopis_C3_Abundance
+          Thysanoessa_spinifera_calyptopis_C3_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_spinifera_damaged_Abundance
+          Thysanoessa_spinifera_damaged_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_spinifera_furcilia_Abundance
+          Thysanoessa_spinifera_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_spinifera_furcilia_F1_Abundance
+          Thysanoessa_spinifera_furcilia_F1_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_spinifera_furcilia_F2_Abundance
+          Thysanoessa_spinifera_furcilia_F2_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_spinifera_furcilia_F3_Abundance
+          Thysanoessa_spinifera_furcilia_F3_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_spinifera_furcilia_F4_Abundance
+          Thysanoessa_spinifera_furcilia_F4_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_spinifera_furcilia_F5_Abundance
+          Thysanoessa_spinifera_furcilia_F5_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_spinifera_furcilia_F6_Abundance
+          Thysanoessa_spinifera_furcilia_F6_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_spinifera_juvenile_Abundance
+          Thysanoessa_spinifera_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_spinifera_larvae_Abundance
+          Thysanoessa_spinifera_larvae_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanoessa_spinifera_metanauplius_Abundance
+          Thysanoessa_spinifera_metanauplius_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanopoda_astylata_adult_Abundance
+          Thysanopoda_astylata_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanopoda_astylata_calyptopis_Abundance
+          Thysanopoda_astylata_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanopoda_astylata_furcilia_Abundance
+          Thysanopoda_astylata_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanopoda_astylata_juvenile_Abundance
+          Thysanopoda_astylata_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanopoda_astylata_larvae_Abundance
+          Thysanopoda_astylata_larvae_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanopoda_cornuta_furcilia_Abundance
+          Thysanopoda_cornuta_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanopoda_egregia_calyptopis_Abundance
+          Thysanopoda_egregia_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanopoda_egregia_furcilia_Abundance
+          Thysanopoda_egregia_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanopoda_egregia_juvenile_Abundance
+          Thysanopoda_egregia_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanopoda_monacantha_adult_Abundance
+          Thysanopoda_monacantha_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanopoda_monacantha_calyptopis_Abundance
+          Thysanopoda_monacantha_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanopoda_monacantha_furcilia_Abundance
+          Thysanopoda_monacantha_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanopoda_monacantha_juvenile_Abundance
+          Thysanopoda_monacantha_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanopoda_obtusifrons_adult_Abundance
+          Thysanopoda_obtusifrons_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanopoda_obtusifrons_calyptopis_Abundance
+          Thysanopoda_obtusifrons_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanopoda_obtusifrons_furcilia_Abundance
+          Thysanopoda_obtusifrons_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanopoda_obtusifrons_juvenile_Abundance
+          Thysanopoda_obtusifrons_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanopoda_orientalis_adult_Abundance
+          Thysanopoda_orientalis_adult_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanopoda_orientalis_calyptopis_Abundance
+          Thysanopoda_orientalis_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanopoda_orientalis_furcilia_Abundance
+          Thysanopoda_orientalis_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanopoda_orientalis_juvenile_Abundance
+          Thysanopoda_orientalis_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanopoda_pectinata_calyptopis_Abundance
+          Thysanopoda_pectinata_calyptopis_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanopoda_pectinata_furcilia_Abundance
+          Thysanopoda_pectinata_furcilia_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+        
+          Thysanopoda_pectinata_juvenile_Abundance
+          Thysanopoda_pectinata_juvenile_Abundance
+          Vertically Integrated Abundance
+          float
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+        
+      
+      no
+      7482
+    
+    
+      BTEDB_Coverage_1951-2020
+      BTEDB Coverage table, 1951-2020
+      
+        BTEDB_Coverage_1951-2020.pdf
+        24887
+        c611cf00a541a0cf852f2080cdca2713
+        
+          
+            pdf
+          
+        
+        
+          
+            https://pasta.lternet.edu/package/data/eml/knb-lter-cce/313/1/883fedf0b0e8f3f301e56a01fd52044f
+          
+        
+      
+      pdf
+    
+    
+      BTEDB_Size_To_Phase_Table
+      BTEDB Size to Phase table
+      
+        BTEDB_Size_To_Phase_Table.pdf
+        58616
+        ddade7fc9e41c98d2a9b89e3a3d02310
+        
+          
+            pdf
+          
+        
+        
+          
+            https://pasta.lternet.edu/package/data/eml/knb-lter-cce/313/1/d17d4867d7a52f16dd5010dced3fda16
+          
+        
+      
+      pdf
+    
+    
+      BTEDB_station_region_map_Cen_and_S
+      BTEDB station map for Southern California and Central California regions
+      
+        BTEDB_station_region_map_Cen_and_S.png
+        162329
+        cc8c52826f1b588d078acce205d781b4
+        
+          
+            png
+          
+        
+        
+          
+            https://pasta.lternet.edu/package/data/eml/knb-lter-cce/313/1/f8f77c544f645080aefa0c1e98dd137c
+          
+        
+      
+      png
+    
+  
+  
+    
+      
+    
+  

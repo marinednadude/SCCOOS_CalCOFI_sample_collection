@@ -1,0 +1,318 @@
+
+  
+    
+      uid=CCE,o=lter,dc=ecoinformatics,dc=org
+      all
+    
+    
+      public
+      read
+    
+  
+  
+    155
+    doi:10.6073/pasta/f3bb35acc4f1bfe6e069cb2bd6b13aba
+    Assembled file of spring annual averages of abundance of selected euphausiids from the Southern California region, 1951 - 2011.
+    
+      California Current Ecosystem LTER
+      			California Current Ecosystem LTER Program Office
+Scripps Institution of Oceanography
+University of California, San Diego
+9500 Gilman Dr.
+			La Jolla, California 92093-0218  USA
+    
+    
+      Mark Ohman
+      SIO
+      mohman@ucsd.edu
+    
+    
+      California Current Ecosystem LTER
+      			California Current Ecosystem LTER Program Office
+Scripps Institution of Oceanography
+University of California, San Diego
+9500 Gilman Dr.
+			La Jolla, California 92093-0218  USA
+    
+    2017-03-28
+    Derived dataset of spring annual averages of abundance of sentinel euphausiid species (Euphausia pacifica, Nyctiphanes simplex and Nematoscelis difficilis) since 1951 (ongoing).  Zooplankton are collected in net tows and enumerated by major taxa from spring CalCOFI cruises (lines 80-93, inclusive of stations from shore out to station 70). Original data are from the zooplankton dataspace, specifically the Brinton-Townsend Euphausiid Database.
+    
+      habitats
+      marine
+      invertebrates
+      taxonomy
+      zooplankton
+      ecology
+      measurements
+      carbon
+      populations
+      LTER Controlled Vocabulary
+    
+    
+      Population Studies
+      Signature
+      LTER Core Areas
+    
+    
+      The data available here are intended for scholarly use by the research community,
+                with the express understanding that data users will properly acknowledge the originating investigator. Use or
+                reproduction of any material herein for any commercial purpose is prohibited without prior written permission
+                from the responsible party.
+            
+    
+    
+      
+        http://oceaninformatics.ucsd.edu/datazoo/catalogs/ccelter/datasets/155
+      
+    
+    
+      
+        
+          
+            1951
+          
+          
+            2011
+          
+        
+      
+    
+    
+      CCE LTER Information Manager
+      California Current Ecosystem LTER
+      ccelter-im@ucsd.edu
+    
+    
+      California Current Ecosystem LTER
+      			California Current Ecosystem LTER Program Office
+Scripps Institution of Oceanography
+University of California, San Diego
+9500 Gilman Dr.
+			La Jolla, California 92093-0218  USA
+    
+    
+      
+        
+          
+            General Methods
+            The euphausiid data are based on night tows only. Spring annual averages are from samples usually taken in April but may vary from February to May. The net tows were double oblique. Over time, the net tows changed from a CalCOFI ring net to 140m, with 1m net mouth diameter and 0.55 mm net mesh (C1s; 1951-1968) to a CalCOFI ring net to 210m depth with 1m net mouth diameter and 0.505 mm net mesh (C1n; 1969-1977), to a CalCOFI bongo to 210m depth with 0.71 net mouth diameter and 0.505 mm net mesh (CB; 1977- present; see Ohman and Smith 1995). Sampling characteristics (see code controlled vocabulary for zooplankton sampling characteristics: http://oceaninformatics.ucsd.edu/datazoo/resources/controlledvocabularies?action=set&id=194).The sample preservative is sodium tetraborate-buffered formaldehyde.
+          
+        
+      
+      
+        
+          
+            Frequency
+            Spring Annual Averages
+          
+        
+      
+      
+        
+          CalBOBL (Bongo) Deployment
+        
+        
+          CalBOBL (Bongo) Deployment
+          
+            CCE LTER / CalCOFI
+          
+          
+            
+              http://cce.lternet.edu/data/methods-manual/augmented-cruises/calbobl-net-depolyment
+            
+          
+        
+      
+    
+    
+      ZooplanktonAbundanceofEuphausiidSentinelSpeciesSpringAnnualAverages
+      Main data table for dataset
+      
+        table_155.csv
+        ASCII
+        
+          
+            1
+            0
+            \n
+            column
+            
+              ,
+              "
+              \
+            
+          
+        
+        
+          
+            https://pasta.lternet.edu/package/data/eml/knb-lter-cce/155/3/34f4fce5e6b0ad648444b2d82ccc9f6e
+          
+        
+      
+      
+        
+          Year
+          year of measurement in GMT
+          integer
+          
+            
+              
+                
+                  year of measurement in GMT
+                
+              
+            
+          
+          
+            NULL
+            No data available
+          
+        
+        
+          Region
+          Nominal spatial region.
+          string
+          
+            
+              
+                
+                  Nominal spatial region.
+                
+              
+            
+          
+          
+            NULL
+            No data available
+          
+        
+        
+          Euphausia pacifica
+          Number per meter squared
+          double
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+          
+            NULL
+            No data available
+          
+        
+        
+          CL95
+          95% confidence limit
+          double
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+          
+            NULL
+            No data available
+          
+        
+        
+          Nyctiphanes simplex
+          Number per meter squared
+          double
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+          
+            NULL
+            No data available
+          
+        
+        
+          CL95
+          95% confidence limit
+          double
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+          
+            NULL
+            No data available
+          
+        
+        
+          Nematoscelis difficilis
+          Number per meter squared
+          double
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+          
+            NULL
+            No data available
+          
+        
+        
+          CL95
+          95% confidence limit
+          double
+          
+            
+              
+                numberPerMeterSquared
+              
+              
+                real
+              
+            
+          
+          
+            NULL
+            No data available
+          
+        
+      
+    
+  
+  
+    
+      
+        
+          
+          
+        
+        
+          number per meter squared
+        
+      
+    
+  

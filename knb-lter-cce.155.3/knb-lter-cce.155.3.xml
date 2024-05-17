@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<eml:eml packageId="knb-lter-cce.155.3" scope="system"
+  system="https://pasta.edirepository.org"
+  xmlns:ds="eml://ecoinformatics.org/dataset-2.1.1"
+  xmlns:eml="eml://ecoinformatics.org/eml-2.1.1"
+  xmlns:stmml="http://www.xml-cml.org/schema/stmml-1.1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="eml://ecoinformatics.org/eml-2.1.1 http://nis.lternet.edu/schemas/EML/eml-2.1.1/eml.xsd">
+  <access authSystem="https://pasta.edirepository.org/authentication"
+    order="allowFirst" scope="document" system="https://pasta.edirepository.org">
+    <allow>
+      <principal>uid=CCE,o=lter,dc=ecoinformatics,dc=org</principal>
+      <permission>all</permission>
+    </allow>
+    <allow>
+      <principal>public</principal>
+      <permission>read</permission>
+    </allow>
+  </access>
+  <dataset scope="document">
+    <alternateIdentifier>155</alternateIdentifier>
+    <alternateIdentifier system="https://doi.org">doi:10.6073/pasta/f3bb35acc4f1bfe6e069cb2bd6b13aba</alternateIdentifier>
+    <title>Assembled file of spring annual averages of abundance of selected euphausiids from the Southern California region, 1951 - 2011.</title>
+    <creator>
+      <organizationName>California Current Ecosystem LTER</organizationName>
+      <address>
+        <deliveryPoint>California Current Ecosystem LTER Program Office
+Scripps Institution of Oceanography
+University of California, San Diego
+9500 Gilman Dr.</deliveryPoint>
+        <city>La Jolla</city>
+        <administrativeArea>California</administrativeArea>
+        <postalCode>92093-0218</postalCode>
+        <country>USA</country>
+      </address>
+    </creator>
+    <creator>
+      <individualName>
+        <givenName>Mark</givenName>
+        <surName>Ohman</surName>
+      </individualName>
+      <organizationName>SIO</organizationName>
+      <electronicMailAddress>mohman@ucsd.edu</electronicMailAddress>
+    </creator>
+    <metadataProvider>
+      <organizationName>California Current Ecosystem LTER</organizationName>
+      <address>
+        <deliveryPoint>California Current Ecosystem LTER Program Office
+Scripps Institution of Oceanography
+University of California, San Diego
+9500 Gilman Dr.</deliveryPoint>
+        <city>La Jolla</city>
+        <administrativeArea>California</administrativeArea>
+        <postalCode>92093-0218</postalCode>
+        <country>USA</country>
+      </address>
+    </metadataProvider>
+    <pubDate>2017-03-28</pubDate>
+    <abstract>Derived dataset of spring annual averages of abundance of sentinel euphausiid species (Euphausia pacifica, Nyctiphanes simplex and Nematoscelis difficilis) since 1951 (ongoing).  Zooplankton are collected in net tows and enumerated by major taxa from spring CalCOFI cruises (lines 80-93, inclusive of stations from shore out to station 70). Original data are from the zooplankton dataspace, specifically the Brinton-Townsend Euphausiid Database.</abstract>
+    <keywordSet>
+      <keyword>habitats</keyword>
+      <keyword>marine</keyword>
+      <keyword>invertebrates</keyword>
+      <keyword>taxonomy</keyword>
+      <keyword>zooplankton</keyword>
+      <keyword>ecology</keyword>
+      <keyword>measurements</keyword>
+      <keyword>carbon</keyword>
+      <keyword>populations</keyword>
+      <keywordThesaurus>LTER Controlled Vocabulary</keywordThesaurus>
+    </keywordSet>
+    <keywordSet>
+      <keyword>Population Studies</keyword>
+      <keyword>Signature</keyword>
+      <keywordThesaurus>LTER Core Areas</keywordThesaurus>
+    </keywordSet>
+    <intellectualRights>
+      <para>The data available here are intended for scholarly use by the research community,
+                with the express understanding that data users will properly acknowledge the originating investigator. Use or
+                reproduction of any material herein for any commercial purpose is prohibited without prior written permission
+                from the responsible party.
+            </para>
+    </intellectualRights>
+    <distribution>
+      <online>
+        <url function="information">http://oceaninformatics.ucsd.edu/datazoo/catalogs/ccelter/datasets/155</url>
+      </online>
+    </distribution>
+    <coverage>
+      <temporalCoverage>
+        <rangeOfDates>
+          <beginDate>
+            <calendarDate>1951</calendarDate>
+          </beginDate>
+          <endDate>
+            <calendarDate>2011</calendarDate>
+          </endDate>
+        </rangeOfDates>
+      </temporalCoverage>
+    </coverage>
+    <contact>
+      <positionName>CCE LTER Information Manager</positionName>
+      <organizationName>California Current Ecosystem LTER</organizationName>
+      <electronicMailAddress>ccelter-im@ucsd.edu</electronicMailAddress>
+    </contact>
+    <publisher>
+      <organizationName>California Current Ecosystem LTER</organizationName>
+      <address>
+        <deliveryPoint>California Current Ecosystem LTER Program Office
+Scripps Institution of Oceanography
+University of California, San Diego
+9500 Gilman Dr.</deliveryPoint>
+        <city>La Jolla</city>
+        <administrativeArea>California</administrativeArea>
+        <postalCode>92093-0218</postalCode>
+        <country>USA</country>
+      </address>
+    </publisher>
+    <methods>
+      <methodStep>
+        <description>
+          <section>
+            <title>General Methods</title>
+            <para>The euphausiid data are based on night tows only. Spring annual averages are from samples usually taken in April but may vary from February to May. The net tows were double oblique. Over time, the net tows changed from a CalCOFI ring net to 140m, with 1m net mouth diameter and 0.55 mm net mesh (C1s; 1951-1968) to a CalCOFI ring net to 210m depth with 1m net mouth diameter and 0.505 mm net mesh (C1n; 1969-1977), to a CalCOFI bongo to 210m depth with 0.71 net mouth diameter and 0.505 mm net mesh (CB; 1977- present; see Ohman and Smith 1995). Sampling characteristics (see code controlled vocabulary for zooplankton sampling characteristics: http://oceaninformatics.ucsd.edu/datazoo/resources/controlledvocabularies?action=set&amp;id=194).The sample preservative is sodium tetraborate-buffered formaldehyde.</para>
+          </section>
+        </description>
+      </methodStep>
+      <methodStep>
+        <description>
+          <section>
+            <title>Frequency</title>
+            <para>Spring Annual Averages</para>
+          </section>
+        </description>
+      </methodStep>
+      <methodStep>
+        <description>
+          <para>CalBOBL (Bongo) Deployment</para>
+        </description>
+        <protocol>
+          <title>CalBOBL (Bongo) Deployment</title>
+          <creator>
+            <organizationName>CCE LTER / CalCOFI</organizationName>
+          </creator>
+          <distribution>
+            <online>
+              <url function="information">http://cce.lternet.edu/data/methods-manual/augmented-cruises/calbobl-net-depolyment</url>
+            </online>
+          </distribution>
+        </protocol>
+      </methodStep>
+    </methods>
+    <dataTable id="155.table_155">
+      <entityName>ZooplanktonAbundanceofEuphausiidSentinelSpeciesSpringAnnualAverages</entityName>
+      <entityDescription>Main data table for dataset</entityDescription>
+      <physical>
+        <objectName>table_155.csv</objectName>
+        <characterEncoding>ASCII</characterEncoding>
+        <dataFormat>
+          <textFormat>
+            <numHeaderLines>1</numHeaderLines>
+            <numFooterLines>0</numFooterLines>
+            <recordDelimiter>\n</recordDelimiter>
+            <attributeOrientation>column</attributeOrientation>
+            <simpleDelimited>
+              <fieldDelimiter>,</fieldDelimiter>
+              <quoteCharacter>"</quoteCharacter>
+              <literalCharacter>\</literalCharacter>
+            </simpleDelimited>
+          </textFormat>
+        </dataFormat>
+        <distribution>
+          <online>
+            <url function="download">https://pasta.lternet.edu/package/data/eml/knb-lter-cce/155/3/34f4fce5e6b0ad648444b2d82ccc9f6e</url>
+          </online>
+        </distribution>
+      </physical>
+      <attributeList>
+        <attribute id="155.table_155.col_2847">
+          <attributeName>Year</attributeName>
+          <attributeDefinition>year of measurement in GMT</attributeDefinition>
+          <storageType typeSystem="http://www.w3.org/2001/XMLSchema-datatypes">integer</storageType>
+          <measurementScale>
+            <nominal>
+              <nonNumericDomain>
+                <textDomain>
+                  <definition>year of measurement in GMT</definition>
+                </textDomain>
+              </nonNumericDomain>
+            </nominal>
+          </measurementScale>
+          <missingValueCode>
+            <code>NULL</code>
+            <codeExplanation>No data available</codeExplanation>
+          </missingValueCode>
+        </attribute>
+        <attribute id="155.table_155.col_2848">
+          <attributeName>Region</attributeName>
+          <attributeDefinition>Nominal spatial region.</attributeDefinition>
+          <storageType typeSystem="http://www.w3.org/2001/XMLSchema-datatypes">string</storageType>
+          <measurementScale>
+            <nominal>
+              <nonNumericDomain>
+                <textDomain>
+                  <definition>Nominal spatial region.</definition>
+                </textDomain>
+              </nonNumericDomain>
+            </nominal>
+          </measurementScale>
+          <missingValueCode>
+            <code>NULL</code>
+            <codeExplanation>No data available</codeExplanation>
+          </missingValueCode>
+        </attribute>
+        <attribute id="155.table_155.col_2856">
+          <attributeName>Euphausia pacifica</attributeName>
+          <attributeDefinition>Number per meter squared</attributeDefinition>
+          <storageType typeSystem="http://www.w3.org/2001/XMLSchema-datatypes">double</storageType>
+          <measurementScale>
+            <ratio>
+              <unit>
+                <customUnit>numberPerMeterSquared</customUnit>
+              </unit>
+              <numericDomain>
+                <numberType>real</numberType>
+              </numericDomain>
+            </ratio>
+          </measurementScale>
+          <missingValueCode>
+            <code>NULL</code>
+            <codeExplanation>No data available</codeExplanation>
+          </missingValueCode>
+        </attribute>
+        <attribute id="155.table_155.col_2857">
+          <attributeName>CL95</attributeName>
+          <attributeDefinition>95% confidence limit</attributeDefinition>
+          <storageType typeSystem="http://www.w3.org/2001/XMLSchema-datatypes">double</storageType>
+          <measurementScale>
+            <ratio>
+              <unit>
+                <customUnit>numberPerMeterSquared</customUnit>
+              </unit>
+              <numericDomain>
+                <numberType>real</numberType>
+              </numericDomain>
+            </ratio>
+          </measurementScale>
+          <missingValueCode>
+            <code>NULL</code>
+            <codeExplanation>No data available</codeExplanation>
+          </missingValueCode>
+        </attribute>
+        <attribute id="155.table_155.col_2858">
+          <attributeName>Nyctiphanes simplex</attributeName>
+          <attributeDefinition>Number per meter squared</attributeDefinition>
+          <storageType typeSystem="http://www.w3.org/2001/XMLSchema-datatypes">double</storageType>
+          <measurementScale>
+            <ratio>
+              <unit>
+                <customUnit>numberPerMeterSquared</customUnit>
+              </unit>
+              <numericDomain>
+                <numberType>real</numberType>
+              </numericDomain>
+            </ratio>
+          </measurementScale>
+          <missingValueCode>
+            <code>NULL</code>
+            <codeExplanation>No data available</codeExplanation>
+          </missingValueCode>
+        </attribute>
+        <attribute id="155.table_155.col_2859">
+          <attributeName>CL95</attributeName>
+          <attributeDefinition>95% confidence limit</attributeDefinition>
+          <storageType typeSystem="http://www.w3.org/2001/XMLSchema-datatypes">double</storageType>
+          <measurementScale>
+            <ratio>
+              <unit>
+                <customUnit>numberPerMeterSquared</customUnit>
+              </unit>
+              <numericDomain>
+                <numberType>real</numberType>
+              </numericDomain>
+            </ratio>
+          </measurementScale>
+          <missingValueCode>
+            <code>NULL</code>
+            <codeExplanation>No data available</codeExplanation>
+          </missingValueCode>
+        </attribute>
+        <attribute id="155.table_155.col_2860">
+          <attributeName>Nematoscelis difficilis</attributeName>
+          <attributeDefinition>Number per meter squared</attributeDefinition>
+          <storageType typeSystem="http://www.w3.org/2001/XMLSchema-datatypes">double</storageType>
+          <measurementScale>
+            <ratio>
+              <unit>
+                <customUnit>numberPerMeterSquared</customUnit>
+              </unit>
+              <numericDomain>
+                <numberType>real</numberType>
+              </numericDomain>
+            </ratio>
+          </measurementScale>
+          <missingValueCode>
+            <code>NULL</code>
+            <codeExplanation>No data available</codeExplanation>
+          </missingValueCode>
+        </attribute>
+        <attribute id="155.table_155.col_2861">
+          <attributeName>CL95</attributeName>
+          <attributeDefinition>95% confidence limit</attributeDefinition>
+          <storageType typeSystem="http://www.w3.org/2001/XMLSchema-datatypes">double</storageType>
+          <measurementScale>
+            <ratio>
+              <unit>
+                <customUnit>numberPerMeterSquared</customUnit>
+              </unit>
+              <numericDomain>
+                <numberType>real</numberType>
+              </numericDomain>
+            </ratio>
+          </measurementScale>
+          <missingValueCode>
+            <code>NULL</code>
+            <codeExplanation>No data available</codeExplanation>
+          </missingValueCode>
+        </attribute>
+      </attributeList>
+    </dataTable>
+  </dataset>
+  <additionalMetadata>
+    <metadata>
+      <stmml:unitList xmlns="http://www.xml-cml.org/schema/stmml"
+        xmlns:sch="http://www.ascc.net/xml/schematron"
+        xmlns:stmml="http://www.xml-cml.org/schema/stmml-1.1"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.xml-cml.org/schema/stmml-1.1 stmml.xsd">
+        <stmml:unitType id="arealDensity" name="arealDensity">
+          <stmml:dimension name="length" power="-2"/>
+          <stmml:dimension name="dimensionless"/>
+        </stmml:unitType>
+        <stmml:unit abbreviation="" id="numberPerMeterSquared"
+          name="numberPerMeterSquared" unitType="arealDensity">
+          <stmml:description>number per meter squared</stmml:description>
+        </stmml:unit>
+      </stmml:unitList>
+    </metadata>
+  </additionalMetadata>
+</eml:eml>
