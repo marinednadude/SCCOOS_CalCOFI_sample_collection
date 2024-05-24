@@ -861,9 +861,24 @@ max_lon <- max(group_by_site_f_a8$Lon_deg_r)
 ggplot(data = world) +
     geom_sf() +
     geom_point(data = group_by_site_f_a8, aes(x = Lon_deg_r, y = Lat_deg_r, size=n,colour=n),alpha=0.6 ) +
-    coord_sf(xlim = c(min_lon-1, max_lon+1), ylim = c(min_lat-0.5, max_lat+0.5), expand = FALSE) +theme_bw() +xlab("Longitude") +ylab("Latitude") +facet_grid(.~season) +scale_colour_viridis_c(option = "magma", direction=-1) # + geom_text(data = group_by_site_f_a8, aes(x = Lon_deg_r, y = Lat_deg_r, label=site),size = 4)
+    coord_sf(xlim = c(min_lon-1, max_lon+1), ylim = c(min_lat-0.5, max_lat+0.5), expand = FALSE) +theme_bw() +xlab("Longitude") +ylab("Latitude") +facet_grid(.~season) +scale_colour_viridis_c(option = "magma", direction=-1) + theme(plot.title = element_text(hjust = 0.5,size = 20, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5,size = 18, face = "bold"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.text=element_text(size=12), 
+        strip.text = element_text(size=16, face="bold"), 
+        axis.title=element_text(size=16,face="bold"),
+        legend.title = element_text( size=16, face="bold"),
+        legend.text = element_text(size=14)
+        )-> option8
 
-
+ggsave(plot= option8, 
+       filename = here("analysis","figures","option8.tiff"),
+       width=14,
+       height = 6,
+       dpi = 300,
+      units = c("in"))
 ```
 
 # 2013 Event 

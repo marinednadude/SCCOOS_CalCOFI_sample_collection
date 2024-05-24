@@ -4,20 +4,26 @@ author: "Zack Gold"
 date: "2024-05-06"
 output: html_document
 ---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
 
-```{r}
+```
+
+```{r, warning=FALSE, include=FALSE }
 library(tidyverse)
 library(here)
 library(readxl)
 library("rnaturalearth")
 library("rnaturalearthdata")
 library(sf)
+library(ggpubr)
+library(patchwork)
 
 world <- ne_countries(scale = "medium", returnclass = "sf")
 
 ```
 
-```{r}
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, include=FALSE}
 
 BTEDB_tax <- read_xlsx(here("knb-lter-cce.313.1","BTEDB_tax.xlsx"))
 
@@ -33,15 +39,14 @@ BTEDB_tax %>%
   
 ```
 
-```{r}
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, include=FALSE}
 BTEDB <- read.csv(here("knb-lter-cce.313.1","BTEDB_Abundances.csv"))
 
-BTEDB %>% 
+BTEDB %>%
   mutate(., Date = as.Date(Date),
         TowBegin= as.POSIXct(TowBegin, format = "%Y-%m-%d %H:%M:%S"),
         TowEnd= as.POSIXct(TowEnd,  format = "%Y-%m-%d %H:%M:%S")) %>% 
   pivot_longer(cols=`Euphausia_brevis_adult_Abundance`:`Thysanopoda_pectinata_juvenile_Abundance`,names_to = "Ohman_tax", values_to = "Count_permsq2") %>% 
-  filter(., Date > "1996-01-01") %>% 
   separate(Ohman_tax, into=c("Genus","species","phase","type"), sep="_", remove = F) %>% 
   mutate(., type = replace_na(type, "")) %>% 
   mutate(ID_Microscopy=str_c(Genus,species, sep=" "), 
@@ -57,14 +62,16 @@ BTEDB %>%
          Longitude = as.numeric(Longitude),
          Lon_deg_r=round(Longitude,1),
           Lat_deg_r=round(Latitude,1)) %>% 
+  mutate(., Station = as.numeric(Station)) %>% 
   mutate(., site= str_c(Line,"_",Station),
          year_site = str_c(year,":",Line,"_",Station),
-         year_season_site = str_c(year,":",season,Line,"_",Station)) %>% 
+         year_season_site = str_c(year,":",season,":",Line,"_",Station)) %>% 
   filter(., Lat_deg_r > 27) %>% 
-  filter(., Lat_deg_r < 40) -> long_microscopy
+  filter(., Lat_deg_r < 40) %>% 
+  filter(., Longitude < -110)-> long_microscopy
 ```
-
-```{r}
+# Map of Samples
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE}
 
 long_microscopy %>% 
   dplyr::select(year, season, site) %>% 
@@ -92,10 +99,12 @@ group_by_site_all %>%
   ggplot(data = world) +
    geom_sf() +
     geom_point(data=group_by_site_all, aes(x = Lon_deg_r, y = Lat_deg_r, size=n,colour=n),alpha=0.6 ) +
-    coord_sf(xlim = c(min_lon-1, max_lon+1), ylim = c(min_lat-0.5, max_lat+0.5), expand = FALSE) +theme_bw() +xlab("Longitude") +ylab("Latitude") +facet_grid(.~season) +scale_colour_viridis_c(option = "magma", direction=-1) 
+    coord_sf(xlim = c(min_lon-1, max_lon+1), ylim = c(min_lat-0.5, max_lat+0.5), expand = FALSE) +theme_bw() +xlab("Longitude") +ylab("Latitude") +facet_wrap(.~season) +scale_colour_viridis_c(option = "mako", direction=-1, begin = 0,
+  end = 0.7) 
 ```
+# Abundance of Euphausia pacifica over Time
 
-```{r}
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, fig.height=20, fig.width=20}
 
 long_microscopy %>% 
   filter(., str_detect(Ohman_tax,"adult")) %>% 
@@ -113,30 +122,338 @@ adult_data %>%
   ggplot(data = world) +
    geom_sf() +
     geom_point(data=eup, aes(x = Lon_deg_r, y = Lat_deg_r,colour=log10(Count_permsq2)),alpha=0.6 ) +
-    coord_sf(xlim = c(min_lon-1, max_lon+1), ylim = c(min_lat-0.5, max_lat+0.5), expand = FALSE) +theme_bw() +xlab("Longitude") +ylab("Latitude") +facet_wrap(ID_Microscopy~year) +scale_colour_viridis_c(option = "magma", direction=-1) 
+    coord_sf(xlim = c(min_lon-1, max_lon+1), ylim = c(min_lat-0.5, max_lat+0.5), expand = FALSE) +theme_bw() +xlab("Longitude") +ylab("Latitude") +facet_wrap(ID_Microscopy~year) +scale_colour_viridis_c(option = "magma", begin = 0,
+  end = 0.7) 
 ```
 
 
 
-```{r}
+# Most Detected Taxa
 
-Micoscropy_data %>% 
-  ggplot(aes(x=Date, y=log10(Count_permsq2), color=ID_Microscopy)) +geom_point() +facet_wrap(Site~.)
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE}
 
-```
-
-```{r}
-
-Micoscropy_data %>% 
-  filter(., Count_permsq2 >0) %>% 
+long_microscopy %>% 
+  filter(., Count_permsq2 > 0) %>% 
   ungroup() %>% 
   count(ID_Microscopy) %>% 
   arrange(desc(`n`)) %>% 
-  filter(., n> 10) -> abundant_species
+  filter(., n> 1000) -> abundant_species
   
-  
-Micoscropy_data %>% 
-  filter(., ID_Microscopy %in% abundant_species$ID_Microscopy) %>% 
-  ggplot(aes(x=Date, y=log10(Count_permsq2), color=ID_Microscopy)) +geom_point() +facet_wrap(Site~.)
+abundant_species  
 
-```c
+```
+
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, include=FALSE}
+
+bottle_data <- read.csv(here("data","CalCOFI_Database_194903-202105_csv","194903-202105_Bottle.csv"), header = T,check.names = F)
+cast_data <- read.csv(here("data","CalCOFI_Database_194903-202105_csv","194903-202105_Cast.csv"), header = T,check.names = F)
+
+cast_data %>% 
+  left_join(bottle_data, relationship="many-to-many") -> cast_bottle
+
+cast_bottle %>% 
+  mutate(., Station = as.double(Rpt_Sta),
+         Line = as.double(Rpt_Line),
+         year=Year) %>% 
+       mutate(., Date = as.Date(Date, "%m/%d/%Y"),
+              year= year(Date),
+        month= month(Date),
+        season = case_when(month < 3 ~"Winter",
+                           month < 6 ~"Spring",
+                           month < 9 ~"Summer",
+                           month < 12 ~"Fall",
+                           TRUE ~"Winter")) %>% 
+ mutate(., site= str_c(Line,"_",Station),
+         year_site = str_c(year,":",Line,"_",Station),
+         year_season_site = str_c(year,":",season,":",Line,"_",Station)) -> cast_bottle_fixed
+
+adult_data %>% 
+  dplyr::select(year_season_site) %>% 
+  left_join(cast_bottle_fixed, by=c("year_season_site")) %>% 
+  dplyr::select(year_season_site,Date,year, Line, Station, season) %>% 
+  filter(., is.na(year)) %>%  distinct() -> missing_data
+
+adult_data %>% 
+  filter(., year_season_site %in% missing_data$year_season_site) %>% 
+    dplyr::select(year_season_site,Date,year, site,Line, Station, season) -> problem_station_IDs
+
+```
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE}
+
+cast_bottle_fixed %>% 
+  mutate(., Depthm=as.numeric(Depthm)) %>% 
+  mutate(., Depth_bin = case_when(Depthm < 211 ~"Upper_210",
+                                  Depthm < 501 ~"210_500",
+                                  TRUE ~"Deeper_500")) %>% 
+  group_by(year_season_site, year, season, site,Depth_bin) %>% 
+  dplyr::summarise(mean_temp = mean(T_degC,na.rm = TRUE),mean_sal = mean(Salnty,na.rm = TRUE),mean_O2ml_L = mean(O2ml_L,na.rm = TRUE),mean_O2Sat = mean(O2Sat,na.rm = TRUE)) -> mean_bottle_Data
+  
+
+
+adult_data %>% 
+  left_join(mean_bottle_Data, by=c("year_season_site"), relationship="many-to-many") %>% 
+  filter(., !is.na(year)) %>% 
+  filter(., ID_Microscopy %in% abundant_species$ID_Microscopy) -> adult_data_chem
+
+
+```
+
+
+# Abundance
+
+## Temperature
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE, message=FALSE, fig.width=12, fig.height=12}
+
+my.formula <- y ~ x
+library(ggpmisc)
+
+
+suppressWarnings({ 
+ # Code that generates warning messages 
+adult_data_chem %>% 
+  filter(., Depth_bin =="Upper_210" ) %>% 
+  ggplot(aes(y=log10(Count_permsq2+1), x=mean_temp)) + geom_point() +facet_wrap(ID_Microscopy~., scales = "free") +   geom_smooth(method = "lm") + stat_poly_eq(formula = my.formula,                                                                                                        aes(label = paste0("atop(", ..eq.label.., ",", ..rr.label.. , ")")),
+                                                                                                                                size = 2.5, label.x.npc = "right" ,rr.digits = 2,coef.digits = 3,p.digits=2, label.y.npc = 0.9,
+                                                                                                                                 parse = TRUE) +
+   stat_poly_eq(formula = my.formula,                                                                                                        aes(label = paste0(..p.value.label..)), size = 2.5, label.x.npc = 0.84 ,rr.digits = 2,coef.digits = 3,p.digits=2, label.y.npc = 0.7,
+                                                                                                                                 parse = TRUE)+xlab("Average Temperature Upper 210m") + ylab("log10(Count per m^2+1)") 
+
+}) 
+```
+
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, fig.width=20, fig.height=12}
+
+suppressWarnings({ 
+ # Code that generates warning messages 
+adult_data_chem %>% 
+  mutate(., PA = if_else(Count_permsq2 >0,1,0)) %>% 
+  filter(., Depth_bin =="Upper_210" ) %>% 
+  ggplot(aes(y=PA, x=mean_temp)) + geom_point(alpha=0.4) +facet_wrap(ID_Microscopy~., scales = "free") +   geom_smooth(
+    method="glm",
+    method.args=list(family="binomial"),
+  ) +
+  stat_poly_eq(use_label(c("adj.R2", "p")),label.y.npc = 0.7) +xlab("Average Temperature Upper 210m") + ylab("Presence/Absence")
+}) 
+```
+
+
+
+## Oxygen
+
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, fig.width=12, fig.height=12}
+
+suppressWarnings({ 
+ # Code that generates warning messages 
+adult_data_chem %>% 
+  filter(., Depth_bin =="Upper_210" ) %>% 
+  ggplot(aes(y=log10(Count_permsq2+1), x=mean_O2ml_L)) + geom_point() +facet_wrap(ID_Microscopy~., scales = "free") +   geom_smooth(method = "lm") + stat_poly_eq(formula = my.formula,                                                                                                        aes(label = paste0("atop(", ..eq.label.., ",", ..rr.label.. , ")")),
+                                                                                                                                size = 2.5, label.x.npc = "right" ,rr.digits = 2,coef.digits = 3,p.digits=2, label.y.npc = 0.9,
+                                                                                                                                 parse = TRUE) +
+   stat_poly_eq(formula = my.formula,                                                                                                        aes(label = paste0(..p.value.label..)), size = 2.5, label.x.npc = 0.84 ,rr.digits = 2,coef.digits = 3,p.digits=2, label.y.npc = 0.7,
+                                                                                                                                 parse = TRUE)+xlab("Average O2ml_L Upper 210m") + ylab("log10(Count per m^2+1)") 
+
+}) 
+```
+
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, fig.width=12, fig.height=12}
+
+
+suppressWarnings({ 
+ # Code that generates warning messages 
+adult_data_chem %>% 
+  mutate(., PA = if_else(Count_permsq2 >0,1,0)) %>% 
+  filter(., Depth_bin =="Upper_210" ) %>% 
+  ggplot(aes(y=PA, x=mean_O2ml_L)) + geom_point(alpha=0.4) +facet_wrap(ID_Microscopy~., scales = "free") +   geom_smooth(
+    method="glm",
+    method.args=list(family="binomial"),
+  ) +
+  stat_poly_eq(use_label(c("adj.R2", "p")),label.y.npc = 0.7) +xlab("Average O2ml_L Upper 210m") + ylab("Presence/Absence")
+}) 
+```
+# Abundance Temp + O2 Envelope
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, fig.width=12, fig.height=12}
+
+suppressWarnings({ 
+ # Code that generates warning messages 
+adult_data_chem %>% 
+    mutate(., PA = if_else(Count_permsq2 >0,1,0)) %>% 
+  filter(., PA >0) %>% 
+  filter(., Depth_bin =="Upper_210" ) %>% 
+  ggplot(aes(y=mean_temp, x=mean_O2ml_L, color=log10(Count_permsq2))) + geom_point(alpha=0.4) +facet_wrap(ID_Microscopy~.) +ylab("Average Temperature Upper 210m") + xlab("Average O2ml_L Upper 210m")+theme_pubclean() +scale_color_viridis_c( option="inferno") + ggtitle("Abundance")
+
+}) 
+```
+
+## Detection Temp + O2 Envelope
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, fig.width=20, fig.height=20}
+
+
+suppressWarnings({ 
+ # Code that generates warning messages 
+adult_data_chem %>% 
+  mutate(., PA = if_else(Count_permsq2 >0,1,0)) %>% 
+  filter(., PA >0) %>% 
+  filter(., Depth_bin =="Upper_210" ) %>% 
+  ggplot(aes(y=mean_temp, x=mean_O2ml_L)) + geom_point(alpha=0.4) +facet_wrap(ID_Microscopy~.) +ylab("Average Temperature Upper 210m") + xlab("Average O2ml_L Upper 210m")+theme_pubclean() + ggtitle("Presence")
+})
+```
+
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, fig.width=12, fig.height=12}
+
+suppressWarnings({ 
+ # Code that generates warning messages 
+adult_data_chem %>% 
+  mutate(., PA = if_else(Count_permsq2 >0,1,0)) %>% 
+  filter(., PA >0) %>% 
+  filter(., ID_Microscopy %in% c("Stylocheiron affine","Euphausia pacifica","Thysanoessa spinifera","Euphausia gibboides")) %>%
+  filter(., Depth_bin =="Upper_210" ) %>% 
+  ggplot(aes(y=mean_temp, x=mean_O2ml_L, color=ID_Microscopy)) + geom_point(alpha=0.8) +ylab("Average Temperature Upper 210m") + xlab("Average O2ml_L Upper 210m") +theme_pubclean() +scale_color_manual(values = c("black","dodgerblue","yellow","tomato")) + ggtitle("Presence")
+})
+```
+# Site - Binomial vs. SST
+
+## Binomial | Station Run models
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE}
+library(lme4)
+adult_data_chem %>% 
+  mutate(., PA = if_else(Count_permsq2 >0,1,0)) %>% 
+  filter(., Depth_bin =="Upper_210" ) %>% 
+  filter(., !is.na(mean_temp)) %>% 
+  filter(., !is.na(mean_O2ml_L))-> pa_adult_data
+
+
+model1 <- glmer(PA ~ (1|ID_Microscopy)+mean_temp*mean_O2ml_L, data=pa_adult_data, family="binomial")
+summary(model1)
+```
+
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, include=FALSE}
+test_nest_a <- pa_adult_data %>% group_by(ID_Microscopy) %>% nest()
+
+library(rstanarm)
+model_holder <- tibble(test_nest_a$ID_Microscopy)
+model_holder$model <- list(0)
+
+for (i in 1:nrow(model_holder)) {
+print(i)
+model_holder$model[[i]] <-
+stan_glm(
+PA ~ 0 + (1 + mean_temp ),
+family = "binomial",
+data = test_nest_a$data[[i]],
+prior = normal(0, 4),
+
+prior_intercept = normal(0, 10),
+#adapt_delta = 0.99,
+chains = 2,
+iter = 1000
+)
+}
+
+
+
+```
+
+
+### Look at the models
+
+Example Euphausia pacifica
+
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, fig.width=12, fig.height=12}
+focalTaxon = "Euphausia pacifica"
+idx = which(test_nest_a$ID_Microscopy == focalTaxon)
+
+test_nest_a$data[[idx]] %>%
+ggplot(aes(y = PA, x = mean_temp)) +
+geom_point(color = "black") +
+#geom_smooth(method = "glm", method.args = list(family = "binomial"), se = F) +
+geom_point(
+aes(y = model_holder$model[[idx]]$fitted.values, x = mean_temp),
+alpha = .5,
+color = "red"
+) +
+geom_smooth(
+aes(y = model_holder$model[[idx]]$fitted.values, x = mean_temp),
+method = "glm",
+method.args = list(family = "binomial"),
+se = F,
+size = 0.5,
+color = "red"
+) 
+
+library(modelr)
+library(tidybayes)
+test_nest_a$data[[idx]] %>%
+  data_grid(mean_temp = seq_range(mean_temp, n = 51),mean_O2ml_L = seq_range(mean_O2ml_L, n = 51) ) %>%
+    mutate(., ID_Microscopy=focalTaxon) %>% 
+  add_fitted_draws(model_holder$model[[3]]) %>%
+  ggplot(aes(x = mean_temp , y = PA)) +
+  stat_lineribbon(aes(y = .value), color="darkred") +
+  geom_point(data = test_nest_a$data[[idx]], color = "darkred") +
+  scale_fill_brewer(palette = "Reds") +
+  scale_color_brewer(palette = "Set2") +
+  theme(axis.text.x = element_text(size=14), 
+        panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.y=element_text(size=14, angle=0), 
+          axis.title.x=element_text(size=18, angle=0,face="bold"), 
+          axis.title.y=element_text(size=18, angle=90,face="bold"),
+          strip.background = element_rect(fill='grey90'), 
+          strip.text.x=element_text(size=15),
+          legend.text=element_text(size=10),
+          legend.title=element_text(size=15),
+          axis.line=element_line(colour='black'))	+ xlab("SST ˚C") + ylab("Occurrence") + labs(fill='Confidence Interval') +
+  facet_wrap(.~ID_Microscopy) -> T_mex_binomial_fig
+
+
+
+
+
+```
+
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, include=FALSE}
+i=1
+color_palette_krill <- c("darkred","navy","darkgreen","gold2","darkorchid4","darkorange3","darkcyan","dodgerblue4","forestgreen","tomato3","black","deeppink3")
+
+color_palette_fill <- c("Reds","Blues","Greens","Oranges","BuPu","Oranges","BuGn","PuBu","Greens","OrRd","Greys","PuRd")
+i
+
+for (i in 1:nrow(model_holder)) {
+  
+focalTaxon =test_nest_a$ID_Microscopy[i]
+
+model_holder$plot[[i]] <- test_nest_a$data[[i]] %>%
+  data_grid(mean_temp = seq_range(mean_temp, n = 51),mean_O2ml_L = seq_range(mean_O2ml_L, n = 51) ) %>%
+    mutate(., ID_Microscopy=focalTaxon) %>% 
+  add_fitted_draws(model_holder$model[[i]]) %>%
+  ggplot(aes(x = mean_temp , y = PA)) +
+  stat_lineribbon(aes(y = .value), color=color_palette_krill[i]) +
+  geom_point(data = test_nest_a$data[[i]], color = color_palette_krill[i]) +
+  scale_fill_brewer(palette = color_palette_fill[i]) +
+  scale_color_brewer(palette = "Set2") +
+  theme(axis.text.x = element_text(size=14), 
+        panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.y=element_text(size=14, angle=0), 
+          axis.title.x=element_text(size=18, angle=0,face="bold"), 
+          axis.title.y=element_text(size=18, angle=90,face="bold"),
+          strip.background = element_rect(fill='grey90'), 
+          strip.text.x=element_text(size=15),
+          legend.text=element_text(size=10),
+          legend.title=element_text(size=15),
+          axis.line=element_line(colour='black'))	+ xlab("Average Temperature Upper 210m") + ylab("Occurrence") + labs(fill='Confidence Interval') +
+  facet_wrap(.~ID_Microscopy) 
+
+}
+```
+
+
+```{r, fig.width=20, fig.height=20,  echo=FALSE, hide=TRUE}
+
+model_holder$plot[[1]] +model_holder$plot[[2]] +model_holder$plot[[3]] +model_holder$plot[[4]] + model_holder$plot[[5]] +model_holder$plot[[6]] +model_holder$plot[[7]] +model_holder$plot[[8]] +model_holder$plot[[9]] +model_holder$plot[[10]] +model_holder$plot[[11]] +model_holder$plot[[12]] + plot_layout(guides = "collect")
+
+```
+
+
+
