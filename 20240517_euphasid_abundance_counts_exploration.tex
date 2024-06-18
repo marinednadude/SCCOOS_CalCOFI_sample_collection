@@ -1,0 +1,260 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{lmodern}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same} % disable monospaced font for URLs
+\hypersetup{
+  pdftitle={Species Index Mapper},
+  pdfauthor={Zack Gold},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Species Index Mapper}
+\author{Zack Gold}
+\date{2024-05-06}
+
+\begin{document}
+\maketitle
+
+\hypertarget{map-of-samples}{%
+\section{Map of Samples}\label{map-of-samples}}
+
+\includegraphics{20240517_euphasid_abundance_counts_exploration_files/figure-latex/unnamed-chunk-4-1.pdf}
+\# Abundance of Euphausia pacifica over Time
+
+\includegraphics{20240517_euphasid_abundance_counts_exploration_files/figure-latex/unnamed-chunk-5-1.pdf}
+
+\hypertarget{most-detected-taxa}{%
+\section{Most Detected Taxa}\label{most-detected-taxa}}
+
+\begin{verbatim}
+## # A tibble: 12 x 2
+##    ID_Microscopy               n
+##    <chr>                   <int>
+##  1 Euphausia pacifica      21182
+##  2 Nematoscelis difficilis 20967
+##  3 Thysanoessa gregaria    12294
+##  4 Nyctiphanes simplex     10117
+##  5 Stylocheiron longicorne  7717
+##  6 Euphausia recurva        6338
+##  7 Euphausia gibboides      4430
+##  8 Stylocheiron affine      4392
+##  9 Thysanoessa spinifera    3579
+## 10 Stylocheiron maximum     2567
+## 11 Euphausia eximia         1311
+## 12 Nematobrachion flexipes  1179
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: There was 1 warning in `filter()`.
+## i In argument: `!is.na(year)`.
+## Caused by warning in `is.na()`:
+## ! is.na() applied to non-(list or vector) of type 'closure'
+\end{verbatim}
+
+\hypertarget{abundance}{%
+\section{Abundance}\label{abundance}}
+
+\hypertarget{temperature}{%
+\subsection{Temperature}\label{temperature}}
+
+\begin{verbatim}
+## Warning: The dot-dot notation (`..eq.label..`) was deprecated in ggplot2 3.4.0.
+## i Please use `after_stat(eq.label)` instead.
+## This warning is displayed once every 8 hours.
+## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
+## generated.
+\end{verbatim}
+
+\includegraphics{20240517_euphasid_abundance_counts_exploration_files/figure-latex/unnamed-chunk-9-1.pdf}
+
+\includegraphics{20240517_euphasid_abundance_counts_exploration_files/figure-latex/unnamed-chunk-10-1.pdf}
+
+\hypertarget{oxygen}{%
+\subsection{Oxygen}\label{oxygen}}
+
+\begin{verbatim}
+## Warning: Removed 792 rows containing non-finite values (`stat_smooth()`).
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 792 rows containing non-finite values (`stat_poly_eq()`).
+## Removed 792 rows containing non-finite values (`stat_poly_eq()`).
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 792 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\includegraphics{20240517_euphasid_abundance_counts_exploration_files/figure-latex/unnamed-chunk-11-1.pdf}
+
+\begin{verbatim}
+## Warning: Removed 792 rows containing non-finite values (`stat_smooth()`).
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 792 rows containing non-finite values (`stat_poly_eq()`).
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 792 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\includegraphics{20240517_euphasid_abundance_counts_exploration_files/figure-latex/unnamed-chunk-12-1.pdf}
+\# Abundance Temp + O2 Envelope
+
+\begin{verbatim}
+## Warning: Removed 134 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\includegraphics{20240517_euphasid_abundance_counts_exploration_files/figure-latex/unnamed-chunk-13-1.pdf}
+
+\hypertarget{detection-temp-o2-envelope}{%
+\subsection{Detection Temp + O2
+Envelope}\label{detection-temp-o2-envelope}}
+
+\begin{verbatim}
+## Warning: Removed 134 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\includegraphics{20240517_euphasid_abundance_counts_exploration_files/figure-latex/unnamed-chunk-14-1.pdf}
+
+\begin{verbatim}
+## Warning: Removed 57 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\includegraphics{20240517_euphasid_abundance_counts_exploration_files/figure-latex/unnamed-chunk-15-1.pdf}
+\# Site - Binomial vs.~SST
+
+\hypertarget{binomial-station-run-models}{%
+\subsection{Binomial \textbar{} Station Run
+models}\label{binomial-station-run-models}}
+
+\begin{verbatim}
+## Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, :
+## Model failed to converge with max|grad| = 0.00455353 (tol = 0.002, component 1)
+\end{verbatim}
+
+\begin{verbatim}
+## Generalized linear mixed model fit by maximum likelihood (Laplace
+##   Approximation) [glmerMod]
+##  Family: binomial  ( logit )
+## Formula: PA ~ (1 | ID_Microscopy) + mean_temp * mean_O2ml_L
+##    Data: pa_adult_data
+## 
+##      AIC      BIC   logLik deviance df.resid 
+##  18626.3  18666.5  -9308.2  18616.3    22711 
+## 
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -1.2370 -0.5766 -0.2175 -0.0823 12.9409 
+## 
+## Random effects:
+##  Groups        Name        Variance Std.Dev.
+##  ID_Microscopy (Intercept) 3.147    1.774   
+## Number of obs: 22716, groups:  ID_Microscopy, 12
+## 
+## Fixed effects:
+##                        Estimate Std. Error z value Pr(>|z|)    
+## (Intercept)           -11.19166    1.30134  -8.600  < 2e-16 ***
+## mean_temp               0.82952    0.10671   7.774 7.63e-15 ***
+## mean_O2ml_L             1.89486    0.25002   7.579 3.49e-14 ***
+## mean_temp:mean_O2ml_L  -0.17096    0.02177  -7.851 4.12e-15 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Correlation of Fixed Effects:
+##             (Intr) mn_tmp m_O2_L
+## mean_temp   -0.912              
+## mean_O2ml_L -0.902  0.959       
+## mn_tm:_O2_L  0.908 -0.983 -0.990
+## optimizer (Nelder_Mead) convergence code: 0 (OK)
+## Model failed to converge with max|grad| = 0.00455353 (tol = 0.002, component 1)
+\end{verbatim}
+
+\hypertarget{look-at-the-models}{%
+\subsubsection{Look at the models}\label{look-at-the-models}}
+
+Example Euphausia pacifica
+
+\begin{verbatim}
+## Warning: Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0.
+## i Please use `linewidth` instead.
+## This warning is displayed once every 8 hours.
+## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
+## generated.
+\end{verbatim}
+
+\begin{verbatim}
+## Warning in eval(family$initialize): non-integer #successes in a binomial glm!
+\end{verbatim}
+
+\includegraphics{20240517_euphasid_abundance_counts_exploration_files/figure-latex/unnamed-chunk-18-1.pdf}
+
+\begin{verbatim}
+## Warning: `fitted_draws` and `add_fitted_draws` are deprecated as their names were confusing.
+## - Use [add_]epred_draws() to get the expectation of the posterior predictive.
+## - Use [add_]linpred_draws() to get the distribution of the linear predictor.
+## - For example, you used [add_]fitted_draws(..., scale = "response"), which
+##   means you most likely want [add_]epred_draws(...).
+## NOTE: When updating to the new functions, note that the `model` parameter is now
+##   named `object` and the `n` parameter is now named `ndraws`.
+\end{verbatim}
+
+\includegraphics{20240517_euphasid_abundance_counts_exploration_files/figure-latex/unnamed-chunk-20-1.pdf}
+
+\end{document}
