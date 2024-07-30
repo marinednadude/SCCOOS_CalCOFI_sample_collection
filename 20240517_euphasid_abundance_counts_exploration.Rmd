@@ -8,6 +8,7 @@ output:
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
 
 ```
 
@@ -20,6 +21,7 @@ library("rnaturalearthdata")
 library(sf)
 library(ggpubr)
 library(patchwork)
+library(knitr)
 
 world <- ne_countries(scale = "medium", returnclass = "sf")
 
@@ -72,7 +74,9 @@ BTEDB %>%
   filter(., Lat_deg_r < 40) %>% 
   filter(., Longitude < -110)-> long_microscopy
 ```
+
 # Map of Samples
+
 ```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE}
 
 long_microscopy %>% 
@@ -102,8 +106,19 @@ group_by_site_all %>%
    geom_sf() +
     geom_point(data=group_by_site_all, aes(x = Lon_deg_r, y = Lat_deg_r, size=n,colour=n),alpha=0.6 ) +
     coord_sf(xlim = c(min_lon-1, max_lon+1), ylim = c(min_lat-0.5, max_lat+0.5), expand = FALSE) +theme_bw() +xlab("Longitude") +ylab("Latitude") +facet_wrap(.~season) +scale_colour_viridis_c(option = "mako", direction=-1, begin = 0,
-  end = 0.7) 
+  end = 0.7) + theme(plot.title = element_text(hjust = 0.5,size = 20, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5,size = 18, face = "bold"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.text=element_text(size=12), 
+        strip.text = element_text(size=16, face="bold"), 
+        axis.title=element_text(size=16,face="bold"),
+        legend.title = element_text( size=16, face="bold"),
+        legend.text = element_text(size=14)
+        )
 ```
+
 # Abundance of Euphausia pacifica over Time
 
 ```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, fig.height=20, fig.width=20}
@@ -125,9 +140,22 @@ adult_data %>%
    geom_sf() +
     geom_point(data=eup, aes(x = Lon_deg_r, y = Lat_deg_r,colour=log10(Count_permsq2)),alpha=0.6 ) +
     coord_sf(xlim = c(min_lon-1, max_lon+1), ylim = c(min_lat-0.5, max_lat+0.5), expand = FALSE) +theme_bw() +xlab("Longitude") +ylab("Latitude") +facet_wrap(ID_Microscopy~year) +scale_colour_viridis_c(option = "magma", begin = 0,
-  end = 0.7) 
+  end = 0.7) +theme(plot.title = element_text(hjust = 0.5,size = 20, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5,size = 18, face = "bold"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.text=element_text(size=12), 
+        strip.text = element_text(size=16, face="bold"), 
+        axis.title=element_text(size=16,face="bold"),
+        legend.title = element_text( size=16, face="bold"),
+        legend.text = element_text(size=14)
+        )
 ```
 
+<div style="page-break-after: always; visibility: hidden"> 
+\pagebreak 
+</div>
 
 
 # Most Detected Taxa
@@ -141,9 +169,12 @@ long_microscopy %>%
   arrange(desc(`n`)) %>% 
   filter(., n> 1000) -> abundant_species
   
-abundant_species  
+abundant_species  %>% kable()
 
 ```
+<div style="page-break-after: always; visibility: hidden"> 
+\pagebreak 
+</div>
 
 ```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, include=FALSE}
 
@@ -204,6 +235,7 @@ adult_data %>%
 # Abundance
 
 ## Temperature
+
 ```{r, echo=FALSE, hide=TRUE, warnings=FALSE, message=FALSE, fig.width=12, fig.height=12}
 
 my.formula <- y ~ x
@@ -218,10 +250,23 @@ adult_data_chem %>%
                                                                                                                                 size = 2.5, label.x.npc = "right" ,rr.digits = 2,coef.digits = 3,p.digits=2, label.y.npc = 0.9,
                                                                                                                                  parse = TRUE) +
    stat_poly_eq(formula = my.formula,                                                                                                        aes(label = paste0(..p.value.label..)), size = 2.5, label.x.npc = 0.84 ,rr.digits = 2,coef.digits = 3,p.digits=2, label.y.npc = 0.7,
-                                                                                                                                 parse = TRUE)+xlab("Average Temperature Upper 210m") + ylab("log10(Count per m^2+1)") 
+                                                                                                                                 parse = TRUE)+xlab("Average Temperature Upper 210m") + ylab("log10(Count per m^2+1)") +theme(plot.title = element_text(size = 20, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5,size = 18, face = "bold"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.text=element_text(size=12), 
+        strip.text = element_text(size=16, face="bold"), 
+        axis.title=element_text(size=16,face="bold"),
+        legend.title = element_text( size=16, face="bold"),
+        legend.text = element_text(size=14)
+        ) 
 
 }) 
 ```
+<div style="page-break-after: always; visibility: hidden"> 
+\pagebreak 
+</div>
 
 ```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, fig.width=20, fig.height=12}
 
@@ -234,10 +279,24 @@ adult_data_chem %>%
     method="glm",
     method.args=list(family="binomial"),
   ) +
-  stat_poly_eq(use_label(c("adj.R2", "p")),label.y.npc = 0.7) +xlab("Average Temperature Upper 210m") + ylab("Presence/Absence")
+  stat_poly_eq(use_label(c("adj.R2", "p")),label.y.npc = 0.7) +xlab("Average Temperature Upper 210m") + ylab("Presence/Absence")+theme(plot.title = element_text(size = 20, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5,size = 18, face = "bold"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.text=element_text(size=12), 
+        strip.text = element_text(size=16, face="bold"), 
+        axis.title=element_text(size=16,face="bold"),
+        legend.title = element_text( size=16, face="bold"),
+        legend.text = element_text(size=14)
+        ) 
 }) 
 ```
 
+
+<div style="page-break-after: always; visibility: hidden"> 
+\pagebreak 
+</div>
 
 
 ## Oxygen
@@ -252,7 +311,17 @@ adult_data_chem %>%
                                                                                                                                 size = 2.5, label.x.npc = "right" ,rr.digits = 2,coef.digits = 3,p.digits=2, label.y.npc = 0.9,
                                                                                                                                  parse = TRUE) +
    stat_poly_eq(formula = my.formula,                                                                                                        aes(label = paste0(..p.value.label..)), size = 2.5, label.x.npc = 0.84 ,rr.digits = 2,coef.digits = 3,p.digits=2, label.y.npc = 0.7,
-                                                                                                                                 parse = TRUE)+xlab("Average O2ml_L Upper 210m") + ylab("log10(Count per m^2+1)") 
+                                                                                                                                 parse = TRUE)+xlab("Average O2ml_L Upper 210m") + ylab("log10(Count per m^2+1)") +theme(plot.title = element_text(size = 20, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5,size = 18, face = "bold"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.text=element_text(size=12), 
+        strip.text = element_text(size=16, face="bold"), 
+        axis.title=element_text(size=16,face="bold"),
+        legend.title = element_text( size=16, face="bold"),
+        legend.text = element_text(size=14)
+        ) 
 
 }) 
 ```
@@ -269,9 +338,24 @@ adult_data_chem %>%
     method="glm",
     method.args=list(family="binomial"),
   ) +
-  stat_poly_eq(use_label(c("adj.R2", "p")),label.y.npc = 0.7) +xlab("Average O2ml_L Upper 210m") + ylab("Presence/Absence")
+  stat_poly_eq(use_label(c("adj.R2", "p")),label.y.npc = 0.7) +xlab("Average O2ml_L Upper 210m") + ylab("Presence/Absence")+theme(plot.title = element_text(size = 20, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5,size = 18, face = "bold"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.text=element_text(size=12), 
+        strip.text = element_text(size=16, face="bold"), 
+        axis.title=element_text(size=16,face="bold"),
+        legend.title = element_text( size=16, face="bold"),
+        legend.text = element_text(size=14)
+        ) 
 }) 
 ```
+<div style="page-break-after: always; visibility: hidden"> 
+\pagebreak 
+</div>
+
+
 # Abundance Temp + O2 Envelope
 ```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, fig.width=12, fig.height=12}
 
@@ -281,7 +365,17 @@ adult_data_chem %>%
     mutate(., PA = if_else(Count_permsq2 >0,1,0)) %>% 
   filter(., PA >0) %>% 
   filter(., Depth_bin =="Upper_210" ) %>% 
-  ggplot(aes(y=mean_temp, x=mean_O2ml_L, color=log10(Count_permsq2))) + geom_point(alpha=0.4) +facet_wrap(ID_Microscopy~.) +ylab("Average Temperature Upper 210m") + xlab("Average O2ml_L Upper 210m")+theme_pubclean() +scale_color_viridis_c( option="inferno") + ggtitle("Abundance")
+  ggplot(aes(y=mean_temp, x=mean_O2ml_L, color=log10(Count_permsq2))) + geom_point(alpha=0.4) +facet_wrap(ID_Microscopy~.) +ylab("Average Temperature Upper 210m") + xlab("Average O2ml_L Upper 210m")+theme_pubclean() +scale_color_viridis_c( option="inferno") + ggtitle("Abundance")+theme(plot.title = element_text(size = 20, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5,size = 18, face = "bold"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.text=element_text(size=12), 
+        strip.text = element_text(size=16, face="bold"), 
+        axis.title=element_text(size=16,face="bold"),
+        legend.title = element_text( size=16, face="bold"),
+        legend.text = element_text(size=14)
+        ) 
 
 }) 
 ```
@@ -296,7 +390,17 @@ adult_data_chem %>%
   mutate(., PA = if_else(Count_permsq2 >0,1,0)) %>% 
   filter(., PA >0) %>% 
   filter(., Depth_bin =="Upper_210" ) %>% 
-  ggplot(aes(y=mean_temp, x=mean_O2ml_L)) + geom_point(alpha=0.4) +facet_wrap(ID_Microscopy~.) +ylab("Average Temperature Upper 210m") + xlab("Average O2ml_L Upper 210m")+theme_pubclean() + ggtitle("Presence")
+  ggplot(aes(y=mean_temp, x=mean_O2ml_L)) + geom_point(alpha=0.4) +facet_wrap(ID_Microscopy~.) +ylab("Average Temperature Upper 210m") + xlab("Average O2ml_L Upper 210m")+theme_pubclean() + ggtitle("Presence")+theme(plot.title = element_text(size = 20, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5,size = 18, face = "bold"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.text=element_text(size=12), 
+        strip.text = element_text(size=16, face="bold"), 
+        axis.title=element_text(size=16,face="bold"),
+        legend.title = element_text( size=16, face="bold"),
+        legend.text = element_text(size=14)
+        ) 
 })
 ```
 
@@ -309,9 +413,23 @@ adult_data_chem %>%
   filter(., PA >0) %>% 
   filter(., ID_Microscopy %in% c("Stylocheiron affine","Euphausia pacifica","Thysanoessa spinifera","Euphausia gibboides")) %>%
   filter(., Depth_bin =="Upper_210" ) %>% 
-  ggplot(aes(y=mean_temp, x=mean_O2ml_L, color=ID_Microscopy)) + geom_point(alpha=0.8) +ylab("Average Temperature Upper 210m") + xlab("Average O2ml_L Upper 210m") +theme_pubclean() +scale_color_manual(values = c("black","dodgerblue","yellow","tomato")) + ggtitle("Presence")
+  ggplot(aes(y=mean_temp, x=mean_O2ml_L, color=ID_Microscopy)) + geom_point(alpha=0.8) +ylab("Average Temperature Upper 210m") + xlab("Average O2ml_L Upper 210m") +theme_pubclean() +scale_color_manual(values = c("black","dodgerblue","yellow","tomato")) + ggtitle("Presence")+theme(plot.title = element_text(size = 20, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5,size = 18, face = "bold"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.text=element_text(size=12), 
+        strip.text = element_text(size=16, face="bold"), 
+        axis.title=element_text(size=16,face="bold"),
+        legend.title = element_text( size=16, face="bold"),
+        legend.text = element_text(size=14)
+        ) 
 })
 ```
+<div style="page-break-after: always; visibility: hidden"> 
+\pagebreak 
+</div>
+
 # Site - Binomial vs. SST
 
 ## Binomial | Station Run models
@@ -325,7 +443,7 @@ adult_data_chem %>%
 
 
 model1 <- glmer(PA ~ (1|ID_Microscopy)+mean_temp*mean_O2ml_L, data=pa_adult_data, family="binomial")
-summary(model1)
+summary(model1) 
 ```
 
 ```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, include=FALSE}
@@ -405,7 +523,17 @@ test_nest_a$data[[idx]] %>%
           legend.text=element_text(size=10),
           legend.title=element_text(size=15),
           axis.line=element_line(colour='black'))	+ xlab("SST ˚C") + ylab("Occurrence") + labs(fill='Confidence Interval') +
-  facet_wrap(.~ID_Microscopy) -> T_mex_binomial_fig
+  facet_wrap(.~ID_Microscopy) +theme(plot.title = element_text(size = 20, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5,size = 18, face = "bold"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.text=element_text(size=12), 
+        strip.text = element_text(size=16, face="bold"), 
+        axis.title=element_text(size=16,face="bold"),
+        legend.title = element_text( size=16, face="bold"),
+        legend.text = element_text(size=14)
+        ) -> T_mex_binomial_fig
 
 
 

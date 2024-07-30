@@ -1,0 +1,191 @@
+---
+title: "Data Merging CalCOFI Krill + Bottles"
+author: "Zack Gold"
+date: "2024-07-30"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+
+```
+
+```{r, warning=FALSE, include=FALSE }
+library(tidyverse)
+library(here)
+library(readxl)
+library(knitr)
+
+```
+
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, include=FALSE}
+#load in the Krill taxonomy data
+
+BTEDB_tax <- read_xlsx(here("knb-lter-cce.313.1","BTEDB_tax.xlsx")) 
+
+BTEDB_tax %>% 
+  mutate(., Ohman_tax=str_remove(Ohman_tax,"_Abundance")) %>% #remove abundance tag
+  separate(Ohman_tax, into=c("Genus","species","phase","type"), sep="_") %>%  #split name into components
+  mutate(., type = replace_na(type, "")) %>%  #get rid of NAs
+  mutate(ID_Microscopy=str_c(Genus,species, sep=" "), #pull together binomial name
+         Phase=str_c(phase,type,sep="-")) %>%  #pull together phase
+  dplyr::select(ID_Microscopy, Phase)%>%  
+  distinct() -> visual_tax_names # make this distinct 
+```
+
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, include=FALSE}
+# Load in the Brinton and Townsend Euphausiid Database - CCE-LTER
+# aka krill
+BTEDB <- read.csv(here("knb-lter-cce.313.1","BTEDB_Abundances.csv"))
+
+# Pull in Ed Weber's awesome code to merge the Cast and Bottle Data
+ed_key <- read.csv(here("data","20240612_key_ed_webber.csv"))
+
+# Clean Up the Metadata
+BTEDB %>%
+  mutate(., PIC_RowNumber=RowNumber, # Clean Up Header
+        TowBegin= as.POSIXct(TowBegin, format = "%Y-%m-%d %H:%M:%S"), # Fix Times
+        TowEnd= as.POSIXct(TowEnd,  format = "%Y-%m-%d %H:%M:%S")) %>% # Fix Times
+  pivot_longer(cols=`Euphausia_brevis_adult_Abundance`:`Thysanopoda_pectinata_juvenile_Abundance`,names_to = "Ohman_tax", values_to = "Count_permsq2") %>% 
+  separate(Ohman_tax, into=c("Genus","species","phase","type"), sep="_", remove = F) %>% 
+  mutate(., type = replace_na(type, "")) %>% 
+  mutate(ID_Microscopy=str_c(Genus,species, sep=" "), 
+         Phase=str_c(phase,type,sep="-")) %>% 
+  dplyr::select(PIC_RowNumber,
+Date,
+MaxDepth,TowBegin,TowEnd,Ohman_tax,Genus,species, phase,type,Count_permsq2,ID_Microscopy,Phase
+) %>% 
+  left_join(ed_key)  %>% 
+  mutate(., Station = as.numeric(N_Station),
+        Line = N_Line) %>% 
+  filter(., N_lat > 27) %>% 
+  filter(., N_lat < 40) %>% 
+  filter(., N_lon < -110) -> long_microscopy
+  
+```
+
+
+# Abundance of Euphausia pacifica over Time
+
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, fig.height=20, fig.width=20}
+
+long_microscopy %>% 
+  filter(., str_detect(Ohman_tax,"adult")) %>% 
+  filter(., season=="Spring")-> adult_data
+
+long_microscopy %>% 
+  filter(., Count_permsq2 > 0) %>% 
+  ungroup() %>% 
+  count(ID_Microscopy) %>% 
+  arrange(desc(`n`)) %>% 
+  filter(., n> 1000) -> abundant_species
+  
+abundant_species  %>% kable()
+
+```
+<div style="page-break-after: always; visibility: hidden"> 
+\pagebreak 
+</div>
+
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, include=FALSE}
+
+bottle_data <- read.csv(here("data","CalCOFI_Database_194903-202105_csv","194903-202105_Bottle.csv"), header = T,check.names = F) #CTD bottle data
+
+cast_data <- read.csv(here("data","CalCOFI_Database_194903-202105_csv","194903-202105_Cast.csv"), header = T,check.names = F) #CTD Cast data
+
+cast_data %>% 
+  left_join(bottle_data, relationship="many-to-many") -> cast_bottle
+
+cast_bottle %>% 
+  mutate(., Station = as.double(Rpt_Sta),
+         Line = as.double(Rpt_Line),
+         year=Year) %>% 
+       mutate(., Date = as.Date(Date, "%m/%d/%Y"),
+              year= year(Date),
+        month= month(Date),
+        season = case_when(month < 3 ~"Winter",
+                           month < 6 ~"Spring",
+                           month < 9 ~"Summer",
+                           month < 12 ~"Fall",
+                           TRUE ~"Winter")) %>% 
+ mutate(., site= str_c(Line,"_",Station),
+         year_site = str_c(year,":",Line,"_",Station),
+         year_season_site = str_c(year,":",season,":",Line,"_",Station)) -> cast_bottle_fixed
+
+```
+
+# Full Merge
+```{r}
+adult_data %>% 
+  left_join(cast_bottle_fixed, by=c("Cst_Cnt"), relationship="many-to-many") %>% 
+  filter(., ID_Microscopy %in% abundant_species$ID_Microscopy) %>% 
+  select(year_season_site=year_season_site.y, year=year.y, season=season.y, site=site.y, ID_Microscopy,Count_permsq2,T_degC, O2ml_L,O2Sat,Depthm, Lat_Dec,Lon_Dec)-> adult_data_chem_full
+
+
+```
+
+# Average Merge
+
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE}
+
+# I need to figure out how to better interpolate the point data to derive metrics of habitat compression to make a weighted regression of metrics
+# However, as a first pass here is just the average (not weighted) of measured variables. This is a bad way to do this, but it is an easy way to do this.
+
+cast_bottle_fixed %>% 
+  mutate(., Depthm=as.numeric(Depthm)) %>% 
+  mutate(., Depth_bin = case_when(Depthm < 211 ~"Upper_210",
+                                  Depthm < 501 ~"210_500",
+                                  TRUE ~"Deeper_500")) %>% 
+  group_by(year_season_site, year, season, site,Depth_bin) %>% 
+  dplyr::summarise(mean_temp = mean(T_degC,na.rm = TRUE),mean_sal = mean(Salnty,na.rm = TRUE),mean_O2ml_L = mean(O2ml_L,na.rm = TRUE),mean_O2Sat = mean(O2Sat,na.rm = TRUE)) -> mean_bottle_Data
+
+# This is the long format data, not
+adult_data %>% 
+  left_join(cast_bottle_fixed, by=c("Cst_Cnt"), relationship="many-to-many") %>% 
+  filter(., ID_Microscopy %in% abundant_species$ID_Microscopy) %>% 
+  mutate(., Depthm=as.numeric(Depthm)) %>% 
+  mutate(., Depth_bin = case_when(Depthm < 211 ~"Upper_210",
+                                  Depthm < 501 ~"210_500",
+                                  TRUE ~"Deeper_500")) %>% 
+  group_by(year_season_site=year_season_site.y, year=year.y, season=season.y, site=site.y,Depth_bin, ID_Microscopy,Count_permsq2) %>% 
+  dplyr::summarise(mean_temp = mean(T_degC,na.rm = TRUE),mean_sal = mean(Salnty,na.rm = TRUE),mean_O2ml_L = mean(O2ml_L,na.rm = TRUE),mean_O2Sat = mean(O2Sat,na.rm = TRUE), Count_permsq2=mean(Count_permsq2))-> adult_data_chem
+  
+```
+
+
+
+# Abundance
+
+## Temperature
+
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE, message=FALSE, fig.width=12, fig.height=12}
+
+my.formula <- y ~ x
+
+
+suppressWarnings({ 
+ # Code that generates warning messages 
+adult_data_chem %>% 
+  filter(., Depth_bin =="Upper_210" ) %>% 
+  ggplot(aes(y=log10(Count_permsq2+1), x=mean_temp)) + geom_point() +facet_wrap(ID_Microscopy~., scales = "free") +   geom_smooth(method = "lm") + stat_poly_eq(formula = my.formula,                                                                                                        aes(label = paste0("atop(", ..eq.label.., ",", ..rr.label.. , ")")),
+                                                                                                                                size = 2.5, label.x.npc = "right" ,rr.digits = 2,coef.digits = 3,p.digits=2, label.y.npc = 0.9,
+                                                                                                                                 parse = TRUE) +
+   stat_poly_eq(formula = my.formula,                                                                                                        aes(label = paste0(..p.value.label..)), size = 2.5, label.x.npc = 0.84 ,rr.digits = 2,coef.digits = 3,p.digits=2, label.y.npc = 0.7,
+                                                                                                                                 parse = TRUE)+xlab("Average Temperature Upper 210m") + ylab("log10(Count per m^2+1)") +theme(plot.title = element_text(size = 20, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5,size = 18, face = "bold"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.text=element_text(size=12), 
+        strip.text = element_text(size=16, face="bold"), 
+        axis.title=element_text(size=16,face="bold"),
+        legend.title = element_text( size=16, face="bold"),
+        legend.text = element_text(size=14)
+        ) 
+
+}) 
+```
+
+
+
