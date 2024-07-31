@@ -52,59 +52,725 @@ library(RColorBrewer)
 library(gganimate)
 library(posterior)
 library(distributional)
+library(zoo)
+library(cmocean)
+
 
 world <- ne_countries(scale = "medium", returnclass = "sf")
 
 ```
 
-```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, include=FALSE}
 
-BTEDB_tax <- read_xlsx(here("knb-lter-cce.313.1","BTEDB_tax.xlsx"))
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, include=FALSE}
+#load in the Krill taxonomy data
+
+BTEDB_tax <- read_xlsx(here("knb-lter-cce.313.1","BTEDB_tax.xlsx")) 
 
 BTEDB_tax %>% 
-  mutate(., Ohman_tax=str_remove(Ohman_tax,"_Abundance")) %>% 
-  separate(Ohman_tax, into=c("Genus","species","phase","type"), sep="_") %>% 
-  mutate(., type = replace_na(type, "")) %>% 
-  mutate(ID_Microscopy=str_c(Genus,species, sep=" "), 
-         Phase=str_c(phase,type,sep="-")) %>% 
-  dplyr::select(ID_Microscopy, Phase) %>%  distinct() -> visual_tax_names
-
-ed_key
-  
+  mutate(., Ohman_tax=str_remove(Ohman_tax,"_Abundance")) %>% #remove abundance tag
+  separate(Ohman_tax, into=c("Genus","species","phase","type"), sep="_") %>%  #split name into components
+  mutate(., type = replace_na(type, "")) %>%  #get rid of NAs
+  mutate(ID_Microscopy=str_c(Genus,species, sep=" "), #pull together binomial name
+         Phase=str_c(phase,type,sep="-")) %>%  #pull together phase
+  dplyr::select(ID_Microscopy, Phase)%>%  
+  distinct() -> visual_tax_names # make this distinct 
 ```
 
 ```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, include=FALSE}
+# Load in the Brinton and Townsend Euphausiid Database - CCE-LTER
+# aka krill
 BTEDB <- read.csv(here("knb-lter-cce.313.1","BTEDB_Abundances.csv"))
+
+# Pull in Ed Weber's awesome code to merge the Cast and Bottle Data
 ed_key <- read.csv(here("data","20240612_key_ed_webber.csv"))
 
-
+# Clean Up the Metadata
 BTEDB %>%
-  mutate(., Date = as.Date(Date),
-         PIC_RowNumber=RowNumber,
-        TowBegin= as.POSIXct(TowBegin, format = "%Y-%m-%d %H:%M:%S"),
-        TowEnd= as.POSIXct(TowEnd,  format = "%Y-%m-%d %H:%M:%S")) %>% 
+  mutate(., PIC_RowNumber=RowNumber, # Clean Up Header
+        TowBegin= as.POSIXct(TowBegin, format = "%Y-%m-%d %H:%M:%S"), # Fix Times
+        TowEnd= as.POSIXct(TowEnd,  format = "%Y-%m-%d %H:%M:%S")) %>% # Fix Times
   pivot_longer(cols=`Euphausia_brevis_adult_Abundance`:`Thysanopoda_pectinata_juvenile_Abundance`,names_to = "Ohman_tax", values_to = "Count_permsq2") %>% 
   separate(Ohman_tax, into=c("Genus","species","phase","type"), sep="_", remove = F) %>% 
   mutate(., type = replace_na(type, "")) %>% 
   mutate(ID_Microscopy=str_c(Genus,species, sep=" "), 
          Phase=str_c(phase,type,sep="-")) %>% 
-     mutate(., year= year(Date),
-        month= month(Date), 
+  dplyr::select(PIC_RowNumber,
+Date,
+MaxDepth,TowBegin,TowEnd,Ohman_tax,Genus,species, phase,type,Count_permsq2,ID_Microscopy,Phase
+) %>% 
+  left_join(ed_key)  %>% 
+  mutate(., Station = as.numeric(N_Station),
+        Line = N_Line) %>% 
+  filter(., N_lat > 27) %>% 
+  filter(., N_lat < 40) %>% 
+  filter(., N_lon < -110) %>% 
+   mutate(., site= str_c(N_Line,"_",N_Station),
+         cruise_site = str_c(N_Cruise,":",N_Line,"_",N_Station))-> long_microscopy
+
+  
+```
+
+
+# Abundance of Euphausia pacifica over Time
+
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, fig.height=20, fig.width=20}
+
+long_microscopy %>% 
+  filter(., str_detect(Ohman_tax,"adult")) -> adult_data
+
+long_microscopy %>% 
+  filter(., Count_permsq2 > 0) %>% 
+  ungroup() %>% 
+  count(ID_Microscopy) %>% 
+  arrange(desc(`n`)) %>% 
+  filter(., n> 1000) -> abundant_species
+  
+abundant_species  %>% kable()
+
+```
+<div style="page-break-after: always; visibility: hidden"> 
+\pagebreak 
+</div>
+
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, include=FALSE}
+
+bottle_data <- read.csv(here("data","CalCOFI_Database_194903-202105_csv","194903-202105_Bottle.csv"), header = T,check.names = F) #CTD bottle data
+
+cast_data <- read.csv(here("data","CalCOFI_Database_194903-202105_csv","194903-202105_Cast.csv"), header = T,check.names = F) #CTD Cast data
+
+cast_data %>% 
+  left_join(bottle_data, relationship="many-to-many") -> cast_bottle
+
+cast_bottle %>% 
+  mutate(., Station = as.double(Rpt_Sta),
+         Line = as.double(Rpt_Line),
+         year=Year) %>% 
+       mutate(., Date = as.Date(Date, "%m/%d/%Y"),
+              year= year(Date),
+        month= month(Date),
         season = case_when(month < 3 ~"Winter",
                            month < 6 ~"Spring",
                            month < 9 ~"Summer",
                            month < 12 ~"Fall",
                            TRUE ~"Winter")) %>% 
-  left_join(ed_key)  %>% 
-  mutate(., Station = as.numeric(N_Station),
-        Line = N_Line) %>% 
-  mutate(., site= str_c(Line,"_",Station),
+ mutate(., site= str_c(Line,"_",Station),
          year_site = str_c(year,":",Line,"_",Station),
-         year_season_site = str_c(year,":",season,":",Line,"_",Station)) %>% 
-  filter(., N_lat > 27) %>% 
-  filter(., N_lat < 40) %>% 
-  filter(., N_lon < -110) -> long_microscopy
+         year_season_site = str_c(year,":",season,":",Line,"_",Station),
+         cruise_site = str_c(Cruise,":",Line,"_",Station)) -> cast_bottle_fixed
+
+adult_data %>% 
+  dplyr::select(PIC_RowNumber,Cst_Cnt,site,cruise_site) %>% 
+  distinct()
+  
 ```
+
+# Full Merge
+```{r}
+adult_data %>% 
+  left_join(cast_bottle_fixed, by=c("cruise_site"), relationship="many-to-many") %>% 
+  filter(., ID_Microscopy %in% abundant_species$ID_Microscopy) -> adult_data_chem_full
+
+
+```
+
+```{r}
+
+#O2sat already calculated for recent data so ignoring this
+#  mutate(O2meas = O2ml_L/31.9988/(STheta + 1000)*(1000^2),
+#         O2sat = gsw_O2sol_SP_pt(Salnty, T_degC), SatPct = (O2meas/O2sat)*100) %>% 
+#  relocate(c(O2meas, O2sat, SatPct), .after = O2ml_L)
+
+Cast_ID
+
+cast_bottle_fixed %>% 
+   filter(., year > 1993) -> cast_bottle_fixed_recent
+
+cast_bottle_fixed_recent %>% 
+  group_by(Cast_ID) %>% 
+  dplyr::summarise(temp_na=sum(is.na(T_degC)),
+                   sal_na=sum(is.na(Salnty)),
+                   o2_na=sum(is.na(O2ml_L)),
+                   sat_na=sum(is.na(O2Sat)),
+                          tot=n()) %>% 
+  filter(., temp_na < (tot-2) ) %>% 
+  filter(., sal_na < (tot-2) ) %>% 
+    filter(., o2_na < (tot-2) ) %>% 
+    filter(., sat_na < (tot-2) )-> casts_to_keep
+```
+
+
+```{r}
+cast_bottle_fixed_recent %>% 
+  filter(., Cast_ID %in% casts_to_keep$Cast_ID)-> cast_bottle_fixed_recent 
+
+cast_bottle_fixed_recent -> test
+
+test %>% 
+  group_by(Cst_Cnt) %>% 
+  nest() -> test_nest_cast
+
+model_holder <- tibble(test_nest_cast$Cst_Cnt)
+model_holder$Depthm_1mbin <- list(0)
+model_holder$T_degC_1mbin <- list(0)
+model_holder$Salnty_1mbin <- list(0)
+model_holder$O2ml_L_1mbin <- list(0)
+model_holder$O2Sat_1mbin <- list(0)
+
+i=1
+
+for (i in 1:nrow(model_holder)) {
+print(i)
+model_holder$Depthm_1mbin[[i]] <- approx(test_nest_cast$data[[i]]$Depthm,test_nest_cast$data[[i]]$T_degC, method="linear", xout=seq(min(test_nest_cast$data[[i]]$Depthm),max(test_nest_cast$data[[i]]$Depthm),by=1))$x
+model_holder$T_degC_1mbin[[i]] <- approx(test_nest_cast$data[[i]]$Depthm,test_nest_cast$data[[i]]$T_degC, method="linear", xout=seq(min(test_nest_cast$data[[i]]$Depthm),max(test_nest_cast$data[[i]]$Depthm),by=1))$y
+model_holder$Salnty_1mbin[[i]] <- approx(test_nest_cast$data[[i]]$Depthm,test_nest_cast$data[[i]]$Salnty, method="linear", xout=seq(min(test_nest_cast$data[[i]]$Depthm),max(test_nest_cast$data[[i]]$Depthm),by=1))$y
+model_holder$O2ml_L_1mbin[[i]] <- approx(test_nest_cast$data[[i]]$Depthm,test_nest_cast$data[[i]]$O2ml_L, method="linear", xout=seq(min(test_nest_cast$data[[i]]$Depthm),max(test_nest_cast$data[[i]]$Depthm),by=1))$y
+model_holder$O2Sat_1mbin[[i]] <- approx(test_nest_cast$data[[i]]$Depthm,test_nest_cast$data[[i]]$O2Sat, method="linear", xout=seq(min(test_nest_cast$data[[i]]$Depthm),max(test_nest_cast$data[[i]]$Depthm),by=1))$y
+}
+
+
+model_holder %>% 
+  pivot_longer(., cols=`Depthm_1mbin`:`O2Sat_1mbin`, values_to = "values", names_to = "metric") %>% 
+  unnest(values) %>% 
+  group_by(`test_nest_cast$Cst_Cnt`,metric) %>% 
+  mutate(id = row_number()) %>% 
+  pivot_wider(., values_from = c("values"), names_from = "metric", values_fill = NA) %>% 
+  dplyr::select(Cst_Cnt=`test_nest_cast$Cst_Cnt`,Depthm_1mbin,T_degC_1mbin, Salnty_1mbin, O2ml_L_1mbin, O2Sat_1mbin) -> one_m_bin_Cst_Cnt
+
+
+```
+
+
+```{r}
+cast_bottle_fixed_recent %>% 
+  dplyr::select(Cst_Cnt, cruise_site, Date, Year, Month, Julian_Date, Julian_Day,Lat_Dec, Lon_Dec, season,site,year_site, year_season_site, Bottom_D) %>% distinct() %>% 
+  left_join(one_m_bin_Cst_Cnt) -> binned_env_data
+  
+binned_env_data %>% 
+  dplyr::select(site, Lat_Dec, Lon_Dec) %>% 
+  distinct() -> to_plot
+
+
+```
+# Map of Samples to Find the Hot Zone Site
+
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE}
+
+
+min_lat <- min(32)
+max_lat <- max(35)
+
+min_lon <- min(-121)
+max_lon <- max(-117)
+  
+  ggplot(data = world) +
+   geom_sf() +
+    geom_label(data=to_plot, aes(x = Lon_Dec, y = Lat_Dec, label=site), size=2) +
+    coord_sf(xlim = c(min_lon-1, max_lon+1), ylim = c(min_lat-0.5, max_lat+0.5), expand = FALSE) +theme_bw() +xlab("Longitude") +ylab("Latitude") 
+  
+  #90 35 and 90 37
+```
+# Focus on site 90 35
+
+```{r}
+library(plotly)
+binned_env_data %>% 
+  filter(site=="90_35") %>% 
+  ggplot(aes(x=O2Sat_1mbin, colour=Depthm_1mbin, y=T_degC_1mbin)) + geom_point(alpha=0.05) 
+
+```
+
+```{r}
+
+binned_env_data %>% 
+  ggplot(aes(x=O2ml_L_1mbin, y=T_degC_1mbin)) + geom_point(alpha=0.05) 
+
+```
+
+```{r}
+
+binned_env_data %>% 
+  filter(site %in% c("90_35", "93.3_35")) %>% 
+  filter(., Depthm_1mbin==55) %>% 
+  ggplot(aes(y=O2ml_L_1mbin, x=Date)) + geom_point()+ facet_wrap(site~.)
+
+```
+
+```{r}
+library(plotly)
+binned_env_data %>% 
+  filter(site=="93.3_35") %>% 
+  filter(., Depthm_1mbin==55) %>% 
+  ggplot(aes(y=O2ml_L_1mbin, x=Date)) + geom_point()  
+
+```
+
+### Oxygen Satuation
+```{r}
+
+binned_env_data %>% 
+  filter(site %in% c("90_35", "93.3_35")) %>% 
+  ggplot(aes(x=Date, y=Depthm_1mbin, colour=O2Sat_1mbin)) + scale_y_reverse() + geom_point() + scale_colour_cmocean( name = "oxy") +facet_wrap(site~.)
+```
+
+```{r}
+
+binned_env_data %>% 
+  filter(site %in% c("90_30", "93.3_30")) %>% 
+  ggplot(aes(x=Date, y=Depthm_1mbin, colour=O2Sat_1mbin)) + scale_y_reverse() + geom_point() + scale_colour_cmocean( name = "oxy") +facet_wrap(site~.)
+```
+
+### Oxygen
+```{r}
+binned_env_data %>% 
+  filter(site %in% c("90_35", "93.3_35")) %>% 
+  ggplot(aes(x=Date, y=Depthm_1mbin, colour=O2ml_L_1mbin)) + scale_y_reverse() + geom_point() + scale_colour_cmocean( name = "oxy") +facet_wrap(site~.)
+
+```
+
+### Temperature
+```{r}
+binned_env_data %>% 
+  filter(site %in% c("90_30", "93.3_30")) %>% 
+  filter(., T_degC_1mbin <30) %>% 
+  ggplot(aes(x=Date, y=Depthm_1mbin, colour=T_degC_1mbin)) + scale_y_reverse() + geom_point() + scale_colour_cmocean( name = "thermal")  +facet_wrap(site~.)
+
+```
+
+```{r}
+adult_data_chem_full %>% 
+  filter(site.y %in% c("90_30", "93.3_30")) %>% 
+    mutate(., PA = if_else(Count_permsq2 >0,1,0)) -> krill_90_35
+
+krill_90_35 %>% 
+  dplyr::select(PIC_RowNumber,Count_permsq2,ID_Microscopy) %>% 
+  distinct() %>% 
+  filter(., Count_permsq2 >0) %>% 
+  group_by(ID_Microscopy) %>% 
+  count() %>% 
+  arrange(desc(n))
+  
+```
+
+```{r}
+
+adult_data %>% 
+  mutate(., Year= as.numeric(str_sub(Date, start=1, end=4))) %>% 
+  filter(., Year > 1993) %>% 
+      mutate(., PA = if_else(Count_permsq2 >0,1,0)) %>% 
+  left_join(binned_env_data, by="cruise_site") %>% 
+  group_by(cruise_site, site=site.y, season,year_site,year_season_site, Date.x, Lat_Dec, Lon_Dec,ID_Microscopy) %>% 
+  dplyr::summarise(., mean_O2_sat= mean(O2Sat_1mbin), mean_temp = mean(T_degC_1mbin), PA=mean(PA),Count_permsq2=mean(Count_permsq2)) %>% 
+  mutate(., PAc=as.character(PA))-> krill_mean
+
+krill_mean %>% 
+  ggplot(aes(x=mean_O2_sat, colour=PAc, y=mean_temp)) + geom_point(alpha=0.2) +facet_wrap(~ID_Microscopy)
+```
+
+```{r}
+
+krill_mean %>% 
+  left_join(Hypoxic_proportion) %>% 
+  left_join(depth_of_hypoxia) -> metric_comp
+
+
+metric_comp %>% 
+  ggplot(., aes(x=DoH, y=mean_temp, colour=mean_O2_sat)) + geom_point()
+
+metric_comp %>% 
+  ggplot(., aes(x=DoH, y=mean_O2_sat)) + geom_point()
+
+metric_comp %>% 
+  ggplot(., aes(x=DoH, y=mean_O2_sat, colour=Hypoxic_proportion)) + geom_point()
+
+metric_comp %>% 
+  ggplot(., aes(colour=DoH, y=mean_O2_sat, x=Hypoxic_proportion)) + geom_point()
+```
+
+
+```{r}
+  
+adult_data_chem_full %>% 
+  filter(site.y %in% c("90_30", "93.3_30")) %>% 
+  ggplot(aes(x=Date.y, y=Count_permsq2)) + geom_line()  +facet_wrap(Ohman_tax ~site.y, ncol=1, scales = "free_y")
+
+```
+
+```{r}
+
+adult_data_chem_full %>% 
+  filter(site.y=="90_35") %>% 
+  mutate(., PA = if_else(Count_permsq2 >0,1,0)) %>% 
+  ggplot(aes(x=Date.y, y=PA)) + geom_point()  +facet_wrap(Ohman_tax ~., ncol=1)
+
+```
+
+
+```{r}
+binned_env_data %>% 
+  filter(., Depthm_1mbin > 200) %>% 
+  group_by(cruise_site, site, Date) %>% 
+  mutate(., Hypoxic = if_else(O2Sat_1mbin <20, 1,0)) %>% 
+  dplyr::summarise(Hypoxic_proportion = mean(Hypoxic)) -> Hypoxic_proportion
+
+```
+
+#Density hypoxia proportion
+```{r}
+
+Hypoxic_proportion %>% 
+    filter(site %in% c("90_35", "93.3_35")) %>% 
+  ggplot(., aes(x=Date, y=Hypoxic_proportion, color=site)) +geom_point()
+
+Hypoxic_proportion %>% 
+    filter(site %in% c("90_35", "93.3_35")) %>% 
+  ggplot(., aes(x=Hypoxic_proportion, color=site)) +geom_density()
+
+```
+
+```{r}
+
+krill_mean %>% 
+  filter(., ID_Microscopy %in% abundant_species$ID_Microscopy) %>% 
+    mutate(., PA = if_else(Count_permsq2 >0,1,0)) %>% 
+  mutate(., PA=as.character(PA)) %>% 
+  left_join(Hypoxic_proportion) %>% 
+  ggplot(aes(x=Hypoxic_proportion, color=PA,group=PA, fill=PA)) + geom_density(alpha=0.2) +facet_wrap(ID_Microscopy~.)
+
+
+```
+
+```{r}
+
+my.formula <- y ~ x
+
+adult_data_chem_full %>% 
+    dplyr::select(cruise_site,Count_permsq2,ID_Microscopy) %>% 
+  distinct() %>% 
+  filter(., ID_Microscopy =="Euphausia pacifica") %>% 
+  left_join(Hypoxic_proportion) %>% 
+  mutate(., PA = if_else(Count_permsq2 >0,1,0)) %>% 
+  ggplot(aes(x=Hypoxic_proportion, y=log(Count_permsq2+1))) +geom_point()+   geom_smooth(method = "lm") + stat_poly_eq(formula = my.formula,                                                                                                        aes(label = paste0("atop(", ..eq.label.., ",", ..rr.label.. , ")")),
+                                                                                                                                size = 2.5, label.x.npc = "right" ,rr.digits = 2,coef.digits = 3,p.digits=2, label.y.npc = 0.9,
+                                                                                                                                 parse = TRUE) +
+   stat_poly_eq(formula = my.formula,                                                                                                        aes(label = paste0(..p.value.label..)), size = 2.5, label.x.npc = 0.84 ,rr.digits = 2,coef.digits = 3,p.digits=2, label.y.npc = 0.7,
+                                                                                                                                 parse = TRUE) + xlab("Hypoxic_proportion")
+
+
+```
+
+
+```{r}
+
+my.formula <- y ~ x
+
+adult_data_chem_full %>% 
+    dplyr::select(cruise_site,Count_permsq2,ID_Microscopy) %>% 
+  distinct() %>% 
+  filter(., ID_Microscopy =="Euphausia pacifica") %>% 
+  left_join(Hypoxic_proportion) %>% 
+  mutate(., PA = if_else(Count_permsq2 >0,1,0)) %>% 
+  ggplot(aes(x=Hypoxic_proportion, y=PA)) +geom_point()+   geom_smooth(method = "lm") + stat_poly_eq(formula = my.formula,                                                                                                        aes(label = paste0("atop(", ..eq.label.., ",", ..rr.label.. , ")")),
+                                                                                                                                size = 2.5, label.x.npc = "right" ,rr.digits = 2,coef.digits = 3,p.digits=2, label.y.npc = 0.9,
+                                                                                                                                 parse = TRUE) +
+   stat_poly_eq(formula = my.formula,                                                                                                        aes(label = paste0(..p.value.label..)), size = 2.5, label.x.npc = 0.84 ,rr.digits = 2,coef.digits = 3,p.digits=2, label.y.npc = 0.7,
+                                                                                                                                 parse = TRUE) + xlab("Hypoxic_proportion")
+
+
+```
+
+```{r}
+
+krill_mean %>% 
+  filter(., ID_Microscopy %in% abundant_species$ID_Microscopy) %>% 
+  left_join(Hypoxic_proportion) %>% 
+  filter(., PAc >0) %>% 
+ ggplot(aes(y=mean_temp, x=Hypoxic_proportion)) +
+  stat_density_2d(aes(fill = ..level..), geom = "polygon", colour="white") +
+  facet_wrap(ID_Microscopy~.) +ylab("Average Temperature Upper 210m") + 
+  xlab("Proportion of Upper 100m that is Hypoxic")+theme_pubclean() + ggtitle("Presence")+theme(plot.title = element_text(size = 20, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5,size = 18, face = "bold"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.text=element_text(size=12), 
+        strip.text = element_text(size=16, face="bold"), 
+        axis.title=element_text(size=16,face="bold"),
+        legend.title = element_text( size=16, face="bold"),
+        legend.text = element_text(size=14)
+        ) 
+```
+
+```{r}
+
+krill_mean %>% 
+  filter(., ID_Microscopy %in% abundant_species$ID_Microscopy) %>% 
+  left_join(Hypoxic_proportion) %>% 
+  filter(., ID_Microscopy=="Euphausia recurva") %>% 
+ ggplot(aes(y=mean_temp, x=Hypoxic_proportion)) +
+  stat_density_2d(aes(fill = ..level..), geom = "polygon", colour="white") +
+  facet_wrap(ID_Microscopy~.) +ylab("Average Temperature Upper 210m") + 
+  xlab("Proportion of Upper 100m that is Hypoxic")+theme_pubclean() + ggtitle("Presence")+theme(plot.title = element_text(size = 20, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5,size = 18, face = "bold"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.text=element_text(size=12), 
+        strip.text = element_text(size=16, face="bold"), 
+        axis.title=element_text(size=16,face="bold"),
+        legend.title = element_text( size=16, face="bold"),
+        legend.text = element_text(size=14)
+        ) 
+```
+
+```{r}
+
+my.formula <- y ~ x
+
+adult_data_chem_full %>% 
+    dplyr::select(cruise_site,Count_permsq2,ID_Microscopy) %>% 
+  distinct() %>% 
+  filter(., ID_Microscopy =="Nematoscelis difficilis") %>% 
+  left_join(Hypoxic_proportion) %>% 
+  mutate(., PA = if_else(Count_permsq2 >0,1,0)) %>% 
+  ggplot(aes(x=Hypoxic_proportion, y=PA)) +geom_point()+   geom_smooth(method = "lm") + stat_poly_eq(formula = my.formula,                                                                                                        aes(label = paste0("atop(", ..eq.label.., ",", ..rr.label.. , ")")),
+                                                                                                                                size = 2.5, label.x.npc = "right" ,rr.digits = 2,coef.digits = 3,p.digits=2, label.y.npc = 0.9,
+                                                                                                                                 parse = TRUE) +
+   stat_poly_eq(formula = my.formula,                                                                                                        aes(label = paste0(..p.value.label..)), size = 2.5, label.x.npc = 0.84 ,rr.digits = 2,coef.digits = 3,p.digits=2, label.y.npc = 0.7,
+                                                                                                                                 parse = TRUE) + xlab("Hypoxic_proportion")
+
+
+```
+# Counts versus Depth of Hypoxia O2 ml/L
+
+```{r}
+binned_env_data %>% 
+  group_by(cruise_site) %>% 
+  mutate(., Hypoxic = O2ml_L_1mbin < 2) %>% 
+  filter(., Hypoxic==TRUE ) %>% 
+  group_by(cruise_site) %>% 
+  slice(which.min(Depthm_1mbin)) %>% dplyr::select(cruise_site, DoH=Depthm_1mbin) -> depth_of_hypoxia
+
+my.formula <- y ~ x
+
+adult_data_chem_full %>% 
+    dplyr::select(cruise_site,Count_permsq2,ID_Microscopy) %>% 
+  distinct() %>% 
+    filter(., ID_Microscopy =="Euphausia pacifica") %>% 
+  left_join(depth_of_hypoxia) %>% 
+  ggplot(aes(x=DoH, y=log10(Count_permsq2+1))) +geom_point()+   geom_smooth(method = "lm") + stat_poly_eq(formula = my.formula,                                                                                                        aes(label = paste0("atop(", ..eq.label.., ",", ..rr.label.. , ")")),
+                                                                                                                                size = 2.5, label.x.npc = "right" ,rr.digits = 2,coef.digits = 3,p.digits=2, label.y.npc = 0.9,
+                                                                                                                                 parse = TRUE) +
+   stat_poly_eq(formula = my.formula,                                                                                                        aes(label = paste0(..p.value.label..)), size = 2.5, label.x.npc = 0.84 ,rr.digits = 2,coef.digits = 3,p.digits=2, label.y.npc = 0.7,
+                                                                                                                                 parse = TRUE) + xlab("Depth of Hypoxia (m)")
+
+
+```
+# Counts versus Depth of Hypoxia O2 Sat
+```{r}
+binned_env_data %>% 
+  group_by(cruise_site) %>% 
+  mutate(., Hypoxic = O2Sat_1mbin < 20) %>% 
+  filter(., Hypoxic==TRUE ) %>% 
+  group_by(cruise_site) %>% 
+  slice(which.min(Depthm_1mbin)) %>% dplyr::select(cruise_site, DoH=Depthm_1mbin) -> depth_of_hypoxia
+
+my.formula <- y ~ x
+
+adult_data_chem_full %>% 
+    dplyr::select(cruise_site,Count_permsq2,ID_Microscopy) %>% 
+  distinct() %>% 
+    filter(., ID_Microscopy =="Euphausia pacifica") %>% 
+  left_join(depth_of_hypoxia) %>% 
+  ggplot(aes(x=DoH, y=log10(Count_permsq2+1))) +geom_point()+   geom_smooth(method = "lm") + stat_poly_eq(formula = my.formula,                                                                                                        aes(label = paste0("atop(", ..eq.label.., ",", ..rr.label.. , ")")),
+                                                                                                                                size = 2.5, label.x.npc = "right" ,rr.digits = 2,coef.digits = 3,p.digits=2, label.y.npc = 0.9,
+                                                                                                                                 parse = TRUE) +
+   stat_poly_eq(formula = my.formula,                                                                                                        aes(label = paste0(..p.value.label..)), size = 2.5, label.x.npc = 0.84 ,rr.digits = 2,coef.digits = 3,p.digits=2, label.y.npc = 0.7,
+                                                                                                                                 parse = TRUE) + xlab("Depth of Hypoxia (m)")
+
+
+```
+
+# Counts versus Depth of Hypoxia O2 Sat
+```{r}
+binned_env_data %>% 
+  group_by(cruise_site) %>% 
+  mutate(., Hypoxic = O2Sat_1mbin < 20) %>% 
+  filter(., Hypoxic==TRUE ) %>% 
+  group_by(cruise_site) %>% 
+  slice(which.min(Depthm_1mbin)) %>% dplyr::select(cruise_site, DoH=Depthm_1mbin) -> depth_of_hypoxia
+
+my.formula <- y ~ x
+
+adult_data_chem_full %>% 
+    dplyr::select(cruise_site,Count_permsq2,ID_Microscopy) %>% 
+  distinct() %>% 
+    mutate(., PA = if_else(Count_permsq2 >0,1,0)) %>% 
+    filter(., ID_Microscopy =="Euphausia pacifica") %>% 
+  left_join(depth_of_hypoxia) %>% 
+  ggplot(aes(x=DoH, y=PA)) +geom_point()+   geom_smooth(method = "lm", family=binomial) + stat_poly_eq(formula = my.formula,                                                                                                        aes(label = paste0("atop(", ..eq.label.., ",", ..rr.label.. , ")")),
+                                                                                                                                size = 2.5, label.x.npc = "right" ,rr.digits = 2,coef.digits = 3,p.digits=2, label.y.npc = 0.9,
+                                                                                                                                 parse = TRUE) +
+   stat_poly_eq(formula = my.formula,                                                                                                        aes(label = paste0(..p.value.label..)), size = 2.5, label.x.npc = 0.84 ,rr.digits = 2,coef.digits = 3,p.digits=2, label.y.npc = 0.7,
+                                                                                                                                 parse = TRUE) + xlab("Depth of Hypoxia (m)")
+
+
+```
+
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, fig.width=20, fig.height=12}
+
+suppressWarnings({ 
+ adult_data_chem_full %>% 
+    dplyr::select(cruise_site,Count_permsq2,ID_Microscopy) %>% 
+  distinct() %>% 
+    mutate(., PA = if_else(Count_permsq2 >0,1,0)) %>% 
+  left_join(depth_of_hypoxia) %>% 
+  ggplot(aes(y=PA, x=DoH)) + geom_point(alpha=0.4) +facet_wrap(ID_Microscopy~., scales = "free") +   geom_smooth(
+    method="glm",
+    method.args=list(family="binomial"),
+  ) +
+  stat_poly_eq(use_label(c("adj.R2", "p")),label.y.npc = 0.7, size=4) +xlab("Depth of Hypoxia") + ylab("Presence/Absence")+theme(plot.title = element_text(size = 20, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5,size = 18, face = "bold"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.text=element_text(size=12), 
+        strip.text = element_text(size=16, face="bold"), 
+        axis.title=element_text(size=16,face="bold"),
+        legend.title = element_text( size=16, face="bold"),
+        legend.text = element_text(size=14)
+        ) 
+}) 
+```
+
+```{r}
+
+krill_mean %>% 
+  filter(., ID_Microscopy %in% abundant_species$ID_Microscopy) %>% 
+    mutate(., PA = if_else(Count_permsq2 >0,1,0)) %>% 
+  mutate(., PA=as.character(PA)) %>% 
+  left_join(depth_of_hypoxia) %>% 
+  ggplot(aes(x=DoH, color=PA,group=PA, fill=PA)) + geom_density(alpha=0.2) +facet_wrap(ID_Microscopy~.)
+
+
+```
+
+```{r}
+
+krill_mean %>% 
+    mutate(., PA = if_else(Count_permsq2 >0,1,0)) %>% 
+  mutate(., PA=as.character(PA)) %>% 
+  left_join(Hypoxic_proportion) %>% 
+  ggplot(aes(x=Hypoxic_proportion, color=PA,group=PA, fill=PA)) + geom_density(alpha=0.2) +facet_wrap(ID_Microscopy~.)
+
+
+```
+
+```{r}
+
+adult_data_chem_full %>% 
+    dplyr::select(cruise_site,Count_permsq2,ID_Microscopy) %>% 
+  distinct() %>% 
+    mutate(., PA = if_else(Count_permsq2 >0,1,0)) %>% 
+  mutate(., PA=as.character(PA)) %>% 
+  left_join(Hypoxic_proportion) %>% 
+  ggplot(aes(x=Hypoxic_proportion, color=PA,group=PA, fill=PA)) + geom_density(alpha=0.2) +facet_wrap(ID_Microscopy~.)
+
+```
+
+```{r}
+
+krill_mean %>% 
+  filter(., ID_Microscopy %in% abundant_species$ID_Microscopy) %>% 
+  left_join(Hypoxic_proportion) %>% 
+  left_join(depth_of_hypoxia) %>% 
+  ggplot(aes(x=DoH, colour=PAc, y=mean_temp)) + geom_point(alpha=0.2) +facet_wrap(~ID_Microscopy)
+
+```
+
+
+```{r}
+binned_env_data %>% 
+  filter(., Depthm_1mbin > 200) %>% 
+  group_by(cruise_site, site, Date) %>% 
+  mutate(., Hypoxic = if_else(O2Sat_1mbin <20, 1,0)) %>% 
+  dplyr::summarise(Hypoxic_proportion = mean(Hypoxic)) -> Hypoxic_proportion
+
+binned_env_data %>% 
+  group_by(cruise_site) %>% 
+  mutate(., Hypoxic = O2Sat_1mbin < 20) %>% 
+  filter(., Hypoxic==TRUE ) %>% 
+  group_by(cruise_site) %>% 
+  slice(which.min(Depthm_1mbin)) %>% dplyr::select(cruise_site, DoH=Depthm_1mbin) -> depth_of_hypoxia
+
+krill_mean %>% 
+  left_join(Hypoxic_proportion) %>% 
+  left_join(depth_of_hypoxia) %>% 
+  mutate(., Year = str_sub(year_site,1,4)) %>% 
+  filter(., Year %in% c(1997,1998,2010,2011,2012,2013, 2014, 2015, 2016))-> map_2014
+
+  ggplot(data = world) +
+   geom_sf() +
+    geom_point(data=map_2014, aes(x = Lon_Dec, y = Lat_Dec,colour=Hypoxic_proportion),size=1.5 ) +
+    coord_sf(xlim = c(min_lon-1, max_lon+1), ylim = c(min_lat-0.5, max_lat+0.5), expand = FALSE) +theme_bw() +xlab("Longitude") +ylab("Latitude") +facet_wrap(Year~.) +scale_colour_viridis_c(option = "mako", direction=-1, begin = 0,
+  end = 0.7) + theme(plot.title = element_text(hjust = 0.5,size = 20, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5,size = 18, face = "bold"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.text=element_text(size=12), 
+        strip.text = element_text(size=16, face="bold"), 
+        axis.title=element_text(size=16,face="bold"),
+        legend.title = element_text( size=16, face="bold"),
+        legend.text = element_text(size=14)
+        )
+
+
+```
+
+```{r}
+
+
+  ggplot(data = world) +
+   geom_sf() +
+    geom_point(data=map_2014, aes(x = Lon_Dec, y = Lat_Dec, size=DoH,colour=DoH) ) +
+    coord_sf(xlim = c(min_lon-1, max_lon+1), ylim = c(min_lat-0.5, max_lat+0.5), expand = FALSE) +theme_bw() +xlab("Longitude") +ylab("Latitude") +facet_wrap(.~Year) +scale_colour_viridis_c(option = "mako", direction=-1, begin = 0,
+  end = 0.7) + theme(plot.title = element_text(hjust = 0.5,size = 20, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5,size = 18, face = "bold"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.text=element_text(size=12), 
+        strip.text = element_text(size=16, face="bold"), 
+        axis.title=element_text(size=16,face="bold"),
+        legend.title = element_text( size=16, face="bold"),
+        legend.text = element_text(size=14)
+        )
+
+
+```
+
+```{r}
+
+
+  ggplot(data = world) +
+   geom_sf() +
+    geom_point(data=map_2014, aes(x = Lon_Dec, y = Lat_Dec,colour=mean_O2_sat),alpha=0.6 ) +
+    coord_sf(xlim = c(min_lon-1, max_lon+1), ylim = c(min_lat-0.5, max_lat+0.5), expand = FALSE) +theme_bw() +xlab("Longitude") +ylab("Latitude") +facet_wrap(.~Year) +scale_colour_viridis_c(option = "mako", direction=-1, begin = 0,
+  end = 0.7) + theme(plot.title = element_text(hjust = 0.5,size = 20, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5,size = 18, face = "bold"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.text=element_text(size=12), 
+        strip.text = element_text(size=16, face="bold"), 
+        axis.title=element_text(size=16,face="bold"),
+        legend.title = element_text( size=16, face="bold"),
+        legend.text = element_text(size=14)
+        )
+
+
+```
+
 
 # Map of Samples
 
@@ -149,6 +815,10 @@ group_by_site_all %>%
         legend.text = element_text(size=14)
         )
 ```
+
+# Below is OLD
+
+
 
 # Abundance of Euphausia pacifica over Time
 
@@ -251,78 +921,6 @@ adult_data %>%
 
 ```
 
-```{r}
-library(oce)
-a <- as.ctd(salinity = 35 + 1:3 / 10, temperature = 10 - 1:3 / 10, pressure = 1:3)
-summary(a)
-
-a <- as.ctd(salinity = c(35,35.1,35.2), temperature = c(10.1,10.2,10.3), pressure = c(1,2,3))
-
-cast_bottle_fixed
-
-Depth from pressurw
- x = sin(latitude / 57.29578);
-  x = x * x;
-  gr = 9.780318 * (1.0 + (5.2788e-3 + 2.36e-5 * x) * x) + 1.092e-6 * p;
-  d = (((-1.82e-15 * p + 2.279e-10) * p - 2.2512e-5) * p + 9.72659) * p;
- 
-library(dplyr)
-library(zoo)
-
-cast_bottle_fixed %>% 
-   filter(., year_season_site=="1993:Spring:93.3_30") %>% 
-   dplyr::group_by(year_season_site) %>% 
-  mutate(O2meas = O2ml_L/31.9988/(potential_density + 1000)*(1000^2),
-         O2sat = gsw_O2sol_SP_pt(Salnty, T_degC), SatPct = (O2meas/O2sat)*100) %>% 
-  relocate(c(O2meas, O2sat, SatPct), .after = DO)-> test 
-
-test %>% 
-  group_by(Cst_Cnt) %>% 
-  nest() -> test_nest_cast
-colnames(test)
-
-model_holder <- tibble(test_nest_cast$Cst_Cnt)
-model_holder$Depthm_1mbin <- list(0)
-model_holder$T_degC_1mbin <- list(0)
-Salnty
-O2ml_L
-i=1
-model_holder$Depthm_1mbin[[i]] <- approx(test$Depthm,test$T_degC, method="linear", xout=seq(min(test$Depthm),max(test$Depthm),by=1))$x
-model_holder$T_degC_1mbin[[i]] <- approx(test$Depthm,test$T_degC, method="linear", xout=seq(min(test$Depthm),max(test$Depthm),by=1))$y
-
-for (i in 1:nrow(model_holder)) {
-print(i)
-model_holder$model[[i]]
-approx(test$Depthm,test$T_degC, method="linear", xout=seq(min(test$Depthm),max(test$Depthm),by=1))
-
-
-par(mfrow = c(2,1))
-plot(test$T_degC, test$Depthm, main = "approx(.) and approxfun(.)")
-points(approx(test$T_degC, test$Depthm), col = 2, pch = "*")
-
- 
-approx
- 
-x <- 1:10
-y <- rnorm(10)
-x
-y
-
-par(mfrow = c(2,1))
-plot(x, y, main = "approx(.) and approxfun(.)")
-points(approx(x, y), col = 2, pch = "*")
-points(approx(x, y, method = "constant"), col = 4, pch = "*")
-
-f <- approxfun(x, y)
-curve(f(x), 0, 11, col = "green2")
-points(x, y)
-is.function(fc <- approxfun(x, y, method = "const")) # TRUE
-curve(fc(x), 0, 10, col = "darkblue", add = TRUE)
-## different extrapolation on left and right side :
-plot(approxfun(x, y, rule = 2:1), 0, 11,
-     col = "tomato", add = TRUE, lty = 3, lwd = 2)
-```
-
 
 ```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE}
 
@@ -386,7 +984,6 @@ adult_data_chem_full %>%
 
 ```{r, echo=FALSE, hide=TRUE, warnings=FALSE, message=FALSE, fig.width=12, fig.height=12}
 
-my.formula <- y ~ x
 
 
 suppressWarnings({ 
@@ -470,6 +1067,7 @@ adult_data_chem_full %>%
 
 }) 
 ```
+
 
 # Map of Depth of Hypoxia
 ```{r}

@@ -16,8 +16,19 @@ library(tidyverse)
 library(here)
 library(readxl)
 library(knitr)
+library(cmocean)
+library(ggpubr)
+library(ggpmisc)
+library(sf)
+library("rnaturalearth")
+library("rnaturalearthdata")
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
 
 ```
+# Import Data
+
+## Load in the Krill Taxonomic File
 
 ```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, include=FALSE}
 #load in the Krill taxonomy data
@@ -34,6 +45,7 @@ BTEDB_tax %>%
   distinct() -> visual_tax_names # make this distinct 
 ```
 
+## Load in the Krill Count Data
 ```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, include=FALSE}
 # Load in the Brinton and Townsend Euphausiid Database - CCE-LTER
 # aka krill
@@ -56,23 +68,26 @@ BTEDB %>%
 Date,
 MaxDepth,TowBegin,TowEnd,Ohman_tax,Genus,species, phase,type,Count_permsq2,ID_Microscopy,Phase
 ) %>% 
-  left_join(ed_key)  %>% 
+  left_join(ed_key)  %>%  # Note that there are missing Cast_Cnt values
   mutate(., Station = as.numeric(N_Station),
         Line = N_Line) %>% 
-  filter(., N_lat > 27) %>% 
+  filter(., N_lat > 27) %>% #There are some samples from around the world and we don't want them
   filter(., N_lat < 40) %>% 
-  filter(., N_lon < -110) -> long_microscopy
+  filter(., N_lon < -110) %>% 
+   mutate(., site= str_c(N_Line,"_",N_Station),
+         cruise_site = str_c(N_Cruise,":",N_Line,"_",N_Station))-> long_microscopy
+# We will merge using cruise_site
+
   
 ```
 
 
-# Abundance of Euphausia pacifica over Time
+## Most Frequently Counted Krill
 
 ```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, fig.height=20, fig.width=20}
 
 long_microscopy %>% 
-  filter(., str_detect(Ohman_tax,"adult")) %>% 
-  filter(., season=="Spring")-> adult_data
+  filter(., str_detect(Ohman_tax,"adult")) -> adult_data # focus on adult krill
 
 long_microscopy %>% 
   filter(., Count_permsq2 > 0) %>% 
@@ -88,6 +103,7 @@ abundant_species  %>% kable()
 \pagebreak 
 </div>
 
+## Load in the Bottle Data
 ```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE, include=FALSE}
 
 bottle_data <- read.csv(here("data","CalCOFI_Database_194903-202105_csv","194903-202105_Bottle.csv"), header = T,check.names = F) #CTD bottle data
@@ -111,80 +127,357 @@ cast_bottle %>%
                            TRUE ~"Winter")) %>% 
  mutate(., site= str_c(Line,"_",Station),
          year_site = str_c(year,":",Line,"_",Station),
-         year_season_site = str_c(year,":",season,":",Line,"_",Station)) -> cast_bottle_fixed
-
+         year_season_site = str_c(year,":",season,":",Line,"_",Station),
+         cruise_site = str_c(Cruise,":",Line,"_",Station)) -> cast_bottle_fixed
+# We will merge using cruise_site
+  
 ```
 
-# Full Merge
+# Full Merge Into Single Data
 ```{r}
 adult_data %>% 
-  left_join(cast_bottle_fixed, by=c("Cst_Cnt"), relationship="many-to-many") %>% 
-  filter(., ID_Microscopy %in% abundant_species$ID_Microscopy) %>% 
-  select(year_season_site=year_season_site.y, year=year.y, season=season.y, site=site.y, ID_Microscopy,Count_permsq2,T_degC, O2ml_L,O2Sat,Depthm, Lat_Dec,Lon_Dec)-> adult_data_chem_full
+  left_join(cast_bottle_fixed, by=c("cruise_site"), relationship="many-to-many") %>% 
+  filter(., ID_Microscopy %in% abundant_species$ID_Microscopy) -> adult_data_chem_full
 
 
 ```
 
-# Average Merge
+# Interpolate Values
+
+### Filter to the most recent casts
+```{r}
+
+#O2sat already calculated for recent data so ignoring this
+#  mutate(O2meas = O2ml_L/31.9988/(STheta + 1000)*(1000^2),
+#         O2sat = gsw_O2sol_SP_pt(Salnty, T_degC), SatPct = (O2meas/O2sat)*100) %>% 
+#  relocate(c(O2meas, O2sat, SatPct), .after = O2ml_L)
+
+cast_bottle_fixed %>% 
+   filter(., year > 1993) -> cast_bottle_fixed_recent
+
+cast_bottle_fixed_recent %>% 
+  group_by(Cast_ID) %>% 
+  dplyr::summarise(temp_na=sum(is.na(T_degC)),
+                   sal_na=sum(is.na(Salnty)),
+                   o2_na=sum(is.na(O2ml_L)),
+                   sat_na=sum(is.na(O2Sat)),
+                          tot=n()) %>% 
+  filter(., temp_na < (tot-2) ) %>% 
+  filter(., sal_na < (tot-2) ) %>% 
+    filter(., o2_na < (tot-2) ) %>% 
+    filter(., sat_na < (tot-2) )-> casts_to_keep
+
+cast_bottle_fixed_recent %>% 
+  filter(., Cast_ID %in% casts_to_keep$Cast_ID)-> cast_bottle_fixed_recent 
+```
+
+## Interopolate values between bottle casts to acquire 1m bins of environmental variables
+```{r}
+
+cast_bottle_fixed_recent -> test
+
+test %>% 
+  group_by(Cst_Cnt) %>% 
+  nest() -> test_nest_cast
+
+model_holder <- tibble(test_nest_cast$Cst_Cnt)
+model_holder$Depthm_1mbin <- list(0)
+model_holder$T_degC_1mbin <- list(0)
+model_holder$Salnty_1mbin <- list(0)
+model_holder$O2ml_L_1mbin <- list(0)
+model_holder$O2Sat_1mbin <- list(0)
+
+i=1
+
+for (i in 1:nrow(model_holder)) {
+model_holder$Depthm_1mbin[[i]] <- approx(test_nest_cast$data[[i]]$Depthm,test_nest_cast$data[[i]]$T_degC, method="linear", xout=seq(min(test_nest_cast$data[[i]]$Depthm),max(test_nest_cast$data[[i]]$Depthm),by=1))$x
+model_holder$T_degC_1mbin[[i]] <- approx(test_nest_cast$data[[i]]$Depthm,test_nest_cast$data[[i]]$T_degC, method="linear", xout=seq(min(test_nest_cast$data[[i]]$Depthm),max(test_nest_cast$data[[i]]$Depthm),by=1))$y
+model_holder$Salnty_1mbin[[i]] <- approx(test_nest_cast$data[[i]]$Depthm,test_nest_cast$data[[i]]$Salnty, method="linear", xout=seq(min(test_nest_cast$data[[i]]$Depthm),max(test_nest_cast$data[[i]]$Depthm),by=1))$y
+model_holder$O2ml_L_1mbin[[i]] <- approx(test_nest_cast$data[[i]]$Depthm,test_nest_cast$data[[i]]$O2ml_L, method="linear", xout=seq(min(test_nest_cast$data[[i]]$Depthm),max(test_nest_cast$data[[i]]$Depthm),by=1))$y
+model_holder$O2Sat_1mbin[[i]] <- approx(test_nest_cast$data[[i]]$Depthm,test_nest_cast$data[[i]]$O2Sat, method="linear", xout=seq(min(test_nest_cast$data[[i]]$Depthm),max(test_nest_cast$data[[i]]$Depthm),by=1))$y
+}
+
+model_holder %>% 
+  pivot_longer(., cols=`Depthm_1mbin`:`O2Sat_1mbin`, values_to = "values", names_to = "metric") %>% 
+  unnest(values) %>% 
+  group_by(`test_nest_cast$Cst_Cnt`,metric) %>% 
+  mutate(id = row_number()) %>% 
+  pivot_wider(., values_from = c("values"), names_from = "metric", values_fill = NA) %>% 
+  dplyr::select(Cst_Cnt=`test_nest_cast$Cst_Cnt`,Depthm_1mbin,T_degC_1mbin, Salnty_1mbin, O2ml_L_1mbin, O2Sat_1mbin) -> one_m_bin_Cst_Cnt
+
+```
+
+### Create Binned Data
+```{r}
+cast_bottle_fixed_recent %>% 
+  dplyr::select(Cst_Cnt, cruise_site, Date, Year, Month, Julian_Date, Julian_Day,Lat_Dec, Lon_Dec, season,site,year_site, year_season_site, Bottom_D) %>% distinct() %>% 
+  left_join(one_m_bin_Cst_Cnt) -> binned_env_data
+```
+
+### Proportion of Upper 200m That is Hypoxic
+```{r}
+binned_env_data %>% 
+  filter(., Depthm_1mbin > 200) %>% 
+  group_by(cruise_site, site, Date) %>% 
+  mutate(., Hypoxic = if_else(O2Sat_1mbin <20, 1,0)) %>% 
+  dplyr::summarise(Hypoxic_proportion = mean(Hypoxic)) -> Hypoxic_proportion
+
+```
+
+### Depth of Hypoxia O2 ml/L
+```{r}
+binned_env_data %>% 
+  group_by(cruise_site) %>% 
+  mutate(., Hypoxic = O2Sat_1mbin < 20) %>% 
+  filter(., Hypoxic==TRUE ) %>% 
+  group_by(cruise_site) %>% 
+  slice(which.min(Depthm_1mbin)) %>% dplyr::select(cruise_site, DoH=Depthm_1mbin) -> depth_of_hypoxia
+```
+
+# Full Merge with binned environmental data
+```{r}
+adult_data %>% 
+  mutate(., Year= as.numeric(str_sub(Date, start=1, end=4))) %>% 
+  filter(., Year > 1993) %>% 
+      mutate(., PA = if_else(Count_permsq2 >0,1,0)) %>% 
+  left_join(binned_env_data, by="cruise_site") %>% 
+  group_by(cruise_site, site=site.y, season,year_site,year_season_site, Date.x, Lat_Dec, Lon_Dec,ID_Microscopy) %>% 
+  dplyr::summarise(., mean_O2_sat= mean(O2Sat_1mbin), mean_temp = mean(T_degC_1mbin), PA=mean(PA),Count_permsq2=mean(Count_permsq2)) %>% 
+  mutate(., PAc=as.character(PA))-> krill_mean
+
+
+```
+
+
+# Focus on sites 90_35 & 86.7_45
+
+### Map of Samples to Find the Hot Zone Site
 
 ```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE}
 
-# I need to figure out how to better interpolate the point data to derive metrics of habitat compression to make a weighted regression of metrics
-# However, as a first pass here is just the average (not weighted) of measured variables. This is a bad way to do this, but it is an easy way to do this.
+binned_env_data %>% 
+  dplyr::select(site, Lat_Dec, Lon_Dec) %>% 
+  distinct() %>% 
+    filter(site %in% c("90_35", "86.7_45"))  -> to_plot
 
-cast_bottle_fixed %>% 
-  mutate(., Depthm=as.numeric(Depthm)) %>% 
-  mutate(., Depth_bin = case_when(Depthm < 211 ~"Upper_210",
-                                  Depthm < 501 ~"210_500",
-                                  TRUE ~"Deeper_500")) %>% 
-  group_by(year_season_site, year, season, site,Depth_bin) %>% 
-  dplyr::summarise(mean_temp = mean(T_degC,na.rm = TRUE),mean_sal = mean(Salnty,na.rm = TRUE),mean_O2ml_L = mean(O2ml_L,na.rm = TRUE),mean_O2Sat = mean(O2Sat,na.rm = TRUE)) -> mean_bottle_Data
+min_lat <- min(32)
+max_lat <- max(35)
 
-# This is the long format data, not
-adult_data %>% 
-  left_join(cast_bottle_fixed, by=c("Cst_Cnt"), relationship="many-to-many") %>% 
-  filter(., ID_Microscopy %in% abundant_species$ID_Microscopy) %>% 
-  mutate(., Depthm=as.numeric(Depthm)) %>% 
-  mutate(., Depth_bin = case_when(Depthm < 211 ~"Upper_210",
-                                  Depthm < 501 ~"210_500",
-                                  TRUE ~"Deeper_500")) %>% 
-  group_by(year_season_site=year_season_site.y, year=year.y, season=season.y, site=site.y,Depth_bin, ID_Microscopy,Count_permsq2) %>% 
-  dplyr::summarise(mean_temp = mean(T_degC,na.rm = TRUE),mean_sal = mean(Salnty,na.rm = TRUE),mean_O2ml_L = mean(O2ml_L,na.rm = TRUE),mean_O2Sat = mean(O2Sat,na.rm = TRUE), Count_permsq2=mean(Count_permsq2))-> adult_data_chem
+min_lon <- min(-121)
+max_lon <- max(-117)
+  
+  ggplot(data = world) +
+   geom_sf() +
+    geom_label(data=to_plot, aes(x = Lon_Dec, y = Lat_Dec, label=site), size=2) +
+    coord_sf(xlim = c(min_lon-1, max_lon+1), ylim = c(min_lat-0.5, max_lat+0.5), expand = FALSE) +theme_bw() +xlab("Longitude") +ylab("Latitude") 
   
 ```
 
 
+### Oxygen Satuation Over Time
+```{r}
 
-# Abundance
-
-## Temperature
-
-```{r, echo=FALSE, hide=TRUE, warnings=FALSE, message=FALSE, fig.width=12, fig.height=12}
-
-my.formula <- y ~ x
+binned_env_data %>% 
+filter(site %in% c("90_35", "86.7_45")) %>% 
+  filter(., Depthm_1mbin < 500) %>% 
+  ggplot(aes(x=Date, y=Depthm_1mbin, colour=O2Sat_1mbin)) + scale_y_reverse() + geom_point() + scale_colour_cmocean( name = "oxy") +facet_wrap(site~.)
+```
 
 
-suppressWarnings({ 
- # Code that generates warning messages 
-adult_data_chem %>% 
-  filter(., Depth_bin =="Upper_210" ) %>% 
-  ggplot(aes(y=log10(Count_permsq2+1), x=mean_temp)) + geom_point() +facet_wrap(ID_Microscopy~., scales = "free") +   geom_smooth(method = "lm") + stat_poly_eq(formula = my.formula,                                                                                                        aes(label = paste0("atop(", ..eq.label.., ",", ..rr.label.. , ")")),
-                                                                                                                                size = 2.5, label.x.npc = "right" ,rr.digits = 2,coef.digits = 3,p.digits=2, label.y.npc = 0.9,
-                                                                                                                                 parse = TRUE) +
-   stat_poly_eq(formula = my.formula,                                                                                                        aes(label = paste0(..p.value.label..)), size = 2.5, label.x.npc = 0.84 ,rr.digits = 2,coef.digits = 3,p.digits=2, label.y.npc = 0.7,
-                                                                                                                                 parse = TRUE)+xlab("Average Temperature Upper 210m") + ylab("log10(Count per m^2+1)") +theme(plot.title = element_text(size = 20, face = "bold"),
+### Oxygen mL/L Over Time
+```{r}
+binned_env_data %>% 
+filter(site %in% c("90_35", "86.7_45")) %>% 
+    filter(., Depthm_1mbin < 500) %>% 
+  ggplot(aes(x=Date, y=Depthm_1mbin, colour=O2ml_L_1mbin)) + scale_y_reverse() + geom_point() + scale_colour_cmocean( name = "oxy") +facet_wrap(site~.)
+
+```
+
+### Temperature Over Time
+```{r}
+binned_env_data %>% 
+filter(site %in% c("90_35", "86.7_45")) %>% 
+  filter(., T_degC_1mbin <30) %>% 
+  filter(., Depthm_1mbin < 500) %>% 
+  ggplot(aes(x=Date, y=Depthm_1mbin, colour=T_degC_1mbin)) + scale_y_reverse() + geom_point() + scale_colour_cmocean( name = "thermal")  +facet_wrap(site~.)
+
+
+```
+
+### Density hypoxia proportion
+```{r}
+
+Hypoxic_proportion %>% 
+filter(site %in% c("90_35", "86.7_45")) %>% 
+  ggplot(., aes(x=Hypoxic_proportion, color=site)) +geom_density()
+
+```
+
+# Krill
+
+## Proportion of of 200m that is Hypoxic
+
+### Krill Presence Absence Distribution Across Proportion of of 200m that is Hypoxic
+```{r, fig.height=14, fig.width=12}
+
+krill_mean %>% 
+  filter(., ID_Microscopy %in% abundant_species$ID_Microscopy) %>% 
+    mutate(., PA = if_else(Count_permsq2 >0,1,0)) %>% 
+  mutate(., PA=as.character(PA)) %>% 
+  left_join(Hypoxic_proportion) %>% 
+  ggplot(aes(x=Hypoxic_proportion, color=PA,group=PA, fill=PA)) + geom_density(alpha=0.2) +facet_wrap(ID_Microscopy~.) + xlab("Proportion of Upper 200m that is Hypoxic")
+
+
+```
+
+### Krill Presences Across Average Water Column Temperature and Proportion of of 200m that is Hypoxic
+```{r, fig.height=14, fig.width=12}
+
+krill_mean %>% 
+  filter(., ID_Microscopy %in% abundant_species$ID_Microscopy) %>% 
+  left_join(Hypoxic_proportion) %>% 
+  filter(., PAc >0) %>% 
+ ggplot(aes(y=mean_temp, x=Hypoxic_proportion)) +
+  stat_density_2d(aes(fill = ..level..), geom = "polygon", colour="white") +
+  facet_wrap(ID_Microscopy~.) +ylab("Average Temperature Upper 210m") + 
+  xlab("Proportion of Upper 200m that is Hypoxic")+theme_pubclean() + ggtitle("Presence")+theme(plot.title = element_text(size = 20, face = "bold"),
         plot.subtitle = element_text(hjust = 0.5,size = 18, face = "bold"),
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         panel.background = element_blank(), 
-        axis.text=element_text(size=12), 
-        strip.text = element_text(size=16, face="bold"), 
+        axis.text=element_text(size=10), 
+        strip.text = element_text(size=10, face="bold"), 
         axis.title=element_text(size=16,face="bold"),
         legend.title = element_text( size=16, face="bold"),
         legend.text = element_text(size=14)
         ) 
+```
 
-}) 
+### Binomial Regressons of Krill Detections As a Function of Depth of Hypoxia
+```{r,fig.height=14, fig.width=12}
+
+
+krill_mean %>% 
+  filter(., ID_Microscopy %in% abundant_species$ID_Microscopy) %>% 
+  left_join(Hypoxic_proportion) %>% 
+  ggplot(aes(x=Hypoxic_proportion, y=PA)) +geom_point(alpha=0.1)+   geom_smooth(
+    method="glm",
+    method.args=list(family="binomial"),
+  ) +
+  stat_poly_eq(use_label(c("adj.R2", "p")),label.y.npc = 0.7, size=4) +  xlab("Proportion of Upper 200m that is Hypoxic") +facet_wrap(ID_Microscopy~.)
+
+
+```
+
+## Depth of Hypoxia
+
+### Krill Presence Absence Distribution Across Depth of Hypoxia
+
+
+```{r, fig.height=14, fig.width=12}
+
+krill_mean %>% 
+  filter(., ID_Microscopy %in% abundant_species$ID_Microscopy) %>% 
+  mutate(., PA = if_else(Count_permsq2 >0,1,0)) %>% 
+  mutate(., PA=as.character(PA)) %>% 
+  left_join(depth_of_hypoxia) %>% 
+  ggplot(aes(x=DoH, color=PA,group=PA, fill=PA)) + geom_density(alpha=0.2) +facet_wrap(ID_Microscopy~.)
+
+
+```
+
+### Krill Presences Across Average Water Column Temperature and Depth of Hypoxia
+
+```{r, fig.height=14, fig.width=12}
+
+krill_mean %>% 
+  filter(., ID_Microscopy %in% abundant_species$ID_Microscopy) %>% 
+  left_join(depth_of_hypoxia) %>% 
+  filter(., PAc >0) %>% 
+ ggplot(aes(y=mean_temp, x=DoH)) +
+  stat_density_2d(aes(fill = ..level..), geom = "polygon", colour="white") +
+  facet_wrap(ID_Microscopy~.) +ylab("Average Temperature Upper 210m") + 
+  xlab("Depth of Hypoxia")+theme_pubclean() + ggtitle("Presence")+theme(plot.title = element_text(size = 20, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5,size = 18, face = "bold"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.text=element_text(size=10), 
+        strip.text = element_text(size=10, face="bold"), 
+        axis.title=element_text(size=16,face="bold"),
+        legend.title = element_text( size=16, face="bold"),
+        legend.text = element_text(size=14)
+        ) 
+```
+
+### Binomial Regressons of Krill Detections As a Function of Depth of Hypoxia
+```{r, fig.height=14, fig.width=12}
+
+
+krill_mean %>% 
+  filter(., ID_Microscopy %in% abundant_species$ID_Microscopy) %>% 
+  left_join(depth_of_hypoxia) %>% 
+  ggplot(aes(x=DoH, y=PA)) +geom_point(alpha=0.1)+   geom_smooth(
+    method="glm",
+    method.args=list(family="binomial"),
+  ) +
+  stat_poly_eq(use_label(c("adj.R2", "p")),label.y.npc = 0.7, size=4) + xlab("Depth of Hypoxia (m)") +facet_wrap(ID_Microscopy~.)
+
+
+```
+
+
+## Temperature
+
+### Krill Presence Absence Distribution Across Mean Water Column Temperature
+```{r, fig.height=14, fig.width=12}
+
+krill_mean %>% 
+  filter(., ID_Microscopy %in% abundant_species$ID_Microscopy) %>% 
+    mutate(., PA = if_else(Count_permsq2 >0,1,0)) %>% 
+  mutate(., PA=as.character(PA)) %>% 
+  left_join(Hypoxic_proportion) %>% 
+  ggplot(aes(x=mean_temp, color=PA,group=PA, fill=PA)) + geom_density(alpha=0.2) +facet_wrap(ID_Microscopy~., scales="free_y") + xlab("Average Water Column Temperature ˚C")
+
+
+```
+
+### Krill Presences Across Average Water Column Temperature and O2 Saturation
+```{r, fig.height=14, fig.width=12}
+
+krill_mean %>% 
+  filter(., ID_Microscopy %in% abundant_species$ID_Microscopy) %>% 
+  left_join(Hypoxic_proportion) %>% 
+  filter(., PAc >0) %>% 
+ ggplot(aes(y=mean_temp, x=mean_O2_sat)) +
+  stat_density_2d(aes(fill = ..level..), geom = "polygon", colour="white") +
+  facet_wrap(ID_Microscopy~.) +ylab("Average Temperature Upper 210m") + 
+  xlab("Average O2 Sat. Upper 210m")+theme_pubclean() + ggtitle("Presence")+theme(plot.title = element_text(size = 20, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5,size = 18, face = "bold"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.text=element_text(size=10), 
+        strip.text = element_text(size=10, face="bold"), 
+        axis.title=element_text(size=16,face="bold"),
+        legend.title = element_text( size=16, face="bold"),
+        legend.text = element_text(size=14)
+        ) 
+```
+
+### Binomial Regressons of Krill Detections As a Function of Depth of Hypoxia
+```{r, fig.height=14, fig.width=12}
+
+
+krill_mean %>% 
+  filter(., ID_Microscopy %in% abundant_species$ID_Microscopy) %>% 
+  ggplot(aes(x=mean_temp, y=PA)) +geom_point(alpha=0.1)+   geom_smooth(
+    method="glm",
+    method.args=list(family="binomial"),
+  ) +
+  stat_poly_eq(use_label(c("adj.R2", "p")),label.y.npc = 0.7, size=4) +  xlab("Average Temperature Upper 210m") +facet_wrap(ID_Microscopy~.)
+
+
 ```
 
 
