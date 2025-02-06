@@ -1,0 +1,579 @@
+---
+title: "CalCOFI Sample Comparison ERDAPP & PIC DBs"
+author: "Zack Gold"
+date: "2024-02-06"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
+
+
+```{r, echo=FALSE, hide=TRUE, warnings=FALSE,message=FALSE}
+library(tidyverse)
+library(here)
+library(sf)
+library(devtools)
+library(nationalparkcolors)
+library(knitr)
+library("rnaturalearth")
+library("rnaturalearthdata")
+library("readxl")
+library(parzer)
+library(lubridate)
+library(tinytex)
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+```
+
+```{r,echo=FALSE, hide=TRUE, warnings=FALSE,message = FALSE}
+
+tow_type <- read_csv(here("erddap_calcofi","erdCalCOFItowtyp_151f_ab30_5792.csv"))
+
+tow_data <- read_csv(here("erddap_calcofi","erdCalCOFItows_8411_77f5_5500.csv"))
+
+tow_data %>% 
+  left_join(tow_type) %>% 
+  slice(-1) %>% 
+  mutate(., time=ymd_hms(time),
+         year= year(time),
+        month= month(time),
+        season = case_when(month < 3 ~"Winter",
+                           month < 6 ~"Spring",
+                           month < 9 ~"Summer",
+                           month < 12 ~"Fall",
+                           TRUE ~"Winter")) %>% 
+  mutate(., latitude= as.numeric(latitude),
+         longitude = as.numeric(longitude),
+         Lon_deg_r=round(longitude,1),
+          Lat_deg_r=round(latitude,1)) %>% 
+  mutate(., site= str_c(line,"_",station),
+         year_site = str_c(year,":",line,"_",station),
+         year_season_site = str_c(year,":",season,line,"_",station),
+         cruise_site = str_c(cruise,":",line,"_",station)) %>% 
+  filter(., year > 1995) %>% 
+  filter(., year != 1997) %>% 
+  filter(., tow_type =="CB") -> calcofi_tows_all
+
+calcofi_tows_all %>%  
+  group_by(`site`) %>% 
+  count() %>% 
+  arrange(desc(n)) %>% 
+  filter(., n > 5) -> unique_stations_to_keep_all
+
+
+calcofi_tows_all %>% 
+  filter(., Lat_deg_r > 31) %>% 
+  filter(., Lat_deg_r < 35) %>% 
+  filter(., !line %in% c(76.7, 70.0,73.3)) %>% 
+  filter(., season %in% c("Spring", "Fall"))-> calcofi_tows_spring_fall
+
+calcofi_tows_spring_fall %>%  
+  group_by(`site`) %>% 
+  count() %>% 
+  arrange(desc(n)) %>% 
+  filter(., n > 5) -> unique_stations_to_keep
+
+calcofi_tows_spring_fall %>% 
+  filter(., site %in% unique_stations_to_keep$site) -> calcofi_tows_spring_fall
+
+calcofi_tows_all %>% 
+  filter(., site %in% unique_stations_to_keep_all$site) -> calcofi_tows_all
+
+```
+
+```{r, warnings=FALSE,echo=FALSE, hide=TRUE, warnings=FALSE,message = FALSE}
+#make some colors
+
+
+pal <- park_palette("Denali", 5)
+pal2 <- park_palette("Yellowstone", 5)
+
+pal3 <- park_palette("Arches", 5)
+pal4 <- park_palette("Hawaii", 5)
+```
+
+# ERDAPP Data
+
+## All Stations
+
+### General Statistics
+
+#### Unique Samples, Cruises, and Sites:
+```{r,echo=FALSE}
+
+calcofi_tows_all %>% 
+dplyr::summarise(n_distinct(cruise), n_distinct(`site`), n_distinct(`year_season_site`)) %>%  kable()
+
+```
+
+This is an optimistic number based on the event records for formalin preserved net tows. Likely not all of these samples exist.
+
+### Map of All Stations
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE, fig.width=12,fig.height=6 }
+
+min_lat <- min(calcofi_tows_all$Lat_deg_r)
+max_lat <- max(calcofi_tows_all$Lat_deg_r)
+
+min_lon <- min(calcofi_tows_all$Lon_deg_r)
+max_lon <- max(calcofi_tows_all$Lon_deg_r)
+
+calcofi_tows_all$year <- as.character(calcofi_tows_all$year)
+
+calcofi_tows_all %>% 
+  select(year, season, site) %>% 
+  group_by(site, season) %>% 
+  count() -> group_by_site_all
+
+calcofi_tows_all %>% 
+  dplyr::select(site, season, Lat_deg_r, Lon_deg_r) %>% 
+  distinct() -> lat_lot_back_all
+
+lat_lot_back_all %>% 
+  group_by(site, season) %>% 
+  slice(1) ->lat_lot_back_all
+
+group_by_site_all %>% 
+  left_join(lat_lot_back_all) -> group_by_site_all
+
+ggplot(data = world) +
+    geom_sf() +
+    geom_point(data = group_by_site_all, aes(x = Lon_deg_r, y = Lat_deg_r, size=n,colour=n),alpha=0.6 ) +
+    coord_sf(xlim = c(min_lon-1, max_lon+1), ylim = c(min_lat-0.5, max_lat+0.5), expand = FALSE) +theme_bw() +xlab("Longitude") +ylab("Latitude") +facet_wrap(.~season, ncol=2) +scale_colour_viridis_c(option = "magma", direction=-1)+ theme(plot.title = element_text(hjust = 0.5,size = 20, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5,size = 18, face = "bold"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.text=element_text(size=12), 
+        strip.text = element_text(size=16, face="bold"), 
+        axis.title=element_text(size=16,face="bold"),
+        legend.title = element_text( size=16, face="bold"),
+        legend.text = element_text(size=14)
+        ) -> figure_1
+
+figure_1
+
+```
+
+Spring and Winter sampling is more consistent and extends further north. Spring, at least for ichthyoplankton, is the time of the highest observed diversity coinciding with peak spawning for many species. 
+
+## Focus on Southern California Bight Spring & Fall
+
+### General Statistics
+
+#### Unique Samples, Cruises, and Sites:
+
+```{r,echo=FALSE}
+
+calcofi_tows_spring_fall %>% 
+dplyr::summarise(n_distinct(`year_site`), n_distinct(cruise), n_distinct(`site`), n_distinct(`year_season_site`)) %>%  kable()
+
+```
+
+### Sampling Distribution of Samples:
+
+```{r,echo=FALSE,warning=FALSE, message=FALSE, fig.width=16,fig.height=12 }
+my_binwidth <- 1
+
+calcofi_tows_spring_fall %>%  
+  group_by(`site`,season) %>% 
+  ggplot(., aes(x=`site`))+
+  geom_histogram(binwidth = my_binwidth, colour= "black", fill = pal[1], stat = "count") +theme_bw()  +ylab("Number of Samples") + xlab("Stations") + facet_wrap(.~season, ncol=1) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size= 12, face = "bold"), axis.title =element_text(size=22, face = "bold"),
+        axis.text.y = element_text(size=20, hjust = 1, face = "bold"),
+        legend.text = element_text(size = 18, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        strip.text = element_text(size=22, face="bold"))
+
+
+```
+
+<div style="page-break-after: always; visibility: hidden"> 
+\pagebreak 
+</div>
+
+
+## Option a8 Selected Priority Sampling - Coastal Focus 1996-2023
+
+### Main Target: Southern California Bight Coastal Eutriphication Driven Hypoxia
+
+The focus is on the coastal grid capturing areas inside and outside the reoccurring hypoxic eddy centered south of Santa Catalina Island. Capturing 25 years of sampling including multiple El Niño and La Niñas, marine heat waves, and documented regime shifts in ichthyoplankton (notably tropicalization of southern mesopelagic species). 
+
+### Secondary Targets: National Marine Sanctuaries & Wind Lease Areas
+
+Capturing Spring data from further North provides baseline data inside and outside of the Channel Islands NMS, proposed Chumash Heritage NMS, and the Morro Bay Wind Lease Area. This also captures inshore state waters supporting OPC, CDFW, and SCCOOS priorities.
+
+There is a diminished focus on the offshore stations, but hopefully still enough spatial and temporal scale to provide regional resolution.
+
+This set up also lends itself to systematic  partitioning of the work. On average there are ~27 jars per cruise and so can process 3-4 jars per batch. Can also focus on all Spring samples first and then decide to expand to Fall sampling as a second set. 
+ 
+
+*Summary Table*
+```{r, echo=FALSE,warning=FALSE, message=FALSE}
+
+subset_8_specific_stations = c(
+"70_51","70_55", "70_60","70_80",
+"73.3_50","73.3_55","73.3_60","73.3_80",
+"76.7_49","76.7_55","76.7_60","76.8_60",
+"80_50.5","80_55","80_60", "80_80",
+"81.7_43.5", "81.8_46.9",
+"83.3_51", "83.3_40.6", "83.3_39.4","83.3_55",
+"86.7_45", "86.7_33","86.7_40",
+"90_45","90_37", "90_35", "90_28","90_60",
+"93.3_30", "93.3_26.7","93.4_26.4","93.3_40","93.3_35",
+"85.4_35.8", "86.8_32.5", "88.5_30.1", "91.7_26.4" )
+
+#calcofi_tows_all$site %>%  unique() %>%  sort()
+calcofi_tows_all %>% 
+  filter(., site %in% subset_8_specific_stations)  %>% 
+  filter(., season %in% c("Spring", "Fall"))-> calcofi_tows_a8_erdapp
+
+readr::write_excel_csv(calcofi_tows_a8_erdapp, file="all_a8_samples_in_ERDAPP.csv")
+
+calcofi_tows_a8_erdapp %>% 
+dplyr::summarise(n_distinct(`year_season_site`),n_distinct(`year_site`), n_distinct(cruise), n_distinct(`site`))  %>%  kable()
+```
+
+### ERDAPP Option a8 Cruise Summary
+```{r}
+calcofi_tows_a8_erdapp %>% 
+  group_by(cruise) %>% 
+  dplyr::summarise(Stations = n_distinct(site)) %>% kable()
+```
+### Average Samples per Cruise
+```{r}
+calcofi_tows_a8_erdapp %>% 
+  ungroup() %>% 
+  group_by(cruise) %>% 
+  count() %>% 
+  ungroup() %>% 
+dplyr::summarise(mean(n), max(n), min(n))  %>%  kable()
+
+```
+
+
+```{r, echo=FALSE,warning=FALSE, message=FALSE}
+calcofi_tows_a8_erdapp %>% 
+  select(year, season, site) %>% 
+  group_by(site, season) %>% 
+  count() -> group_by_site_f_a8
+
+calcofi_tows_all %>% 
+  dplyr::select(site, season, Lat_deg_r, Lon_deg_r) %>% 
+  distinct() -> lat_lot_back_all
+
+lat_lot_back_all %>% 
+  group_by(site, season) %>% 
+  slice(1) ->lat_lot_back_all
+
+group_by_site_f_a8 %>% 
+  left_join(lat_lot_back_all) -> group_by_site_f_a8
+
+
+```
+
+### Map of Selected Sites (Option a8)
+
+```{r, echo=FALSE,warning=FALSE, message=FALSE, fig.width=12}
+
+min_lat <- min(group_by_site_f_a8$Lat_deg_r)
+max_lat <- max(group_by_site_f_a8$Lat_deg_r)
+
+min_lon <- min(group_by_site_f_a8$Lon_deg_r)
+max_lon <- max(group_by_site_f_a8$Lon_deg_r)
+
+
+ggplot(data = world) +
+    geom_sf() +
+    geom_point(data = group_by_site_f_a8, aes(x = Lon_deg_r, y = Lat_deg_r, size=n,colour=n),alpha=0.6 ) +
+    coord_sf(xlim = c(min_lon-1, max_lon+1), ylim = c(min_lat-0.5, max_lat+0.5), expand = FALSE) +theme_bw() +xlab("Longitude") +ylab("Latitude") +facet_grid(.~season) +scale_colour_viridis_c(option = "magma", direction=-1) + theme(plot.title = element_text(hjust = 0.5,size = 20, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5,size = 18, face = "bold"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.text=element_text(size=12), 
+        strip.text = element_text(size=16, face="bold"), 
+        axis.title=element_text(size=16,face="bold"),
+        legend.title = element_text( size=16, face="bold"),
+        legend.text = element_text(size=14)
+        )-> option8
+
+option8
+
+ggsave(option8, file=here("option8.png"), width=12, height =8)
+```
+
+# PIC Data
+
+```{r}
+PIC_net <- read.csv(here("PIC_net-type-is-calbobl.csv"))
+
+PIC_net_all <- read.csv(here("PIC_expedition-contains-calcofi+date-range-jan-1-1996-dec-31-2024.csv"))
+
+
+PIC_net_all %>% 
+filter(., Fixative %in% c("ethanol","Ethanol")) %>% 
+  mutate(., SampleDate = as.Date(SampleDate,"%d%b%Y")) %>% 
+  filter(., SampleDate > "1995-01-01") %>% 
+  mutate(., Expedition=recode(Expedition, `CALCOFI`="CALCOFI 1010") ) -> ethanol_PIC
+
+ethanol_PIC %>%
+  mutate(., Cruise = str_trim(str_sub(Expedition, -4))) %>%
+  mutate(., Cruise = recode(Cruise, 
+                            "404"="0404",
+                            "711"="0711",
+                            "801"="0801",
+                            )) %>% 
+ mutate(., Cruise = case_when(str_sub(Cruise, 1) > 8 ~ str_c("19", Cruise),
+                                      TRUE~str_c("20", Cruise))) %>% 
+  mutate(., cruise_site = str_c(Cruise,":",Staline,"_",StaNo),
+            site = str_c(Staline,"_",StaNo)) %>% 
+   mutate(., 
+         year= year(SampleDate),
+        month= month(SampleDate),
+        season = case_when(month < 3 ~"Winter",
+                           month < 6 ~"Spring",
+                           month < 9 ~"Summer",
+                           month < 12 ~"Fall",
+                           TRUE ~"Winter")) %>% 
+  separate(Location, into=c("latitude","longitude"), sep=",", remove=F) %>% 
+  mutate(., latitude= as.numeric(latitude),
+         longitude = as.numeric(longitude),
+         Lon_deg_r=round(longitude,1),
+          Lat_deg_r=round(latitude,1)) %>% 
+  mutate(year_site = str_c(`year`,":",`site`),
+         year_season_site = str_c(year,":",season,"_",site))-> ethanol_PIC_fixed
+```
+
+### General Statistics
+
+#### Unique Samples, Cruises, and Sites:
+```{r,echo=FALSE}
+
+ethanol_PIC_fixed %>% 
+dplyr::summarise(n_distinct(Cruise), n_distinct(`site`), n_distinct(`year_season_site`)) %>%  kable()
+
+```
+
+This is an optimistic number based on the event records for formalin preserved net tows. Likely not all of these samples exist.
+
+### Map of All Stations
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE, fig.width=12,fig.height=6 }
+
+min_lat <- min(ethanol_PIC_fixed$Lat_deg_r)
+max_lat <- 40 #max(ethanol_PIC_fixed$Lat_deg_r)
+
+min_lon <- min(ethanol_PIC_fixed$Lon_deg_r)
+max_lon <- max(ethanol_PIC_fixed$Lon_deg_r)
+
+ethanol_PIC_fixed$year <- as.character(ethanol_PIC_fixed$year)
+
+ethanol_PIC_fixed %>% 
+  select(year, season, site) %>% 
+  group_by(site, season) %>% 
+  count() -> group_by_site_all
+
+ethanol_PIC_fixed %>% 
+  dplyr::select(site, season, Lat_deg_r, Lon_deg_r) %>% 
+  distinct() -> lat_lot_back_all
+
+lat_lot_back_all %>% 
+  group_by(site, season) %>% 
+  slice(1) ->lat_lot_back_all
+
+group_by_site_all %>% 
+  left_join(lat_lot_back_all) -> group_by_site_all
+
+ggplot(data = world) +
+    geom_sf() +
+    geom_point(data = group_by_site_all, aes(x = Lon_deg_r, y = Lat_deg_r, size=n,colour=n),alpha=0.6 ) +
+    coord_sf(xlim = c(min_lon-1, max_lon+1), ylim = c(min_lat-0.5, max_lat+0.5), expand = FALSE) +theme_bw() +xlab("Longitude") +ylab("Latitude") +facet_wrap(.~season, ncol=2) +scale_colour_viridis_c(option = "magma", direction=-1)+ theme(plot.title = element_text(hjust = 0.5,size = 20, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5,size = 18, face = "bold"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.text=element_text(size=12), 
+        strip.text = element_text(size=16, face="bold"), 
+        axis.title=element_text(size=16,face="bold"),
+        legend.title = element_text( size=16, face="bold"),
+        legend.text = element_text(size=14)
+        ) -> figure_2
+
+figure_2
+
+```
+
+Spring and Winter sampling is more consistent and extends further north. Spring, at least for ichthyoplankton, is the time of the highest observed diversity coinciding with peak spawning for many species. 
+
+
+
+
+## Option a8 Selected Priority Sampling - Coastal Focus 1996-2023
+
+```{r}
+
+ethanol_PIC_fixed %>% 
+  filter(., site %in% subset_8_specific_stations)  %>% 
+  filter(., season %in% c("Spring", "Fall"))-> calcofi_tows_a8_pic
+
+# 1998?
+
+readr::write_excel_csv(calcofi_tows_a8_pic, file="all_a8_samples_in_PIC_DB.csv")
+```
+
+#### Unique Samples, Cruises, and Sites:
+```{r,echo=FALSE}
+
+calcofi_tows_a8_pic %>% 
+dplyr::summarise(n_distinct(Cruise), n_distinct(`site`), n_distinct(`year_season_site`)) %>%  kable()
+
+```
+
+### Map of Selected Sites (Option a8)
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE, fig.width=12,fig.height=6 }
+
+min_lat <- min(calcofi_tows_a8_pic$Lat_deg_r)
+max_lat <- 36 #max(ethanol_PIC_fixed$Lat_deg_r)
+
+min_lon <- min(calcofi_tows_a8_pic$Lon_deg_r)
+max_lon <- max(calcofi_tows_a8_pic$Lon_deg_r)
+
+calcofi_tows_a8_pic$year <- as.character(calcofi_tows_a8_pic$year)
+
+calcofi_tows_a8_pic %>% 
+  select(year, season, site) %>% 
+  group_by(site, season) %>% 
+  count() -> group_by_site_all
+
+calcofi_tows_a8_pic %>% 
+  dplyr::select(site, season, Lat_deg_r, Lon_deg_r) %>% 
+  distinct() -> lat_lot_back_all
+
+lat_lot_back_all %>% 
+  group_by(site, season) %>% 
+  slice(1) ->lat_lot_back_all
+
+group_by_site_all %>% 
+  left_join(lat_lot_back_all) -> group_by_site_all
+
+ggplot(data = world) +
+    geom_sf() +
+    geom_point(data = group_by_site_all, aes(x = Lon_deg_r, y = Lat_deg_r, size=n,colour=n),alpha=0.6 ) +
+    coord_sf(xlim = c(min_lon-1, max_lon+1), ylim = c(min_lat-0.5, max_lat+0.5), expand = FALSE) +theme_bw() +xlab("Longitude") +ylab("Latitude") +facet_wrap(.~season, ncol=2) +scale_colour_viridis_c(option = "magma", direction=-1)+ theme(plot.title = element_text(hjust = 0.5,size = 20, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5,size = 18, face = "bold"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.text=element_text(size=12), 
+        strip.text = element_text(size=16, face="bold"), 
+        axis.title=element_text(size=16,face="bold"),
+        legend.title = element_text( size=16, face="bold"),
+        legend.text = element_text(size=14)
+        ) -> figure_3
+
+figure_3
+
+```
+
+### PIC Option a8 Cruise Summary
+```{r}
+
+calcofi_tows_a8_pic %>% 
+  group_by(Cruise) %>% 
+  dplyr::summarise(Stations = n_distinct(site)) %>% kable()
+
+```
+
+
+# Comparison of ERDAPP and PIC DBs
+
+## In ERDAPP not in PIC
+
+```{r}
+
+setdiff(calcofi_tows_a8_erdapp$cruise_site %>% unique(), calcofi_tows_a8_pic$cruise_site %>% unique()) -> samples_in_ERDAPP_not_PIC
+length(samples_in_ERDAPP_not_PIC) 
+
+calcofi_tows_a8_erdapp %>% 
+  filter(.,cruise_site %in% samples_in_ERDAPP_not_PIC ) -> a8_samples_in_ERDAPP_not_PIC
+readr::write_excel_csv( a8_samples_in_ERDAPP_not_PIC, file="a8_samples_in_ERDAPP_not_PIC.csv")
+```
+
+
+## In PIC not in ERDAPP
+
+```{r}
+setdiff( calcofi_tows_a8_pic$cruise_site %>% unique(),calcofi_tows_a8_erdapp$cruise_site %>% unique()) -> samples_in_PIC_not_ERDAPP
+length(samples_in_PIC_not_ERDAPP)
+
+
+calcofi_tows_a8_pic %>% 
+  filter(.,cruise_site %in% samples_in_PIC_not_ERDAPP ) -> a8_samples_in_PIC_not_ERDAPP
+readr::write_excel_csv( a8_samples_in_PIC_not_ERDAPP, file="a8_samples_in_PIC_not_ERDAPP.csv")
+```
+
+
+## Shared Samples in PIC & ERDAPP
+
+```{r}
+intersect(calcofi_tows_a8_erdapp$cruise_site %>% unique(), calcofi_tows_a8_pic$cruise_site %>% unique()) -> samples_in_PIC_and_ERDAPP
+length(samples_in_PIC_and_ERDAPP)
+
+calcofi_tows_a8_pic %>% 
+  filter(., cruise_site %in% samples_in_PIC_and_ERDAPP ) -> a8_samples_in_PIC_and_ERDAPP
+
+readr::write_excel_csv( a8_samples_in_PIC_and_ERDAPP, file="a8_samples_in_PIC_and_ERDAPP.csv")
+
+```
+
+
+## Differences Per Year
+```{r}
+calcofi_tows_a8_pic %>% 
+  mutate(., year = as.character(year)) %>% 
+  group_by(year) %>% 
+  count() %>% 
+    rename(`PIC (n)`=n) -> pic_count
+
+```
+
+```{r}
+calcofi_tows_a8_erdapp %>% 
+  group_by(year) %>% 
+  count() %>% 
+  rename(`ERDAPP (n)`=n) -> erdapp_count
+```
+
+```{r}
+
+erdapp_count %>% 
+  left_join(pic_count) %>% 
+  dplyr::mutate(`PIC (n)` = replace_na(`PIC (n)`, 0)) %>% 
+  mutate( Difference = `ERDAPP (n)`- `PIC (n)`) -> sample_count_differences_by_year
+
+sample_count_differences_by_year %>% kable()
+
+  readr::write_excel_csv(sample_count_differences_by_year, file="sample_count_differences_by_year.csv")
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
