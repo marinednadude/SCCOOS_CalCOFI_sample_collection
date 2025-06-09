@@ -1,0 +1,284 @@
+---
+title: "Best Model Validation and Exploration"
+author: "Zack Gold"
+date: "7/13/2022"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(ggcorrplot)
+library(vegan)
+library(rstanarm)
+library(here)
+library(bayesplot)
+
+```
+
+```{r}
+
+metadata2 <-
+read.csv(file = "../data/calcofi_metadata_analysis_20210907.csv")
+
+metadata2 %>% 
+  dplyr::select(ST_ID,Sta_ID,Year,mean_100_T,mean_100_Salinity,mean_100_O2,mean_100_PO4,mean_100_silicate,mean_100_NO3,mean_100_NO2,mean_100_CHLa,two_month_sst,annual_sst) -> df_sub
+
+
+df_sub %>% 
+  mutate(., station = case_when(Sta_ID =="080.0 060.0" ~"Pt.C",
+                                Sta_ID =="086.7 050.0" ~"SaNI",
+                                Sta_ID =="093.3 060.0" ~"SDOf",
+                                Sta_ID =="093.3 030.0"~"SDIn"),
+         Year=as.integer(Year)) %>% dplyr::select(-ST_ID,-Sta_ID)->df_sub
+```
+
+
+
+
+```{r}
+
+b_grid_tibble <- readRDS(file = here("data", "b_grid_tibble_rpkn.RDS"))
+
+
+b_grid_tibble %>%
+mutate(., log_est = log10(est + 0.01)) %>%
+group_by(Year, station, ID_main) %>%
+dplyr::summarise(
+mean = mean(est),
+median = median(est),
+sd = sd(est),
+p05 = quantile(est, probs = 0.05),
+p95 = quantile(est, probs = 0.95)
+) %>%
+mutate(mean_log = log10(mean + 0.01), sd_log = log10(sd + 0.01)) -> b_ID_main_out_site
+
+b_ID_main_out_site$Year  <- as.numeric(b_ID_main_out_site$Year)
+
+saveRDS(b_ID_main_out_site, here("data","b_ID_main_out_site.RDS"))
+
+
+b_ID_main_out_site <- readRDS(file = here("data", "b_ID_main_out_site.RDS"))
+
+
+
+```
+
+```{r}
+test_a <- b_ID_main_out_site %>%
+mutate(.,
+Normalized.biomass = mean,
+log_Normalized.biomass = mean_log) %>%
+   mutate(., station = case_when(station =="80_60" ~"Pt.C",
+                                station =="86.7_50" ~"SaNI",
+                                station =="93.3_60" ~"SDOf",
+                                station =="93.3_30"~"SDIn"),
+         Year=as.integer(Year)) %>% 
+left_join(df_sub) %>%
+mutate(PA_biomass = if_else(Normalized.biomass > 0.01, 1, 0)) %>%  #NOTE change to small value, rather than actual zero, given model output
+ungroup() %>%
+mutate(temp_std = (two_month_sst - mean(two_month_sst)) / sd(two_month_sst)) %>%
+mutate(O2_std = (mean_100_O2 - mean(mean_100_O2)) / sd(mean_100_O2)) %>%
+mutate(PSU_std = (mean_100_Salinity - mean(mean_100_Salinity)) / sd(mean_100_Salinity)) %>%
+mutate(., ID_main = str_replace(ID_main, "AANOTHER", "sp."))
+```
+
+##### Log Biomass | Station Run models
+```{r}
+test_a %>% 
+  ggplot(aes(mean)) +geom_density()
+
+ ggsave(
+  file = here::here("analysis", "figures", "geom_density_raw.jpeg"),
+  width = 12,
+  height = 8, limitsize = FALSE
+  )
+ 
+ test_a %>% 
+  ggplot(aes(log_Normalized.biomass)) +geom_density()
+
+ ggsave(
+  file = here::here("analysis", "figures", "geom_density_log.jpeg"),
+  width = 12,
+  height = 8, limitsize = FALSE
+  )
+
+```
+
+
+
+```{r}
+# 
+# glmer_stan_mod_log_combo<- stan_glmer(log_Normalized.biomass ~ 0 + (1 + temp_std | ID_main/station),   #mod3
+#                              family = "gaussian",
+#                              data = test_a,
+#                              #prior = normal(0, 4),
+#                             #prior_intercept = normal(0, 10),
+#                              adapt_delta = 0.99,
+#                              chains = 10,
+#                              iter = 4000,
+#                              cores = 2)
+# 
+# saveRDS(glmer_stan_mod_log_combo,here("data","glmer_stan_mod_log_combo.RDS"))
+
+glmer_stan_mod_log_combo <- readRDS(here("data","glmer_stan_mod_log_combo.RDS"))
+
+```
+
+
+# Best Model Exploration
+```{r}
+print(glmer_stan_mod_log_combo)
+summary(glmer_stan_mod_log_combo,         probs = c(0.025, 0.975))
+
+```
+
+```{r}
+posterior <- as.matrix(glmer_stan_mod_log_combo)
+
+plot_title <- ggtitle("Posterior distributions",
+                      "with medians and 95% intervals")
+mcmc_areas(posterior,
+           prob = 0.95) + plot_title
+
+ ggsave(
+  file = here::here("analysis", "figures", "mcmc_areas.jpeg"),
+  width = 20,
+  height = 80, limitsize = FALSE
+  )
+```
+
+```{r}
+
+pp_check(glmer_stan_mod_log_combo, plotfun = "stat", stat = "mean")
+pp_check(glmer_stan_mod_log_combo, plotfun = "dens_overlay")
+
+ggsave(
+  file = here::here("analysis", "figures", "pp_check.jpeg"),
+  width = 12,
+  height = 8, limitsize = FALSE
+  )
+```
+
+```{r}
+# another example with rstanarm
+color_scheme_set("purple")
+test_a %>% 
+  unite("Species:station",c("ID_main","station"), remove=F, sep=":") -> test_a
+
+ppc_intervals_grouped(
+  y = test_a$log_Normalized.biomass,
+  yrep = posterior_predict(glmer_stan_mod_log_combo),
+  x = test_a$temp_std,
+  group=test_a$`Species:station`,
+  prob = 0.95
+) +
+  labs(
+    x = "SST (Norm)",
+    y = "Log(Abundance)",
+    title = "95% posterior predictive intervals \nvs observed Abundance ",
+    subtitle = "by SST"
+  ) +
+  panel_bg(fill = "gray95", color = NA) +
+  grid_lines(color = "white") 
+
+
+ ggsave(
+  file = here::here("analysis", "figures", "ppc_intervals.jpeg"),
+  width = 40,
+  height = 40
+  )
+ 
+```
+
+
+```{r}
+plot(glmer_stan_mod_log_combo, plotfun = "trace")
+
+ ggsave(
+  file = here::here("analysis", "figures", "trace.jpeg"),
+  width = 40,
+  height = 40
+  )
+```
+
+
+ 
+ 
+
+```{r}
+glmer_stan_mod_log_combo_v2 <- readRDS(here("data","glmer_stan_mod_log_combo_v2.RDS"))
+
+ppc_intervals_grouped(
+  y = test_a$log_Normalized.biomass,
+  yrep = posterior_predict(glmer_stan_mod_log_combo_v2),
+  x = test_a$temp_std,
+  group=test_a$`Species:station`,
+  prob = 0.95
+) +
+  labs(
+    x = "SST (Norm)",
+    y = "Log(Abundance)",
+    title = "95% posterior predictive intervals \nvs observed Abundance ",
+    subtitle = "by SST"
+  ) +
+  panel_bg(fill = "gray95", color = NA) +
+  grid_lines(color = "white") 
+
+
+ ggsave(
+  file = here::here("analysis", "figures", "ppc_intervals_no_nest.jpeg"),
+  width = 40,
+  height = 40
+  )
+
+```
+
+
+```{r}
+posterior2 <- extract(fit2, inc_warmup = TRUE, permuted = FALSE)
+
+color_scheme_set("mix-blue-pink")
+p <- mcmc_trace(posterior2,  pars = c("mu", "tau"), n_warmup = 300,
+                facet_args = list(nrow = 2, labeller = label_parsed))
+p + facet_text(size = 15)
+
+```
+
+```{r}
+# scatter plot also showing divergences
+color_scheme_set("darkgray")
+mcmc_scatter(
+  as.matrix(fit2),
+  pars = c("tau", "theta[1]"), 
+  np = nuts_params(fit2), 
+  np_style = scatter_style_np(div_color = "green", div_alpha = 0.8)
+)
+
+```
+
+```{r}
+color_scheme_set("red")
+ppc_dens_overlay(y = fit$y,
+                 yrep = posterior_predict(fit, draws = 50))
+```
+
+
+```{r}
+plot(glmer_stan_mod_log_combo, plotfun = "trace")
+
+
+ ggsave(
+  file = here::here("analysis", "figures", "trace.jpeg"),
+  width = 40,
+  height = 40
+  )
+ 
+ 
+pp_check(glmer_stan_mod_log_combo, plotfun = "stat", stat = "mean")
+pp_check(glmer_stan_mod_log_combo, plotfun = "dens_overlay")
+
+
+plot(glmer_stan_mod_log_combo, "rhat")
+plot(glmer_stan_mod_log_combo, "ess")
+
+```

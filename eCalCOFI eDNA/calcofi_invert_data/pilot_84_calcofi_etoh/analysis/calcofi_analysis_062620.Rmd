@@ -1,0 +1,2035 @@
+---
+title: "Calcofi December Analysis 2019"
+author: "Zack Gold"
+date: "06/26/2020"
+output: html_document
+---
+
+```{r Import Data}
+Local_folder <- "/Users/zackgold/Documents/UCLA_phd/Projects/California/NOAA_CALCOFI/data_an_2020/analysis_062020/analysis"
+
+setwd("/Users/zackgold/Documents/UCLA_phd/Projects/California/NOAA_CALCOFI/data_an_2020/analysis_062020/analysis")
+
+#Pre SOM
+pre_occ_eIDX <- readRDS(file="/Users/zackgold/Documents/UCLA_phd/Projects/California/NOAA_CALCOFI/data_an_2020/analysis_062020/calcofi_pre_occ_tech_averaged_sum.taxonomy_e_index.RDS")
+
+pre_occ_counts <- readRDS(file="/Users/zackgold/Documents/UCLA_phd/Projects/California/NOAA_CALCOFI/data_an_2020/analysis_062020/calcofi_pre_occ_tech_averagedsum.taxonomy_counts.RDS")
+
+pre_occ_counts_site <- readRDS(file="/Users/zackgold/Documents/UCLA_phd/Projects/California/NOAA_CALCOFI/data_an_2020/analysis_062020/calcofi_pre_occ_site_averaged_sum.taxonomy_reads.RDS")
+
+pre_occ_eIDX_site <- readRDS(file="/Users/zackgold/Documents/UCLA_phd/Projects/California/NOAA_CALCOFI/data_an_2020/analysis_062020/calcofi_pre_occ_site_averaged_sum.taxonomy_e_index.RDS")
+
+
+#Post SOM
+post_occ_eIDX <- readRDS(file="/Users/zackgold/Documents/UCLA_phd/Projects/California/NOAA_CALCOFI/data_an_2020/analysis_062020/calcofi_post_occ_tech_averaged_sum.taxonomy_e_index.RDS")
+
+post_occ_counts <- readRDS(file="/Users/zackgold/Documents/UCLA_phd/Projects/California/NOAA_CALCOFI/data_an_2020/analysis_062020/calcofi_post_occ_tech_averagedsum.taxonomy_counts.RDS")
+
+post_occ_counts_site <- readRDS(file="/Users/zackgold/Documents/UCLA_phd/Projects/California/NOAA_CALCOFI/data_an_2020/analysis_062020/calcofi_post_occ_site_averaged_sum.taxonomy_reads.RDS")
+
+post_occ_eIDX_site <- readRDS(file="/Users/zackgold/Documents/UCLA_phd/Projects/California/NOAA_CALCOFI/data_an_2020/analysis_062020/calcofi_post_occ_site_averaged_sum.taxonomy_e_index.RDS")
+
+
+ASV.nested <- readRDS(file="/Users/zackgold/Documents/UCLA_phd/Projects/California/NOAA_CALCOFI/data_an_2020/analysis_062020/ASV.nested_post_occ.RDS")
+
+ASV_sum.taxonomy <- readRDS(file="/Users/zackgold/Documents/UCLA_phd/Projects/California/NOAA_CALCOFI/CalCOFI_Database_194903-201806_csv_12Jun2019/preoccupancy.ASV.sum.taxonomy.rds")
+
+#Metadata
+input_meta_path <- "/Users/zackgold/Documents/UCLA_phd/Projects/California/NOAA_CALCOFI/CalCOFI_Database_194903-201907_csv_30Apr2020/calcofi_metadata_analysis_062620.csv"
+
+metadata <- read.table(input_meta_path, header = 1, sep = ",", stringsAsFactors = F)
+tech_matcher <- read.table("/Users/zackgold/Documents/UCLA_phd/Projects/California/NOAA_CALCOFI/CalCOFI_Database_194903-201907_csv_30Apr2020/calcofi_metadata_tech_matcher.csv", header = 1, sep = ",", stringsAsFactors = F)
+
+```
+
+```{r}
+
+metadata %>% 
+filter(!Cst_Cnt %in% c(30208,30214)) %>% 
+  mutate(sample=paste0("X",sample)) %>% 
+  filter(., sample !="XNA_NA_NA_NA")->metadata
+
+tech_matcher %>% as.data.frame() %>% 
+  mutate(Location=paste0("X",Location)) %>% 
+  left_join(metadata, by=c("Location"="sample")) %>%
+  dplyr::select(Sample, everything()) %>% distinct() %>% 
+  mutate(Sample=paste0("X",Sample))-> tech_metadata
+tech_metadata %>%  View()
+metadata %>% View()
+```
+
+```{r anacapa to phyloseq functions from ranacapa library imported manually since they do not work on R3.6.0,  results="hide", warning=FALSE, include=FALSE}
+#' Takes a site-abundance table from Anacapa, and summarizes to each unique taxon in the sum.taxonomy column
+#' @param taxon_table OTU table from Anacapa
+#' @author Gaurav Kandlikar
+#' @examples
+#' good_taxon_table <- data.frame(sum.taxonomy = c("a;b;c;d;f;u", "p;q;r;s;t;u"),
+#' site_1 = c(0,1), site_2 = c(10, 20))
+#' group_anacapa_by_taxonomy(good_taxon_table)
+#' @export
+
+
+group_anacapa_by_taxonomy <- function(taxon_table) {
+  # If tables were made in New Anacapa (with Domain), get rid of domain...
+  if(stringr::str_count(taxon_table$sum.taxonomy, ";")[1] == 6) {
+    taxon_table$sum.taxonomy = gsub(pattern = "^.*?;", replacement = "", x = taxon_table$sum.taxonomy)
+  }
+  taxon_table %>%
+    dplyr::filter(sum.taxonomy != "") %>%
+    dplyr::group_by(sum.taxonomy) %>%
+    dplyr::summarize_if(is.numeric, sum) %>%
+    dplyr::mutate(sum.taxonomy = as.character(sum.taxonomy)) %>%
+    data.frame
+}
+
+
+#' Takes an site-abundance table from Anacapa, along with a qiime-style mapping file, and returns a phyloseq object
+#' @param taxon_table Taxon table in the anacapa format
+#' @param metadata_file Metadata file with rows as sites, columns as variables
+#' @return phyloseq class object
+#' @author Gaurav Kandlikar
+#' @examples
+#' good_taxon_table <- data.frame(sum.taxonomy = c("a;b;c;d;f;u", "p;q;r;s;t;u"),
+#' site_1 = c(0,1), site_2 = c(10, 20))
+#' good_maps <- data.frame(site = c("site_1", "site_2"), season = c("wet", "dry"),
+#'  host = c("oak", "sage"))
+#' convert_anacapa_to_phyloseq(good_taxon_table, good_maps)
+#' @export
+
+
+convert_anacapa_to_phyloseq <- function(taxon_table, metadata_file) {
+
+  # Validate the files
+  validate_input_files(taxon_table, metadata_file)
+
+  # Group the anacapa ouptut by taxonomy, if it has not yet happened, and turn it into a matrix
+  taxon_table2 <- group_anacapa_by_taxonomy(taxon_table) %>%
+    tibble::column_to_rownames("sum.taxonomy") %>%
+    as.matrix
+  # Reorder the columns (sites) for ease of displaying later
+  taxon_table2 <- taxon_table2[ , order(colnames(taxon_table2))]
+
+  # Convert the matrix into a phyloseq otu_table object, with taxa as the rows
+  ana_taxon_table_physeq <- phyloseq::otu_table(taxon_table2, taxa_are_rows = TRUE)
+
+  # Extract the rownames of the matrix above- this has the full taxonomic path.
+  # Split the taxonomic path on semicolons, and turn the resulting matrix into
+  # a phyloseq tax_table object
+  taxon_names <- reshape2::colsplit(rownames(taxon_table2), ";",
+                          names = c("Phylum","Class","Order","Family","Genus","Species")) %>%
+    as.matrix
+  rownames(taxon_names) <- rownames(taxon_table2)
+
+  tax_physeq <- phyloseq::tax_table(taxon_names)
+  colnames(tax_physeq) <- c("Phylum","Class","Order","Family","Genus","Species")
+
+  # Make a phyloseq object out of the otu_table and the tax_table objects
+  physeq_object <- phyloseq::phyloseq(ana_taxon_table_physeq, tax_physeq)
+
+  # Make sure the mapping file (ie the site metadata) is ordered according to site name
+  rownames(metadata_file) <- metadata_file[, 1]
+  metadata_file <- metadata_file[order(metadata_file[, 1]), ]
+
+  # Convert the mapping file into a phyloseq sample_data object, and merge it with the
+  # phyloseq object created above to make a phyloseq object with otu table, tax table, and sample data.
+  sampledata <- phyloseq::sample_data(metadata_file)
+  sample_names(sampledata)
+  sample_names(physeq_object)
+  phyloseq::merge_phyloseq(physeq_object, sampledata)
+}
+
+#' Takes a phyloseq object with an otu_table object and returns a vegan style community matrix.
+#' @param physeq_object phyloseq object with an otu_table object within
+#' @return vegan-style community matrix
+#' @examples
+#' good_taxon_table <- data.frame(sum.taxonomy = c("a;b;c;d;f;u", "p;q;r;s;t;u"),
+#' site_1 = c(0,1), site_2 = c(10, 20))
+#' good_maps <- data.frame(site = c("site_1", "site_2"), season = c("wet", "dry"),
+#' host = c("oak", "sage"))
+#' physeq_object <- convert_anacapa_to_phyloseq(good_taxon_table, good_maps)
+#' vegan_otu(physeq_object)
+#' @export
+vegan_otu <- function(physeq_object) {
+  OTU <- phyloseq::otu_table(physeq_object)
+  if (phyloseq::taxa_are_rows(OTU)) {
+    OTU <- t(OTU)
+  }
+  return(methods::as(OTU, "matrix"))
+}
+
+#' Remove "xxx_seq_number" column from ana_taxon_table file if it exists
+#' takes one taxon table as its input, and if it include
+#' a column named "xxx_seq_number", it gets rid of that column - it's not of use to us
+#' any longer
+#'
+#' @param taxon_table taxonomy table from Anacapa
+#' @return ana_taxon_table file, with "xxx_seq_number" column removed (if it existed)
+#' @examples
+#' good_taxon_table <- data.frame(seq_number = c(1,2),
+#' sum.taxonomy = c("a;b;c;d;f;u", "p;q;r;s;t;u"),
+#' site_1 = c(0,1), site_2 = c(10, 20))
+#' scrub_seqNum_column(good_taxon_table)
+#' @export
+scrub_seqNum_column <- function(taxon_table) {
+  to_return <- taxon_table %>% dplyr::select(-dplyr::matches("seq_number"))
+  return(to_return)
+}
+
+#' Replace empty calls in Anacapa taxonomy tables with Unknown
+#' (that is what they effectively are to most users)
+#' @param taxon_table taxonomy table from Anacapa
+#' @return ana_taxon_table with scrubbed 'sum.taxonomy' column
+#' @examples
+#' good_taxon_table <- data.frame(sum.taxonomy = c("a;b;c;d;f;u", "p;q;r;s;t;u"),
+#' site_1 = c(0,1), site_2 = c(10, 20))
+#' scrub_taxon_paths(good_taxon_table)
+#' @export
+scrub_taxon_paths <- function(taxon_table) {
+  to_return <- taxon_table
+  new_sum_tax <- reshape2::colsplit(taxon_table$sum.taxonomy, ";",
+                          names = c("Phylum", "Class", "Order", "Family", "Genus", "Species"))
+
+  new_sum_tax <- new_sum_tax %>%
+    dplyr::mutate(Phylum = ifelse(is.na(Phylum) | Phylum == "", "unknown", Phylum)) %>%
+    dplyr::mutate(Class = ifelse(is.na(Class) | Class == "", "unknown", Class)) %>%
+    dplyr::mutate(Order = ifelse(is.na(Order) | Order == "", "unknown", Order)) %>%
+    dplyr::mutate(Family = ifelse(is.na(Family) | Family == "", "unknown", Family)) %>%
+    dplyr::mutate(Genus = ifelse(is.na(Genus) | Genus == "", "unknown", Genus)) %>%
+    dplyr::mutate(Species = ifelse(is.na(Species)| Species == "", "unknown", Species))
+
+  new_sum_tax2 <- paste(new_sum_tax$Phylum,
+                        new_sum_tax$Class,
+                        new_sum_tax$Order,
+                        new_sum_tax$Family,
+                        new_sum_tax$Genus,
+                        new_sum_tax$Species, sep = ";")
+  to_return$sum.taxonomy <- new_sum_tax2
+  return(to_return)
+}
+
+#' Verify that the input taxon_table file and the input mapping file meets specificationss
+#' The function takes one taxon table as its input, and verfies that it meets
+#' the expected standards.
+#' The standards incude:
+#' 1. Column names exist.
+#' 2. One of the columns is named "sum.taxonomy"
+#' 3. The "xxx_seq_number" column, if it ever existed, is removed
+#' 4. All columns apart from sum.taxonomy should be numeric
+#' 5. All columns apart from sum.taxonomy should have corresponding row in metadata file
+#' @param taxon_table taxonomy table from Anacapa
+#' @param metadata_file Qiime-style mapping
+#' @examples
+#' good_taxon_table <- data.frame(sum.taxonomy = c("a;b;c;d;f;u", "p;q;r;s;t;u"),
+#' site_1 = c(0,1), site_2 = c(10, 20))
+#' good_maps <- data.frame(site = c("site_1", "site_2"),
+#' season = c("wet", "dry"), host = c("oak", "sage"))
+#' validate_input_files(good_taxon_table, good_maps)
+#' @export
+validate_input_files <- function(taxon_table, metadata_file) {
+  # 1. Column names exist.
+  if (is.null(colnames(taxon_table))) {
+    stop("The input taxon table should have column names. The taxonomy column should be named 'sum.taxonomy'; the rest of the columns should be named according to their sample names.")
+  }
+
+  # 2. One of the columns is named "sum.taxonomy"
+  if (!("sum.taxonomy" %in% colnames(taxon_table))) {
+    stop("Please make sure that the taxonomy column in the input taxon table is named 'sum.taxonomy'!")
+  }
+
+  # 3. The "xxx_seq_number" column, if it ever existed, is removed
+  if (any(stringr::str_detect(colnames(taxon_table), "seq_number"))) {
+    stop("Please makes sure that you have removed the 'xxx_seq_number' column from the taxon table (note: this can be done with the function `scrub_seqNum_column`)")
+  }
+
+  # 4. All columns apart from sum.taxonomy should be numeric
+  if (!(all(sapply(taxon_table %>% ungroup() %>%  dplyr::select(-sum.taxonomy), is.numeric)))) {
+    stop("Please make sure that all columns apart from sum.taxonomy only contain numeric data!")
+  }
+
+  # 5. All columns apart from sum.taxonomy should have corresponding row in metadata file
+ # if (!(all(colnames(taxon_table %>% dplyr::select(-sum.taxonomy)) %in% metadata_file[, 1]))) {
+  #  stop("Please make sure that each sample in your taxon table has a corresponding row in the mapping file!")
+  #}
+
+
+}
+
+```
+
+```{r}
+#Create phyloseq object
+setdiff(colnames(pre_occ_eIDX[[1]]),colnames(pre_occ_counts))
+pre_occ_eIDX[[1]] %>% 
+  dplyr::select(-`1998_4_86.7_50_1_2`) ->pre_occ_eIDX[[1]]
+
+post_occ_eIDX[[1]] %>% 
+  dplyr::select(-`1998_4_86.7_50_1_2`) ->post_occ_eIDX[[1]]
+dim(pre_occ_eIDX[[1]])
+dim(pre_occ_counts)
+
+physeq_obj.step2_eIDX <- convert_anacapa_to_phyloseq(pre_occ_eIDX[[1]], tech_metadata)
+physeq_obj.step2_counts <- convert_anacapa_to_phyloseq(pre_occ_counts, tech_metadata)
+physeq_obj.step2_eIDX_site <- convert_anacapa_to_phyloseq(pre_occ_eIDX_site[[1]], metadata)
+physeq_obj.step2_counts_site <- convert_anacapa_to_phyloseq(pre_occ_counts_site, metadata)
+
+physeq_obj.step3_eIDX <- convert_anacapa_to_phyloseq(post_occ_eIDX[[1]], tech_metadata)
+physeq_obj.step3_counts <- convert_anacapa_to_phyloseq(post_occ_counts, tech_metadata)
+physeq_obj.step3_eIDX_site <- convert_anacapa_to_phyloseq(post_occ_eIDX_site[[1]], metadata)
+physeq_obj.step3_counts_site <- convert_anacapa_to_phyloseq(post_occ_counts_site, metadata)
+
+#removed unassigned ASVs
+badTaxa = c("Unassigned","NA","",NA, "Chordata;Actinopterygii;;;;","Chordata;Actinopterygii;Salmoniformes;Salmonidae;Salmo;Salmo salar","Chordata;Mammalia;Primates;Hominidae;Homo;Homo sapiens", "Chordata;Mammalia;Artiodactyla;Bovidae;Bos;Bos taurus", "Chordata;Mammalia;Artiodactyla;Suidae;Sus;Sus scrofa","Eukaryota;Chordata;Actinopterygii;;;;","Eukaryota;Chordata;Actinopterygii;Salmoniformes;Salmonidae;Salmo;Salmo salar","Eukaryota;Chordata;Mammalia;Primates;Hominidae;Homo;Homo sapiens", "Eukaryota;Chordata;Mammalia;Artiodactyla;Bovidae;Bos;Bos taurus", "Eukaryota;Chordata;Mammalia;Artiodactyla;Suidae;Sus;Sus scrofa")
+
+goodTaxa <- setdiff(taxa_names(physeq_obj.step2_eIDX), badTaxa)
+goodTaxa2 <- setdiff(taxa_names(physeq_obj.step2_counts), badTaxa)
+goodTaxa3 <- setdiff(taxa_names(physeq_obj.step2_eIDX_site), badTaxa)
+goodTaxa4 <- setdiff(taxa_names(physeq_obj.step2_counts_site), badTaxa)
+
+goodTaxa5 <- setdiff(taxa_names(physeq_obj.step3_eIDX), badTaxa)
+goodTaxa6 <- setdiff(taxa_names(physeq_obj.step3_counts), badTaxa)
+goodTaxa7 <- setdiff(taxa_names(physeq_obj.step3_eIDX_site), badTaxa)
+goodTaxa8 <- setdiff(taxa_names(physeq_obj.step3_counts_site), badTaxa)
+
+physeq_obj.step2_eIDX <- prune_taxa(goodTaxa, physeq_obj.step2_eIDX)
+physeq_obj.step2_counts <- prune_taxa(goodTaxa2, physeq_obj.step2_counts)
+physeq_obj.step2_eIDX_site <- prune_taxa(goodTaxa3, physeq_obj.step2_eIDX_site)
+physeq_obj.step2_counts_site <- prune_taxa(goodTaxa4, physeq_obj.step2_counts_site)
+
+physeq_obj.step3_eIDX <- prune_taxa(goodTaxa5, physeq_obj.step3_eIDX)
+physeq_obj.step3_counts <- prune_taxa(goodTaxa6, physeq_obj.step3_counts)
+physeq_obj.step3_eIDX_site <- prune_taxa(goodTaxa7, physeq_obj.step3_eIDX_site)
+physeq_obj.step3_counts_site <- prune_taxa(goodTaxa8, physeq_obj.step3_counts_site)
+
+```
+
+```{r}
+physeq_obj.step3_eIDX
+```
+```{r}
+tax_table(physeq_obj.step3_eIDX)
+```
+
+```{r}
+get_taxa_unique(physeq_obj.step3_eIDX,"Species")
+```
+
+```{r}
+#Summary Count of Taxonomic Ranks Observed pre SOM
+Phylum <- length(get_taxa_unique(physeq_obj.step3_eIDX, "Phylum"))
+Phylum <- as.data.frame(Phylum)
+Class <- length(get_taxa_unique(physeq_obj.step3_eIDX, "Class"))
+Class <- as.data.frame(Class)
+Order <- length(get_taxa_unique(physeq_obj.step3_eIDX, "Order"))-2
+Order <- as.data.frame(Order)
+Family <- length(get_taxa_unique(physeq_obj.step3_eIDX, "Family"))-1
+Family <- as.data.frame(Family)
+Genus <- length(get_taxa_unique(physeq_obj.step3_eIDX, "Genus"))-1
+Genus <- as.data.frame(Genus)
+Species <- length(get_taxa_unique(physeq_obj.step3_eIDX, "Species"))-1
+Species <- as.data.frame(Species)
+
+table_step3 <- bind_cols(Phylum,Class,Order,Family,Genus,Species)
+
+rownames(table_step3) <- "Unique"
+
+table_step3
+
+```
+
+
+```{r}
+get_taxa_unique(subset_taxa(physeq_obj.step3_eIDX, Genus=="Sebastes"),"Species")
+
+```
+
+```{r}
+#List of All Species Observed pre SOM
+species_list <- as.data.frame (get_taxa_unique(physeq_obj.step3_eIDX, "Species"))
+names(species_list) <- "Species"
+species_list
+```
+
+#------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------
+
+# Color Generation -----------
+
+```{r}
+col3.gr <- wes_palette(name = "Darjeeling1", n=5, type="discrete")
+col2.gr <- wes_palette(name = "Darjeeling2", n=5, type="discrete")
+col1.gr <- wes_palette(name = "GrandBudapest1", n=4, type="discrete")
+col4.gr <- wes_palette(name = "Royal1", n=4, type="discrete")
+col5.gr <- wes_palette(name = "GrandBudapest2", n=4, type="discrete")
+col6.gr <- wes_palette(name = "Chevalier1", n=4, type="discrete")
+col7.gr <- wes_palette(name = "Moonrise3", n=4, type="discrete")
+col8.gr <- wes_palette(name = "IsleofDogs1", n=4, type="discrete")
+col9.gr <- wes_palette(name = "IsleofDogs2", n=4, type="discrete")
+col10.gr <- wes_palette(name = "Zissou1", n=5, type="discrete")
+col_mpa <- c(col2.gr[2],col3.gr[1], col3.gr[3])
+col.great <- c(col5.gr[1],col3.gr[1],col1.gr[2],col3.gr[4],col6.gr[2],col10.gr[4],col2.gr[4],col2.gr[2],col10.gr[1],col4.gr[1],col4.gr[3],col7.gr[2],col7.gr[3],col4.gr[3])
+col_cofi <- c(col2.gr[2],col2.gr[4],col3.gr[2],col2.gr[3])
+col_grad <- c(col10.gr[1],col2.gr[2],col3.gr[2])
+
+#Blue
+col10.gr[1]
+col10.gr[2]
+col2.gr[2]
+col3.gr[5]
+col2.gr[4]
+col5.gr[4]
+
+#Green
+col3.gr[2]
+col6.gr[1]
+col7.gr[3]
+col7.gr[4]
+
+#Red
+col3.gr[1]
+col4.gr[2]
+
+#Orange
+col3.gr[4]
+col1.gr[4]
+
+
+#Purple
+col1.gr[3]
+col8.gr[1]
+
+col_gradient <- c(col3.gr[1],col3.gr[2],col3.gr[3],col3.gr[3],
+                  col3.gr[2],col3.gr[2],col3.gr[2],col3.gr[2],
+                  col3.gr[2],col8.gr[1],col3.gr[3],col3.gr[2],
+                  col3.gr[3],col2.gr[2],col3.gr[5],col3.gr[5],
+                  col2.gr[2],col2.gr[2],col2.gr[2],col3.gr[3],
+                  col8.gr[3],col2.gr[2],col3.gr[3],col8.gr[3],
+                  col8.gr[3],col8.gr[3],col8.gr[3])
+z
+col_gradient_2 <- c(col3.gr[1],col3.gr[2],col3.gr[3],col3.gr[2],
+                  col3.gr[2],col3.gr[2],col8.gr[1],col3.gr[3],
+                  col3.gr[2],col2.gr[2],col3.gr[2],col3.gr[5],
+                  col3.gr[5],col3.gr[2],col3.gr[3],col3.gr[3],
+                  col2.gr[2],col2.gr[2],col2.gr[2],col3.gr[3],
+                  col8.gr[3],col2.gr[2],col3.gr[3],col8.gr[3],
+                  col8.gr[3],col8.gr[3],col8.gr[3])
+
+y
+
+```
+
+#### Comparison of Alphadiversity Across Sites  
+<br />
+
+##### Observed Taxa  
+<br />
+
+###### Years
+```{r, ANOVA Observed Taxa Between Years}
+# Anova between sites
+
+alpha.diversity <- estimate_richness(physeq_obj.step3_counts, measures = c("Observed"))
+data <- cbind(sample_data(physeq_obj.step3_counts), alpha.diversity)
+model=lm(data$Observed ~ data$Year)
+ANOVA=aov(model)
+summary(ANOVA)
+
+```
+
+```{r}
+
+as.data.frame(data) %>% 
+  select(Year,Sta_ID,Observed)  %>% 
+  group_by(Year,Sta_ID) %>% 
+  mutate(., avg = mean(Observed)) %>% 
+  select(Year,avg,Sta_ID) %>% 
+  distinct() -> data_year
+
+p <- ggplot(data_year, aes(x=Year, y=avg, color =Sta_ID, group=Sta_ID)) + geom_point() + geom_line(aes(group=Sta_ID)) + scale_color_manual(values=col_cofi) +labs(color = "Station ID") +
+  ggtitle("Mean Diversity Over Time") +
+  xlab("Year") + ylab("Observed Species") + theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + labs(color = "Station ID") 
+newSTorder=c("080.0 060.0","086.7 050.0","093.3 030.0","093.3 060.0")
+
+p$data$Sta_ID <- as.character(p$data$Sta_ID)
+p$data$Sta_ID <- factor(p$data$Sta_ID, levels=newSTorder)
+
+p
+```
+
+```{r TUKEY Observed Taxa Between Sites}
+# Tukey test to study each pair of treatment :
+data$Year <- as.factor(data$Year) #ensure that Sites are factors
+TUKEY <- TukeyHSD(x=ANOVA, 'data$Year', conf.level=0.95)
+TUKEY
+```
+
+```{r Observed Taxa Box Plot}
+#Function for determining signficant Groups from Tukey
+generate_label_df <- function(TUKEY, variable){
+  
+  # Extract labels and factor levels from Tukey post-hoc 
+  Tukey.levels <- TUKEY[[variable]][,4]
+  Tukey.labels <- data.frame(multcompLetters(Tukey.levels)['Letters'])
+  
+  #I need to put the labels in the same order as in the boxplot :
+  Tukey.labels$treatment=rownames(Tukey.labels)
+  Tukey.labels=Tukey.labels[order(Tukey.labels$treatment) , ]
+  return(Tukey.labels)
+}
+
+#Determine Groups of Samples
+labels<-generate_label_df(TUKEY , "data$Year") #generate labels of groups using function
+names(labels)<-c('Letters','Year') #rename columns for merging
+
+#Obtain letter position for y axis using means
+yvalue<-aggregate(Observed~Year, data=data, mean) 
+
+final<-merge(labels,yvalue) #merge dataframes
+
+newSTorder = c("1996", "1998","1999","2000","2001","2002","2003","2004","2005","2006","2007","2008","2009","2010","2011","2012","2013","2014","2015","2016","2017","2018","2019")
+
+# Plot Boxplot of Observed Species w/ Signficant Groups labeled
+t <- plot_richness(physeq_obj.step3_counts, x = ("Year"), measures = c("Observed")) +
+  geom_violin(aes_string(fill = "Year", alpha=0.2), width=0.75, trim=FALSE) + #scale_fill_manual(values= col.great) + geom_boxplot(width=0.1)+
+  theme_bw() +theme(legend.position="none") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank()) +
+  #scale_x_discrete(limits=c("MPA","Edge","Outside"), labels=c("MPA", "Edge","Outside")) +
+  geom_text(data = final, aes(x = Year, y = Observed, label = Letters),vjust=-17,hjust=.5, label.size = 6 ) + ylab("Observed Species") + ggtitle("Observed Species Across Years") + ylim(0,70) + theme(axis.text=element_text(size=16),
+        axis.title=element_text(size=20,face="bold"))
+t$data$Year <- as.character(t$data$Year)
+t$data$Year <- factor(t$data$Year, levels=newSTorder)
+
+t
+```
+Does not work!!!!!
+```{r}
+t <- ggplot(temps_sta, aes( x = ("Site"), measures = c("Observed"), group=Sta_ID, color=Sta_ID)) +
+  geom_violin(aes_string(fill = "Year", alpha=0.2), width=0.75, trim=FALSE) + scale_fill_manual(values= col_cofi) + geom_boxplot(width=0.1)+
+  theme_bw() +theme(legend.position="none") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank()) +
+  #scale_x_discrete(limits=c("MPA","Edge","Outside"), labels=c("MPA", "Edge","Outside")) +
+  geom_text(data = final, aes(x = Year, y = Observed, label = Letters),vjust=-17,hjust=.5, label.size = 6 ) + ylab("Observed Species") + ggtitle("Observed Species Across Years") + ylim(0,70) + theme(axis.text=element_text(size=16),
+        axis.title=element_text(size=20,face="bold"))
+
+
+t$data$Year <- as.character(t$data$Year)
+t$data$Year <- factor(t$data$Year, levels=newSTorder)
+
+t
+temps_sta
+```
+###### Site
+```{r, ANOVA Observed Taxa Between Sites}
+# Anova between sites
+
+alpha.diversity <- estimate_richness(physeq_obj.step3_counts, measures = c("Observed"))
+data <- cbind(sample_data(physeq_obj.step3_counts), alpha.diversity)
+data %>% 
+  filter(!is.na(Sta_ID)) -> data
+
+model=lm(data$Observed ~ data$Sta_ID)
+ANOVA=aov(model)
+summary(ANOVA)
+
+```
+
+```{r TUKEY Observed Taxa Between Sites}
+# Tukey test to study each pair of treatment :
+data$Sta_ID <- as.factor(data$Sta_ID) #ensure that Sites are factors
+TUKEY <- TukeyHSD(x=ANOVA, 'data$Sta_ID', conf.level=0.95)
+TUKEY
+```
+
+```{r Observed Taxa Box Plot}
+#Function for determining signficant Groups from Tukey
+generate_label_df <- function(TUKEY, variable){
+  
+  # Extract labels and factor levels from Tukey post-hoc 
+  Tukey.levels <- TUKEY[[variable]][,4]
+  Tukey.labels <- data.frame(multcompLetters(Tukey.levels)['Letters'])
+  
+  #I need to put the labels in the same order as in the boxplot :
+  Tukey.labels$treatment=rownames(Tukey.labels)
+  Tukey.labels=Tukey.labels[order(Tukey.labels$treatment) , ]
+  return(Tukey.labels)
+}
+
+#Determine Groups of Samples
+labels<-generate_label_df(TUKEY , "data$Sta_ID") #generate labels of groups using function
+names(labels)<-c('Letters','Sta_ID') #rename columns for merging
+
+#Obtain letter position for y axis using means
+yvalue<-aggregate(Observed~Sta_ID, data=data, mean) 
+
+final<-merge(labels,yvalue) #merge dataframes
+
+newSTorder = c("086.7 050.0", "080.0 060.0", "093.3 030.0", "093.3 060.0")
+
+
+# Plot Boxplot of Observed Species w/ Signficant Groups labeled
+t <- plot_richness(physeq_obj.step3_counts, x = ("Sta_ID"), measures = c("Observed")) +
+  geom_violin(aes_string(fill = "Sta_ID", alpha=0.2), width=0.75, trim=FALSE) + scale_fill_manual(values= col_cofi) + geom_boxplot(width=0.1)+
+  theme_bw() +theme(legend.position="none") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank()) +
+  #scale_x_discrete(limits=c("MPA","Edge","Outside"), labels=c("MPA", "Edge","Outside")) +
+  geom_text(data = final, aes(x = Sta_ID, y = Observed, label = Letters),vjust=-15,hjust=.5) + ylab("Observed Species") +ggtitle("Observed Species Across Sites") + ylim(0,80) +theme(axis.text=element_text(size=16),
+        axis.title=element_text(size=20,face="bold"), axis.text.x = element_text(angle = 45,hjust = 1)) + theme(legend.text=element_text(size=28), legend.title=element_text(size=28)) +theme(
+  plot.title = element_text( size = 20, face = "bold"), plot.subtitle = element_text(color = "blue")) +  
+theme(
+  strip.background = element_blank(),
+  strip.text.x = element_blank()
+) + xlab("Station")
+
+t$data$Sta_ID <- as.character(t$data$Sta_ID)
+t$data$Sta_ID <- factor(t$data$Sta_ID, levels=newSTorder)
+t
+```
+
+```{r, ANOVA Observed Taxa Between Sites}
+# Anova between sites
+
+alpha.diversity <- estimate_richness(physeq_obj.step2_alpha, measures = c("Observed"))
+data <- cbind(sample_data(physeq_obj.step2_alpha), alpha.diversity)
+data %>% 
+  filter(!is.na(Sta_ID)) -> data
+
+model=lm(data$Observed ~ data$Location)
+ANOVA=aov(model)
+summary(ANOVA)
+
+```
+
+```{r TUKEY Observed Taxa Between Sites}
+# Tukey test to study each pair of treatment :
+data$Location <- as.factor(data$Location) #ensure that Sites are factors
+TUKEY <- TukeyHSD(x=ANOVA, 'data$Location', conf.level=0.95)
+TUKEY
+```
+
+```{r Observed Taxa Box Plot}
+#Function for determining signficant Groups from Tukey
+generate_label_df <- function(TUKEY, variable){
+  
+  # Extract labels and factor levels from Tukey post-hoc 
+  Tukey.levels <- TUKEY[[variable]][,4]
+  Tukey.labels <- data.frame(multcompLetters(Tukey.levels)['Letters'])
+  
+  #I need to put the labels in the same order as in the boxplot :
+  Tukey.labels$treatment=rownames(Tukey.labels)
+  Tukey.labels=Tukey.labels[order(Tukey.labels$treatment) , ]
+  return(Tukey.labels)
+}
+
+#Determine Groups of Samples
+labels<-generate_label_df(TUKEY , "data$Location") #generate labels of groups using function
+names(labels)<-c('Letters','Location') #rename columns for merging
+
+#Obtain letter position for y axis using means
+yvalue<-aggregate(Observed~Location, data=data, mean) 
+
+final<-merge(labels,yvalue) #merge dataframes
+
+# Plot Boxplot of Observed Species w/ Signficant Groups labeled
+t <- plot_richness(physeq_obj.step2_alpha, x = ("Location"), measures = c("Observed")) +
+  geom_violin(aes_string(fill = "Location", alpha=0.2), width=0.75, trim=FALSE) + #scale_fill_manual(values= col2.gr) + 
+  geom_boxplot(width=0.1)+
+  theme_bw() +theme(legend.position="none") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank()) +
+  #scale_x_discrete(limits=c("MPA","Edge","Outside"), labels=c("MPA", "Edge","Outside")) +
+  geom_text(data = final, aes(x = Location, y = Observed, label = Letters),vjust=-12,hjust=.5) + ylab("Observed Species") +ggtitle("Observed Species Across Location") + ylim(0,80)
+t$data$Sta_ID <- as.character(t$data$Sta_ID)
+t$data$Sta_ID <- factor(t$data$Sta_ID, levels=newSTorder)
+t
+```
+
+
+
+```{r, Regression Observed Species vs. Temp}
+
+my.formula <- y ~ x
+
+data %>% 
+  ggplot(., aes(x=mean_100_T, y=Observed, color=Sta_ID, fill=Sta_ID)) + geom_point()  + geom_smooth(method = "lm")+ scale_fill_manual(values=col_cofi) + scale_color_manual(values=col_cofi)+
+  ggtitle("Diversity vs. Temperature") +
+  xlab("T˚C") + ylab("Observed Species") + theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+stat_poly_eq(formula = my.formula, 
+                aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
+                size = 5, label.x = 0.1,
+                parse = TRUE) +
+  stat_fit_glance(method = 'lm', 
+                  geom = "text_npc",
+                  method.args = list(formula = y ~ x),
+                      aes(label = paste("P-value = ",signif(..p.value.., digits = 4)),sep = "~~~"),
+                  size = 5, label.x = 0.1, hjust = -1.75, parse = TRUE) +xlim(10,15) +ylim(0,60) +theme(axis.text=element_text(size=16),
+        axis.title=element_text(size=20,face="bold"), axis.text.x = element_text(angle = 45,hjust = 1)) + theme( legend.text=element_text(size=16), legend.title=element_text(size=16)) +labs(fill = "Station", color="Station")-> p
+p$data$Sta_ID <- as.character(p$data$Sta_ID)
+p$data$Sta_ID <- factor(p$data$Sta_ID, levels=newSTorder)
+
+p
+
+```
+```{r, Regression Observed Species vs. Temp}
+
+my.formula <- y ~ x
+
+data %>% 
+  ggplot(., aes(x=mean_100_T, y=Observed )) +
+  geom_point(aes(color=Sta_ID))  +
+  geom_smooth(method = "lm", color="black")+
+  scale_fill_manual(values=col_cofi) +
+  scale_color_manual(values=col_cofi) +
+  ggtitle("Diversity vs. Temperature") +
+  xlab("T˚C") + ylab("Observed Species") + theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + labs(color = "Station ID") +
+  stat_poly_eq(formula = my.formula, 
+                aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
+                size = 5, label.x = 0.1,
+                parse = TRUE) +
+  stat_fit_glance(method = 'lm', 
+                  geom = "text_npc",
+                  method.args = list(formula = y ~ x),
+                      aes(label = paste("P-value = ",signif(..p.value.., digits = 4)),sep = "~~~"),
+                  size = 5, label.x = 0.1, hjust = -1.75, parse = TRUE) +xlim(10,15) +ylim(0,60) -> p
+  p$data$Sta_ID <- as.character(p$data$Sta_ID)
+p$data$Sta_ID <- factor(p$data$Sta_ID, levels=newSTorder)
+
+p
+
+
+
+```
+
+```{r, Regression Observed Species vs. Chla}
+
+my.formula <- y ~ x
+
+data %>% 
+  ggplot(., aes(x=mean_100_CHLa, y=Observed)) +
+  geom_point(aes(color=Sta_ID))  +
+  geom_smooth(method = "lm", color="black")+
+  scale_fill_manual(values=col_cofi) +
+  scale_color_manual(values=col_cofi) +
+  ggtitle("Diversity vs. Chl A") +
+  xlab("Chl A mg/m^3") + ylab("Observed Species") + theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  stat_poly_eq(formula = my.formula, 
+                aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
+                size = 5, label.x = 0.1,
+                parse = TRUE) +
+  stat_fit_glance(method = 'lm', 
+                  geom = "text_npc",
+                  method.args = list(formula = y ~ x),
+                      aes(label = paste("P-value = ",signif(..p.value.., digits = 4)),sep = "~~~"),
+                  size = 5, label.x = 0.1, hjust = -1.75, parse = TRUE) +xlim(0,5) +ylim(0,60) -> p
+  p$data$Sta_ID <- as.character(p$data$Sta_ID)
+p$data$Sta_ID <- factor(p$data$Sta_ID, levels=newSTorder)
+
+p
+
+
+
+```
+```{r, Regression Observed Species vs. Chl A}
+
+my.formula <- y ~ x
+
+data %>% 
+  ggplot(., aes(x=mean_100_CHLa, y=Observed, color=Sta_ID, fill=Sta_ID)) + geom_point()  + geom_smooth(method = "lm")+ scale_fill_manual(values=col_cofi) + scale_color_manual(values=col_cofi)+
+  ggtitle("Diversity vs. Chl A") +
+  xlab("Chl A mg/m^3") + ylab("Observed Species") + theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+stat_poly_eq(formula = my.formula, 
+                aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
+                size = 5, label.x = 0.1,
+                parse = TRUE) +
+  stat_fit_glance(method = 'lm', 
+                  geom = "text_npc",
+                  method.args = list(formula = y ~ x),
+                      aes(label = paste("P-value = ",signif(..p.value.., digits = 4)),sep = "~~~"),
+                  size = 5, label.x = 0.1, hjust = -1.75, parse = TRUE) +xlim(0,5) +ylim(0,60) -> p
+  p$data$Sta_ID <- as.character(p$data$Sta_ID)
+p$data$Sta_ID <- factor(p$data$Sta_ID, levels=newSTorder)
+
+p
+
+
+
+```
+
+```{r, Regression Observed Species vs. Salinity}
+
+my.formula <- y ~ x
+
+data %>% 
+  ggplot(., aes(x=mean_100_Salinity, y=Observed)) +
+  geom_point(aes(color=Sta_ID))  +
+  geom_smooth(method = "lm", color="black")+
+  scale_fill_manual(values=col_cofi) +
+  scale_color_manual(values=col_cofi) +
+  ggtitle("Diversity vs. Salinity") +
+  xlab("PSU") + ylab("Observed Species") + theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  stat_poly_eq(formula = my.formula, 
+                aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
+                size = 5, label.x = 0.1,
+                parse = TRUE) +
+  stat_fit_glance(method = 'lm', 
+                  geom = "text_npc",
+                  method.args = list(formula = y ~ x),
+                      aes(label = paste("P-value = ",signif(..p.value.., digits = 4)),sep = "~~~"),
+                  size = 5, label.x = 0.1, hjust = -1.75, parse = TRUE) -> p
+  p$data$Sta_ID <- as.character(p$data$Sta_ID)
+p$data$Sta_ID <- factor(p$data$Sta_ID, levels=newSTorder)
+
+p
+
+
+
+```
+```{r, Regression Observed Species vs. Salinity}
+
+my.formula <- y ~ x
+
+data %>% 
+  ggplot(., aes(x=mean_100_Salinity, y=Observed, color=Sta_ID, fill=Sta_ID)) + geom_point()  + geom_smooth(method = "lm")+ scale_fill_manual(values=col_cofi) + scale_color_manual(values=col_cofi)+
+  ggtitle("Diversity vs. Salinity") +
+  xlab("PSU") + ylab("Observed Species") + theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+stat_poly_eq(formula = my.formula, 
+                aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
+                size = 5, label.x = 0.1,
+                parse = TRUE) +
+  stat_fit_glance(method = 'lm', 
+                  geom = "text_npc",
+                  method.args = list(formula = y ~ x),
+                      aes(label = paste("P-value = ",signif(..p.value.., digits = 4)),sep = "~~~"),
+                  size = 5, label.x = 0.1, hjust = -1.75, parse = TRUE) -> p
+  p$data$Sta_ID <- as.character(p$data$Sta_ID)
+p$data$Sta_ID <- factor(p$data$Sta_ID, levels=newSTorder)
+
+p
+
+
+
+```
+
+
+```{r, Regression Observed Species vs. O2}
+
+my.formula <- y ~ x
+
+data %>% 
+  ggplot(., aes(x=mean_100_O2, y=Observed)) +
+  geom_point(aes(color=Sta_ID))  +
+  geom_smooth(method = "lm", color="black")+
+  scale_fill_manual(values=col_cofi) +
+  scale_color_manual(values=col_cofi) +
+  ggtitle("Diversity vs. O2") +
+  xlab("O2 mL/L") + ylab("Observed Species") + theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  stat_poly_eq(formula = my.formula, 
+                aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
+                size = 5, label.x = 0.1,
+                parse = TRUE) +
+  stat_fit_glance(method = 'lm', 
+                  geom = "text_npc",
+                  method.args = list(formula = y ~ x),
+                      aes(label = paste("P-value = ",signif(..p.value.., digits = 4)),sep = "~~~"),
+                  size = 5, label.x = 0.1, hjust = -1.75, parse = TRUE) -> p
+  p$data$Sta_ID <- as.character(p$data$Sta_ID)
+p$data$Sta_ID <- factor(p$data$Sta_ID, levels=newSTorder)
+
+p
+
+
+
+```
+```{r, Regression Observed Species vs. Chl A}
+
+my.formula <- y ~ x
+
+data %>% 
+  ggplot(., aes(x=mean_100_O2, y=Observed, color=Sta_ID, fill=Sta_ID)) + geom_point()  + geom_smooth(method = "lm")+ scale_fill_manual(values=col_cofi) + scale_color_manual(values=col_cofi)+
+  ggtitle("Diversity vs. O2") +
+  xlab("O2 mL/L") + ylab("Observed Species") + theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+stat_poly_eq(formula = my.formula, 
+                aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
+                size = 5, label.x = 0.1,
+                parse = TRUE) +
+  stat_fit_glance(method = 'lm', 
+                  geom = "text_npc",
+                  method.args = list(formula = y ~ x),
+                      aes(label = paste("P-value = ",signif(..p.value.., digits = 4)),sep = "~~~"),
+                  size = 5, label.x = 0.1, hjust = -1.75, parse = TRUE) -> p
+  p$data$Sta_ID <- as.character(p$data$Sta_ID)
+p$data$Sta_ID <- factor(p$data$Sta_ID, levels=newSTorder)
+
+p
+
+
+p
+```
+<br />
+
+***Figure 8.** The site outside the MPA had signficantly greater observed species than the site within and on the edge of the MPA (ANOVA, p<0.01)*
+<br />
+
+```{r Venn Diagram of Species Between Sites, results="hide",warning=FALSE}
+library(nVennR)
+
+North <- physeq_obj.step2 %>% subset_samples(Sta_ID == "080.0 060.0")
+Med_North <- physeq_obj.step2 %>% subset_samples(Sta_ID == "086.7 050.0")
+Med_South <- physeq_obj.step2 %>% subset_samples(Sta_ID == "093.3 030.0")
+South <- physeq_obj.step2 %>% subset_samples(Sta_ID == "093.3 060.0")
+
+
+North <- prune_taxa(
+  taxa = apply(otu_table(North), 1, function(x){sum(x>0) >= 1}), 
+  x = North)
+
+Med_North <- prune_taxa(
+  taxa = apply(otu_table(Med_North), 1, function(x){sum(x>0) >= 1}), 
+  x = Med_North)
+
+Med_South <- prune_taxa(
+  taxa = apply(otu_table(Med_South), 1, function(x){sum(x>0) >= 1}), 
+  x = Med_South)
+
+South <- prune_taxa(
+  taxa = apply(otu_table(South), 1, function(x){sum(x>0) >= 1}), 
+  x = South)
+
+North_species <- taxa_names(North)
+Med_North_species <- taxa_names(Med_North)
+Med_South_species <- taxa_names(Med_South)
+South_species <- taxa_names(South)
+all_species <- taxa_names(physeq_obj.step2)
+
+
+North_species_df <- as.data.frame(North_species)
+Med_North_species_df <- as.data.frame(Med_North_species)
+Med_South_species_df <- as.data.frame(Med_South_species)
+South_species_df <- as.data.frame(South_species)
+all_species_df <- as.data.frame(all_species)
+
+names(North_species_df) <- "Species"
+names(Med_North_species_df) <- "Species"
+names(Med_South_species_df) <- "Species"
+names(South_species_df) <- "Species"
+names(all_species_df) <-"Species"
+
+all_species_df %>% 
+  mutate(Master=Species) -> all_species_df
+
+all_species_df$Master
+
+
+all_species_df %>% 
+  mutate(., South = Master %in% South_species_df$Species) %>% 
+  mutate(., Med_South = Master %in% Med_South_species_df$Species) %>% 
+  mutate(., Med_North = Master %in% Med_North_species_df$Species) %>% 
+  mutate(., North = Master %in% North_species_df$Species) -> exampledf
+
+
+exampledf
+
+South_t <- subset(exampledf, South == TRUE)$Master
+Med_South_t <- subset(exampledf, Med_South == TRUE)$Master
+Med_North_t <- subset(exampledf, Med_North == TRUE)$Master
+North_t <- subset(exampledf, North == TRUE)$Master
+
+
+North <- physeq_obj.step2 %>% subset_samples(Sta_ID == "080.0 060.0")
+Med_North <- physeq_obj.step2 %>% subset_samples(Sta_ID == "086.7 050.0")
+Med_South <- physeq_obj.step2 %>% subset_samples(Sta_ID == "093.3 030.0")
+South <- physeq_obj.step2 %>% subset_samples(Sta_ID == "093.3 060.0")
+
+myV <- plotVenn(list(ST_080.0_060.0=North_t,ST_086.7_050.0=Med_North_t,ST_093.3_060.0=South_t, ST_093.3_030.0=Med_South_t), nCycles = 10000, showPlot = T, outFile="a4.svg", opacity = 0.1, labelRegions = F, borderWidth = 3, fontScale = 2, setColors = col_cofi)
+
+
+```
+
+```{r Venn Diagram of Species Between Sites, results="hide",warning=FALSE}
+library(nVennR)
+
+x1996 <- physeq_obj.step2 %>% subset_samples(Year == "1996")
+x1998 <- physeq_obj.step2 %>% subset_samples(Year == "1998")
+x1999 <- physeq_obj.step2 %>% subset_samples(Year == "1999")
+x2000 <- physeq_obj.step2 %>% subset_samples(Year == "2000")
+x2001 <- physeq_obj.step2 %>% subset_samples(Year == "2001")
+x2002 <- physeq_obj.step2 %>% subset_samples(Year == "2002")
+x2003 <- physeq_obj.step2 %>% subset_samples(Year == "2003")
+x2004 <- physeq_obj.step2 %>% subset_samples(Year == "2004")
+x2005 <- physeq_obj.step2 %>% subset_samples(Year == "2005")
+x2006 <- physeq_obj.step2 %>% subset_samples(Year == "2006")
+x2007 <- physeq_obj.step2 %>% subset_samples(Year == "2007")
+x2008 <- physeq_obj.step2 %>% subset_samples(Year == "2008")
+x2009 <- physeq_obj.step2 %>% subset_samples(Year == "2009")
+x2010 <- physeq_obj.step2 %>% subset_samples(Year == "2010")
+x2011 <- physeq_obj.step2 %>% subset_samples(Year == "2011")
+x2012 <- physeq_obj.step2 %>% subset_samples(Year == "2012")
+x2013 <- physeq_obj.step2 %>% subset_samples(Year == "2013")
+x2014 <- physeq_obj.step2 %>% subset_samples(Year == "2014")
+x2015 <- physeq_obj.step2 %>% subset_samples(Year == "2015")
+x2016 <- physeq_obj.step2 %>% subset_samples(Year == "2016")
+x2017 <- physeq_obj.step2 %>% subset_samples(Year == "2017")
+x2018 <- physeq_obj.step2 %>% subset_samples(Year == "2018")
+x2019 <- physeq_obj.step2 %>% subset_samples(Year == "2019")
+
+
+x1996 <- prune_taxa(
+  taxa = apply(otu_table(x1996), 1, function(x){sum(x>0) >= 1}), 
+  x = x1996)
+
+x1998 <- prune_taxa(
+  taxa = apply(otu_table(x1998), 1, function(x){sum(x>0) >= 1}), 
+  x = x1998)
+
+x1999 <- prune_taxa(
+  taxa = apply(otu_table(x1999), 1, function(x){sum(x>0) >= 1}), 
+  x = x1999)
+x2000 <- prune_taxa(
+  taxa = apply(otu_table(x2000), 1, function(x){sum(x>0) >= 1}), 
+  x = x2000)
+x2001 <- prune_taxa(
+  taxa = apply(otu_table(x2001), 1, function(x){sum(x>0) >= 1}), 
+  x = x2001)
+x2002 <- prune_taxa(
+  taxa = apply(otu_table(x2002), 1, function(x){sum(x>0) >= 1}), 
+  x = x2002)
+x2003 <- prune_taxa(
+  taxa = apply(otu_table(x2003), 1, function(x){sum(x>0) >= 1}), 
+  x = x2003)
+x2004 <- prune_taxa(
+  taxa = apply(otu_table(x2004), 1, function(x){sum(x>0) >= 1}), 
+  x = x2004)
+x2005 <- prune_taxa(
+  taxa = apply(otu_table(x2005), 1, function(x){sum(x>0) >= 1}), 
+  x = x2005)
+x2006 <- prune_taxa(
+  taxa = apply(otu_table(x2006), 1, function(x){sum(x>0) >= 1}), 
+  x = x2006)
+x2007 <- prune_taxa(
+  taxa = apply(otu_table(x2007), 1, function(x){sum(x>0) >= 1}), 
+  x = x2007)
+x2008 <- prune_taxa(
+  taxa = apply(otu_table(x2008), 1, function(x){sum(x>0) >= 1}), 
+  x = x2008)
+x2009 <- prune_taxa(
+  taxa = apply(otu_table(x2009), 1, function(x){sum(x>0) >= 1}), 
+  x = x2009)
+x2010 <- prune_taxa(
+  taxa = apply(otu_table(x2010), 1, function(x){sum(x>0) >= 1}), 
+  x = x2010)
+
+x2011 <- prune_taxa(
+  taxa = apply(otu_table(x2011), 1, function(x){sum(x>0) >= 1}), 
+  x = x2011)
+x2012 <- prune_taxa(
+  taxa = apply(otu_table(x2012), 1, function(x){sum(x>0) >= 1}), 
+  x = x2012)
+x2013 <- prune_taxa(
+  taxa = apply(otu_table(x2013), 1, function(x){sum(x>0) >= 1}), 
+  x = x2013)
+x2014 <- prune_taxa(
+  taxa = apply(otu_table(x2014), 1, function(x){sum(x>0) >= 1}), 
+  x = x2014)
+x2015 <- prune_taxa(
+  taxa = apply(otu_table(x2015), 1, function(x){sum(x>0) >= 1}), 
+  x = x2015)
+x2016 <- prune_taxa(
+  taxa = apply(otu_table(x2016), 1, function(x){sum(x>0) >= 1}), 
+  x = x2016)
+x2017 <- prune_taxa(
+  taxa = apply(otu_table(x2017), 1, function(x){sum(x>0) >= 1}), 
+  x = x2017)
+x2018 <- prune_taxa(
+  taxa = apply(otu_table(x2018), 1, function(x){sum(x>0) >= 1}), 
+  x = x2018)
+x2019 <- prune_taxa(
+  taxa = apply(otu_table(x2019), 1, function(x){sum(x>0) >= 1}), 
+  x = x2019)
+
+x1996_species <- as.data.frame(taxa_names(x1996))
+x1998_species <- as.data.frame(taxa_names(x1998))
+x1999_species <- as.data.frame(taxa_names(x1999))
+x2000_species <- as.data.frame(taxa_names(x2000))
+x2001_species <- as.data.frame(taxa_names(x2001))
+x2002_species <- as.data.frame(taxa_names(x2002))
+x2003_species <- as.data.frame(taxa_names(x2003))
+x2004_species <- as.data.frame(taxa_names(x2004))
+x2005_species <- as.data.frame(taxa_names(x2005))
+x2006_species <- as.data.frame(taxa_names(x2006))
+x2007_species <- as.data.frame(taxa_names(x2007))
+x2008_species <- as.data.frame(taxa_names(x2008))
+x2009_species <- as.data.frame(taxa_names(x2009))
+x2010_species <- as.data.frame(taxa_names(x2010))
+x2011_species <- as.data.frame(taxa_names(x2011))
+x2012_species <- as.data.frame(taxa_names(x2012))
+x2013_species <- as.data.frame(taxa_names(x2013))
+x2014_species <- as.data.frame(taxa_names(x2014))
+x2015_species <- as.data.frame(taxa_names(x2015))
+x2016_species <- as.data.frame(taxa_names(x2016))
+x2017_species <- as.data.frame(taxa_names(x2017))
+x2018_species <- as.data.frame(taxa_names(x2018))
+x2019_species <- as.data.frame(taxa_names(x2019))
+all_species <- as.data.frame(taxa_names(physeq_obj.step2))
+
+names(x1996_species) <- "Species"
+names(x1998_species) <- "Species"
+names(x1999_species) <- "Species"
+names(x2000_species) <- "Species"
+names(x2001_species) <- "Species"
+names(x2002_species) <- "Species"
+names(x2003_species) <- "Species"
+names(x2004_species) <- "Species"
+names(x2005_species) <- "Species"
+names(x2006_species) <- "Species"
+names(x2007_species) <- "Species"
+names(x2008_species) <- "Species"
+names(x2009_species) <- "Species"
+names(x2010_species) <- "Species"
+names(x2011_species) <- "Species"
+names(x2012_species) <- "Species"
+names(x2013_species) <- "Species"
+names(x2014_species) <- "Species"
+names(x2015_species) <- "Species"
+names(x2016_species) <- "Species"
+names(x2017_species) <- "Species"
+names(x2018_species) <- "Species"
+names(x2019_species) <- "Species"
+names(all_species) <-"Species"
+
+
+all_species %>% 
+  mutate(Master=Species) -> all_species
+
+all_species %>% 
+  mutate(., x1996 = Master %in% x1996_species$Species) %>% 
+  mutate(., x1998 = Master %in% x1998_species$Species) %>% 
+  mutate(., x1999 = Master %in% x1996_species$Species) %>% 
+  mutate(., x2000 = Master %in% x2000_species$Species)%>%
+mutate(., x2001 = Master %in% x2001_species$Species)%>%
+mutate(., x2002 = Master %in% x2002_species$Species)%>%
+mutate(., x2003 = Master %in% x2003_species$Species)%>%
+mutate(., x2004 = Master %in% x2004_species$Species)%>%
+mutate(., x2005 = Master %in% x2005_species$Species)%>%
+mutate(., x2006 = Master %in% x2006_species$Species)%>%
+mutate(., x2007 = Master %in% x2007_species$Species)%>%
+mutate(., x2008 = Master %in% x2008_species$Species)%>%
+mutate(., x2009 = Master %in% x2009_species$Species)%>%
+mutate(., x2010 = Master %in% x2010_species$Species)%>%
+mutate(., x2011 = Master %in% x2011_species$Species)%>%
+mutate(., x2012 = Master %in% x2012_species$Species)%>%
+mutate(., x2013 = Master %in% x2013_species$Species)%>%
+mutate(., x2014 = Master %in% x2014_species$Species)%>%
+mutate(., x2015 = Master %in% x2015_species$Species)%>%
+mutate(., x2016 = Master %in% x2016_species$Species)%>%
+mutate(., x2017 = Master %in% x2017_species$Species)%>%
+mutate(., x2018 = Master %in% x2018_species$Species)%>%
+mutate(., x2019 = Master %in% x2019_species$Species)-> exampledf
+
+x1996_t <- subset(exampledf, x1996 == TRUE)$Master
+x1998_t <- subset(exampledf, x1998 == TRUE)$Master
+x1999_t <- subset(exampledf, x1999 == TRUE)$Master
+x2000_t <- subset(exampledf, x2000 == TRUE)$Master
+x2001_t <- subset(exampledf, x2001 == TRUE)$Master
+x2002_t <- subset(exampledf, x2002 == TRUE)$Master
+x2003_t <- subset(exampledf, x2003 == TRUE)$Master
+x2004_t <- subset(exampledf, x2004 == TRUE)$Master
+x2005_t <- subset(exampledf, x2005 == TRUE)$Master
+x2006_t <- subset(exampledf, x2006 == TRUE)$Master
+x2007_t <- subset(exampledf, x2007 == TRUE)$Master
+x2008_t <- subset(exampledf, x2008 == TRUE)$Master
+x2009_t <- subset(exampledf, x2009 == TRUE)$Master
+x2010_t <- subset(exampledf, x2010 == TRUE)$Master
+x2011_t <- subset(exampledf, x2011 == TRUE)$Master
+x2012_t <- subset(exampledf, x2012 == TRUE)$Master
+x2013_t <- subset(exampledf, x2013 == TRUE)$Master
+x2014_t <- subset(exampledf, x2014 == TRUE)$Master
+x2015_t <- subset(exampledf, x2015 == TRUE)$Master
+x2016_t <- subset(exampledf, x2016 == TRUE)$Master
+x2017_t <- subset(exampledf, x2017 == TRUE)$Master
+x2018_t <- subset(exampledf, x2018 == TRUE)$Master
+x2019_t <- subset(exampledf, x2019 == TRUE)$Master
+
+myV <- plotVenn(list(
+x1996_t,
+x1998_t, 
+x1999_t, 
+x2000_t, 
+x2001_t,
+x2002_t, 
+x2003_t,
+x2004_t, 
+x2005_t, 
+x2006_t, 
+x2007_t, 
+x2008_t, 
+x2009_t,
+x2010_t, 
+x2011_t, 
+x2012_t,
+x2013_t, 
+x2014_t, 
+x2015_t, 
+x2016_t, 
+x2017_t, 
+x2018_t, 
+x2019_t ), nCycles = 1, showPlot = T, outFile="a4.svg", opacity = 0.1, labelRegions = F, borderWidth = 3, fontScale = 2)
+
+showSVG(nVennObj =myV, outFile ="my_quad")
+
+```
+
+
+```{r, Comparison of Taxa Across All Sites}
+physeq_obj.step2 %>% 
+  taxa_names() %>% 
+  as.data.frame() %>%
+  transmute(.,Species = .) %>% 
+  mutate(., Common_species = Species %in% common_species) %>% 
+  mutate(., Outside_species_unique = Species %in% outside_species_unique) %>% 
+  mutate(., Edge_species_unique = Species %in% edge_species_unique) %>% 
+  mutate(., Mpa_species_unique = Species %in% mpa_species_unique) %>% 
+  mutate(., Outside_edge_species_common = Species %in% outside_edge_species_common) %>% 
+  mutate(., Outside_mpa_species_common = Species %in% outside_mpa_species_common) %>% 
+  mutate(., Edge_mpa_species_common = Species %in% edge_mpa_species_common) %>% 
+  mutate(., Species_found = case_when(Common_species == TRUE ~ "Common_species",
+                                      Outside_species_unique == TRUE ~ "Outside_species_unique",
+                                      Edge_species_unique == TRUE ~ "Edge_species_unique",
+                                      Mpa_species_unique == TRUE ~ "Mpa_species_unique",
+                                      Outside_edge_species_common == TRUE ~ "Outside_edge_species_common",
+                                      Outside_mpa_species_common == TRUE ~ "Outside_mpa_species_common",
+                                      Mpa_species_unique == TRUE ~ "Mpa_species_unique",
+                                      Edge_mpa_species_common == TRUE ~ "Edge_mpa_species_common"
+                                      )) %>% 
+  select(Species,Species_found) %>% arrange(desc(Species_found))-> species_locations
+
+write_csv(species_locations, "venn_list.csv")
+```
+
+
+```{r }
+#Comparison of Most Abundant Families per Site 
+sample_data(physeq_obj.step3_eIDX)$Sta_ID = factor(sample_data(physeq_obj.step3_eIDX)$Sta_ID)
+
+p = plot_bar(physeq_obj.step3_eIDX,"Family","Abundance", "Family", facet_grid = "Sta_ID~.") 
+p + geom_bar(aes(fill=Family), stat="identity", position="stack") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank()) + ggtitle("Relative Abundance of Species Between Sites") + ylab("eDNA Index")
+
+plot_bar(physeq_obj.step3_eIDX, x="Sta_ID", fill="Family") + geom_bar(aes(fill=Family), stat="identity", position="stack") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank()) + ggtitle("Relative Abundance of Family Between Sites") + ylab("eDNA Index")
+```
+
+
+
+```{r}
+#Generate Vegan formatted data table
+physeq_obj.step3_nan <- filter_taxa(physeq_obj.step3_eIDX, function (x) {sum(x > 0) > 1}, prune=TRUE)
+
+physeq_obj.step3_nan = prune_samples(sample_sums(physeq_obj.step3_nan)>=0.000000001, physeq_obj.step3_nan)
+physeq_obj.step3_nan = subset_samples(physeq_obj.step3_nan, mean_100_T != "NA")
+sample_data(physeq_obj.step3_nan)
+physeq_obj.step3_nan = subset_samples(physeq_obj.step3_nan, mean_100_CHLa != "NA")
+
+sampledf <- data.frame(sample_data(physeq_obj.step3_nan))
+
+carnivore_rel_abun<- vegan_otu(physeq_obj.step3_nan)
+
+#Bray curtis dissimilarity matrix
+d_carn <- vegdist(carnivore_rel_abun, method="bray") 
+
+#Permanova
+adonis(carnivore_rel_abun~ sampledf$Year + 
+                     sampledf$Sta_ID + sampledf$Year*sampledf$Sta_ID +
+          sampledf$mean_100_T+
+                     sampledf$mean_100_silicate+
+         sampledf$mean_100_O2_sat + 
+         sampledf$mean_100_O2 + 
+         sampledf$mean_100_Salinity+
+                     sampledf$mean_100_PO4 +
+                     sampledf$mean_100_NO3 +
+                     sampledf$mean_100_NO2 + 
+                     sampledf$mean_100_CHLa+ 
+                     sampledf$mean_100_Phaeo)
+
+```
+
+```{r}
+groups <- factor(getElement(sampledf, "Year"))
+#Homogeneity of dispersions test
+mod <- betadisper(d_carn, groups)
+
+anova(mod)
+broom::tidy(TukeyHSD(betadisper(d_carn, getElement(sampledf, "Year"))))
+
+```
+```{r}
+groups <- factor(getElement(sampledf, "Sta_ID"))
+#Homogeneity of dispersions test
+mod <- betadisper(d_carn, groups)
+
+anova(mod)
+broom::tidy(TukeyHSD(betadisper(d_carn, getElement(sampledf, "Sta_ID"))))
+#significant difference in variability across sites
+```
+
+```{r}
+groups <- factor(getElement(sampledf, "mean_100_T"))
+#Homogeneity of dispersions test
+mod <- betadisper(d_carn, groups)
+
+anova(mod)
+broom::tidy(TukeyHSD(betadisper(d_carn, getElement(sampledf, "mean_100_T"))))
+#significant difference in variability across sites
+```
+```{r}
+groups <- factor(getElement(sampledf, "mean_100_O2"))
+#Homogeneity of dispersions test
+mod <- betadisper(d_carn, groups)
+
+anova(mod)
+broom::tidy(TukeyHSD(betadisper(d_carn, getElement(sampledf, "mean_100_O2"))))
+#significant difference in variability across sites
+```
+```{r}
+groups <- factor(getElement(sampledf, "mean_100_CHLa"))
+#Homogeneity of dispersions test
+mod <- betadisper(d_carn, groups)
+
+anova(mod)
+broom::tidy(TukeyHSD(betadisper(d_carn, getElement(sampledf, "mean_100_CHLa"))))
+#significant difference in variability across sites
+```
+```{r}
+groups <- factor(getElement(sampledf, "mean_100_Salinity"))
+#Homogeneity of dispersions test
+mod <- betadisper(d_carn, groups)
+
+anova(mod)
+broom::tidy(TukeyHSD(betadisper(d_carn, getElement(sampledf, "mean_100_Salinity"))))
+#significant difference in variability across sites
+```
+
+
+```{r, results="hide",warning=FALSE}
+#Apportioning variance: OTU counts
+
+OTU.count.adonis<-adonis(carnivore_rel_abun~ sampledf$Year + 
+                     sampledf$Sta_ID + sampledf$Year*sampledf$Sta_ID +
+          sampledf$mean_100_T+
+                     sampledf$mean_100_silicate+
+         sampledf$mean_100_O2_sat + 
+         sampledf$mean_100_O2 + 
+         sampledf$mean_100_Salinity+
+                     sampledf$mean_100_PO4 +
+                     sampledf$mean_100_NO3 +
+                     sampledf$mean_100_NO2 + 
+                     sampledf$mean_100_CHLa+ 
+                     sampledf$mean_100_Phaeo)$aov.tab
+
+OTU.count.adonis
+
+#Set up for Q Plot
+q<-as.data.frame(OTU.count.adonis)
+row.names(q)<-c("Year","Sta_ID","Mean 100m Temperature","Mean 100m Silicate","Mean 100m O2 Sat","Mean 100m Oxygen","Mean 100m Salinity","Mean 100m PO4","Mean 100m NO3","Mean 100m NO2","Mean 100 Chl A","Mean 100m Phaeo","YearxSta_ID", "Residuals", "Total") 
+
+rownames_to_column(q) -> q2
+
+
+bluer <- c(rev(brewer.pal(10, "Blues")[3:9]),col2.gr[2],col10.gr[1],col10.gr[2],col3.gr[5],col2.gr[4],col7.gr[1],col5.gr[4])
+
+bluest <- c(bluer[1],bluer[2],col2.gr[2],bluer[3],bluer[4],col5.gr[4],col10.gr[1],col10.gr[2],bluer[5],bluer[6],bluer[1],bluer[2],col2.gr[2],bluer[3],bluer[4],col5.gr[4],col10.gr[1],col10.gr[2],bluer[5],bluer[6])
+
+plot(1:14, 1:14, col=bluest, pch=19, cex=3, xlab="", ylab="")
+
+q2 %>% 
+  arrange(desc(R2)) %>% 
+  filter(., rowname!= "Total") %>% 
+  mutate(., colors = bluer) -> q2
+
+# must match names correctly
+q<-data.frame(row.names(q), q)
+q <- q %>% arrange(desc(R2)) %>% filter(., row.names.q.!= "Total")
+names(q)[1]<-"Level"
+q$Level<-paste(q$Level, "\n",
+               round(q$R2,2), " (", q$Pr..F., ")", 
+               sep="")
+
+
+
+#Plot Figure 
+q0.plot<-ggplot(q, aes(area = R2, label=Level))+
+  geom_treemap(fill=q2$colors, color=1, alpha=.8)+
+  geom_treemap_text(colour = "black", place = "centre", grow = FALSE, size=10)+
+  ggtitle("Apportioned Variance")+
+  theme(plot.background = element_blank())+
+  theme(plot.title = element_text(hjust = 0.5))
+
+q0.plot
+```
+
+
+#####Constrained Analysis of Principle Components
+<br />
+
+
+```{r}
+#Constrained Analysis of Principle Components
+cap_ord <- ordinate(
+  physeq = physeq_obj.step3_eIDX, 
+  method = "CAP",
+  distance = d_carn,
+  formula = ~ sampledf$Year + 
+                     sampledf$Sta_ID + sampledf$Year*sampledf$Sta_ID +
+          sampledf$mean_100_T+
+                     sampledf$mean_100_silicate+
+         sampledf$mean_100_O2_sat + 
+         sampledf$mean_100_O2 + 
+         sampledf$mean_100_Salinity+
+                     sampledf$mean_100_PO4 +
+                     sampledf$mean_100_NO3 +
+                     sampledf$mean_100_NO2 + 
+                     sampledf$mean_100_CHLa+ 
+                     sampledf$mean_100_Phaeo
+
+)
+#Results of model
+anova(cap_ord)
+```
+
+```{r, results="hide",warning=FALSE}
+
+library(RColorBrewer)
+n <- 200
+qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
+col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+pie(rep(1,n), col=sample(col_vector, n))
+color = grDevices::colors()[grep('gr(a|e)y', grDevices::colors(), invert = T)]
+pie(rep(1,n), col=sample(color, n))
+pie(rep(1,n), col=sample(color, n))
+
+col=sample(color, n)
+
+# CAP plot of environmental predictor variables
+cap_plot <- plot_ordination(
+  physeq = physeq_obj.step3_eIDX, 
+  ordination = cap_ord, 
+  color = "Year", 
+  axes = c(1,2)
+) + 
+  aes(shape = Sta_ID) + scale_shape_manual(values=c(15, 16, 17,18)) +
+  geom_point(aes(colour = Year), size = 4) + 
+  geom_point(colour = "grey90", size = 1.5) + 
+  scale_color_manual(values = c(col)) 
+  
+
+cap_plot +  
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(),  panel.border = element_rect(colour = "black", fill=NA, size=2))+
+  scale_fill_manual(name  ="Location",
+                            breaks=c("093.3 060.0", "093.3 030.0", "086.7 050.0","080.0 060.0"),
+                            labels=c("093.3 060.0", "093.3 030.0", "086.7 050.0","080.0 060.0"), 
+                        values = c(col.great))+
+    ggtitle("Constrained Analysis of Principle Components", subtitle="Factors Between Sites")
+
+```
+
+
+
+
+
+
+##### NMDS Plots
+<br />
+
+
+
+```{r, results="hide",warning=FALSE}
+# NMDS ordination
+ord <- ordinate(physeq_obj.step3_eIDX, method = "MDS", distance = d_carn)
+
+plot_ordination(physeq_obj.step3_eIDX, ord, color = "mean_100_T", shape="Sta_ID") +
+  geom_point(size=5) +
+  theme_bw() +
+  #geom_text(aes(x=NMDS1,y=NMDS2,label=Replicate),alpha=0.5)+
+   ggtitle(paste("Principle Coordinate Analysis Bray-Curtis Dissimilarity Method")) +
+  scale_color_manual(values=col) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.text=element_text(size=16),
+        axis.title=element_text(size=20,face="bold"),legend.title = element_text( size=12, face="bold"),legend.text = element_text(size=10, 
+                                     face="bold") ) + scale_shape_manual(values=c(15, 16, 17,18)) + theme(legend.text=element_text(size=16), legend.title=element_text(size=20))
+
+
+```
+
+
+##### Gradient Forest
+<br />
+<br />
+
+
+```{r, results="hide",warning=FALSE}
+
+sample_data(physeq_obj.step3_eIDX) %>% 
+  write.csv(., file="calcofi_metadata_tobeedited_07062020")
+
+
+#Remake Indexed OTU table
+carn_ra_num <- as.data.frame(carnivore_rel_abun)
+
+#Make Numeric
+carn_ra_num <- as.data.frame(carnivore_rel_abun)
+carn_ra_num <- sapply(carn_ra_num, as.numeric)
+
+#Re apply row and col names
+row.names(carn_ra_num) <- row.names(carnivore_rel_abun)
+colnames(carn_ra_num) <- colnames(carnivore_rel_abun)
+
+#Rename Column Names
+species_names <- colnames(carnivore_rel_abun)
+easy_name <- vector(length=length(species_names))
+
+for (i in 1:length(easy_name)) {
+  easy_name[i] <- paste0("species", i)
+}
+#colnames(carn_ra_num) <- easy_name
+
+#Store Name Pairs
+species_list <- as.list(easy_name,species_names)
+names(species_names) <- easy_name
+
+#sites are rows (same order as metadata)
+#species are columns
+
+##########################
+# COMBINE BOTH DATA SETS #
+##########################
+input_meta_path2 <- "/Users/zackgold/Documents/UCLA_phd/Projects/California/NOAA_CALCOFI/data_an_2020/analysis_062020/analysis/calcofi_metadata_gradfor_07062020.csv"
+metadata2 <- read.table(input_meta_path2, header = 1, sep = ",", stringsAsFactors = F)
+metadata2 <- as.data.frame(metadata2)
+row_namers <- metadata2$sample
+metadata2 <- sapply(metadata2, as.numeric)
+row.names(metadata2) <- row_namers
+metadata2 <- metadata2 %>% as.data.frame() %>% dplyr::select(-sample)
+
+datDF_carn<-merge(metadata2,carn_ra_num,by="row.names")
+g <- length(datDF_carn)
+row_namers2 <- row.names(carn_ra_num)
+datDF_carn <- sapply(datDF_carn, as.numeric)
+datDF_carn <- datDF_carn[,2:g]
+datDF_carn <- as.data.frame(datDF_carn)
+row.names(datDF_carn) <- row_namers2 
+
+###########################
+# GRADIENT FOREST EXAMPLE #
+###########################
+
+eDNA_gradFor<-gradientForest(datDF_carn,
+                             predictor.vars = colnames(metadata2), 
+                             response.vars = colnames(carn_ra_num),
+                             ntree = 5000, transform = NULL, compact = F,
+                             corr.threshold = 0.5, trace=T)
+```
+
+```{r, results="hide",warning=FALSE}
+#Remake Indexed OTU table
+carn_ra_num <- as.data.frame(carnivore_rel_abun)
+
+#Make Numeric
+carn_ra_num <- as.data.frame(carnivore_rel_abun)
+carn_ra_num <- sapply(carn_ra_num, as.numeric)
+
+#Re apply row and col names
+row.names(carn_ra_num) <- row.names(carnivore_rel_abun)
+colnames(carn_ra_num) <- colnames(carnivore_rel_abun)
+
+#Rename Column Names
+species_names <- colnames(carnivore_rel_abun)
+easy_name <- vector(length=length(species_names))
+
+for (i in 1:length(easy_name)) {
+  easy_name[i] <- paste0("species", i)
+}
+#colnames(carn_ra_num) <- easy_name
+
+#Store Name Pairs
+species_list <- as.list(easy_name,species_names)
+names(species_names) <- easy_name
+
+#sites are rows (same order as metadata)
+#species are columns
+
+##########################
+# COMBINE BOTH DATA SETS #
+##########################
+input_meta_path2 <- "/Users/zackgold/Documents/UCLA_phd/Projects/California/NOAA_CALCOFI/CalCOFI_Database_194903-201806_csv_12Jun2019/calcofi_metadata_edited_grad_forest_small.txt"
+metadata2 <- read.table(input_meta_path2, header = 1, sep = "\t", stringsAsFactors = F)
+metadata2 <- as.data.frame(metadata2)
+row_namers <- metadata2$sample
+metadata2 <- sapply(metadata2, as.numeric)
+row.names(metadata2) <- row_namers
+metadata2 <- metadata2 %>% as.data.frame() %>% select(-sample)
+
+datDF_carn<-merge(metadata2,carn_ra_num,by="row.names")
+g <- length(datDF_carn)
+row_namers2 <- row.names(carn_ra_num)
+datDF_carn <- sapply(datDF_carn, as.numeric)
+datDF_carn <- datDF_carn[,2:g]
+datDF_carn <- as.data.frame(datDF_carn)
+row.names(datDF_carn) <- row_namers2 
+
+###########################
+# GRADIENT FOREST EXAMPLE #
+###########################
+
+eDNA_gradFor_small<-gradientForest(datDF_carn,
+                             predictor.vars = colnames(metadata2), 
+                             response.vars = colnames(carn_ra_num),
+                             ntree = 5000, transform = NULL, compact = F,
+                             corr.threshold = 0.5, trace=T)
+```
+
+```{r}
+#Plot Overall Importance of Environmental Variables
+col = c("red", "blue", "green", "orange")[z]
+
+base::rev(col_gradient) -> col_gradient
+base::rev(col_gradient_2) -> col_gradient_2
+
+z = names(importance(eDNA_gradFor))
+y = importance(eDNA_gradFor, type="Accuracy")
+y = y[order(-y)]
+
+y=names(y)
+names(col_gradient) <- z
+names(col_gradient_2) <- y
+
+plot(eDNA_gradFor,plot.type="Overall.Importance", col=col_gradient, cex.axis=1.25, cex.main=2)
+
+plot(eDNA_gradFor,plot.type="Overall.Importance", col=col_gradient_2, cex.axis=1.25, cex.main=2)
+
+y
+Top Five Predictors
+SS_CHLa, mean_100_T,mean_100_CHLa, SS_T, mean_100_Salinity
+```
+
+```{r}
+eDNA_gradFor$res
+
+```
+
+<br />
+
+***Figure 18.** Overall Importance of Environmental Variables from Gradient Forest Analysis* 
+<br />
+<br />
+```{r}
+most_important <- names(importance(eDNA_gradFor))
+par(mgp = c(2, 0.75, 0))
+
+plot(eDNA_gradFor, plot.type = "S", imp.vars = most_important[1],
+ leg.posn = "top", cex.legend = 1.5, cex.axis = 2.5,
+ cex.lab = 2, line.ylab = 2.5, par.args = list(mgp = c(5,
+ 3, 1), mar=c(6,4,0,0)))
+```
+
+```{r}
+
+plot(eDNA_gradFor, plot.type = "C", imp.vars = most_important[1],
+ show.overall = F, legend = T, leg.posn = "topleft",
+ leg.nspecies = 10, cex.lab = 0.7, cex.legend = 0.4,
+ cex.axis = 0.6, line.ylab = 0.9, par.args = list(mgp = c(1.5,
+ 0.5, 0), mar = c(2.5, 1, 0.1, 0.5), omi = c(0,
+ 0.3, 0, 0)))
+
+
+  
+
+```
+
+
+```{r}
+plot(eDNA_gradFor, plot.type = "C", imp.vars = most_important[c(1,2,3,4)],
+ show.species = F, common.scale = T, cex.axis = 0.6,
+ cex.lab = 0.7, line.ylab = 0.9, par.args = list(mgp = c(1.5,
+ 0.5, 0), mar = c(2.5, 1, 0.1, 0.5), omi = c(0,
+ 0.3, 0, 0)))
+
+```
+
+```{r}
+#R^2 fit for each species
+plot(eDNA_gradFor, plot.type = "Performance", show.names = F, horizontal = F,
+     cex.axis = 1, cex.labels = 0.7, line = 2.5)
+
+```
+
+```{r}
+plot(eDNA_gradFor, plot.type = "P", show.names = T, horizontal = F,
+ cex.axis = 1, cex.labels = 0.7, line = 2.5)
+
+plot(eDNA_gradFor, plot.type = "P", show.names = F, horizontal = T,
+cex.axis = 1, cex.labels = 0.6, line = 2.5)
+
+plot(eDNA_gradFor, plot.type = "P", show.names = T, horizontal = T,
+cex.axis = 1, cex.labels = 0.6, line = 2.5)
+
+```
+
+
+
+```{r}
+sort(eDNA_gradFor$result, decreasing=T)
+```
+
+
+```{r}
+goodTaxa = names(sort(eDNA_gradFor_small$result, decreasing=T))[2]
+goodTaxa
+
+as.tibble(as.data.frame(eDNA_gradFor_small$res)) %>% 
+  filter(spec %in% goodTaxa) %>% 
+  filter(., var == "SS_T") %>% 
+  View()
+
+importance(eDNA_gradFor_small,  "Species")
+head(getTree(eDNA_gradFor_small,2))
+```
+
+```{r}
+GP = filter_taxa(physeq_obj.step2_alpha_nan, function(x) sum(x > 3) > (0.2*length(x)), TRUE)
+abundant_taxa <- taxa_names(GP)
+GPfr = prune_taxa(abundant_taxa,physeq_obj.step3_nan)
+GPfr = subset_samples(GPfr, mean_100_T!="NA")
+GPfr = subset_samples(physeq_obj.step3_nan, mean_100_T!="NA")
+
+
+get_taxa(GPfr)
+head(sample_data(GP))
+env.taxa.cor <- taxa.env.correlation(GPfr, select.variables="mean_100_T", adjustment = 5, num.taxa = 190)
+
+melted_sample_metadata_mean_100_T %>% 
+  mutate(., Temp_type = ifelse(value < 12, "Cold",  ifelse(value >12, "Hot", NA))) %>% 
+  group_by(Year,Temp_type) %>% 
+  count() %>%
+  pivot_wider(names_from = c(Temp_type), values_from = n) %>%
+  replace(., is.na(.), 0) %>% 
+  mutate(., Designation =  ifelse(Cold>0, "Cold", ifelse(Hot>2, "Hot", "Medium"))) -> temp_designation
+  
+cold_year <- temp_designation %>% filter(., Designation =="Cold") %>% select(Year)
+hot_year <- temp_designation %>% filter(., Designation =="Hot") %>% select(Year)
+
+env.taxa.cor %>% 
+  filter(., Significance!="") %>% 
+  mutate(., Temp_type =  ifelse(Correlation>0, "Hot", "Cold")) %>% 
+  group_by(Taxa) %>% 
+  count(Temp_type) %>%
+  pivot_wider(names_from = c(Temp_type), values_from = n) %>%
+  replace(., is.na(.), 0) %>% 
+  mutate(., difference = Hot-Cold) %>% 
+  mutate(., Designation =  ifelse(Cold>0, ifelse(Hot < 1 & difference < 0, "Cold", ifelse(difference < -1, "Cold", ifelse(difference > 2, "Hot","Mixed"))), ifelse(difference > 1, "Hot","Mixed"))) -> temp_designation_species
+
+cold_species <- temp_designation_species %>% filter(., Designation =="Cold") %>% select(Taxa)
+warm_species <- temp_designation_species %>% filter(., Designation =="Hot") %>% select(Taxa)
+
+env.taxa.cor %>% 
+ as.data.frame() %>% 
+  filter(., Taxa %in% cold_species$Taxa)  %>%
+  separate(., Taxa, c("Phylum","Class","Order","Family","Genus","Species","Species2"), sep = "\\.") %>% 
+  unite(.,Taxa, "Family","Genus","Species2",sep = ".") %>% 
+  mutate(Env="Mean 10-100m T ˚C" ) ->env.taxa.cor_top_cold
+
+p <- plot_taxa_env(env.taxa.cor_top_cold) + theme_bw()  +
+  theme(panel.grid.minor.y=element_blank(),panel.grid.minor.x=element_blank(),panel.grid.major.y=element_blank(),panel.grid.major.x=element_blank(), axis.text.x = element_text(angle = 90, hjust = 0)) +theme(axis.text=element_text(size=14),
+        axis.title=element_text(size=20,face="bold"), axis.text.x = element_text(angle = 45,hjust = 1)) + theme(legend.text=element_text(size=10), legend.title=element_text(size=20), legend.position = "right")+ labs(fill = "Mean 10-100m T ˚C \n Correlation") +scale_fill_gradient2(labels = c("0.8", "0.4", "0", "-0.4", "-0.8"),
+           breaks = c(0.8, 0.4, 0, -0.4, -0.8), high = col3.gr[1], mid = "white",
+  low =col2.gr[2], midpoint = 0) +
+    guides(fill = guide_colorbar(barwidth = 0.5, barheight = 10)) + ggtitle(label = "Cold Associated Species")
+
+p
+
+env.taxa.cor %>% 
+ as.data.frame() %>% 
+  filter(., Taxa %in% warm_species$Taxa)  %>%
+  separate(., Taxa, c("Phylum","Class","Order","Family","Genus","Species","Species2"), sep = "\\.") %>% 
+  unite(.,Taxa, "Family","Genus","Species2",sep = ".") %>% 
+  mutate(Env="Mean 10-100m T ˚C" ) ->env.taxa.cor_top_warm
+
+p <- plot_taxa_env(env.taxa.cor_top_warm) + theme_bw()  +
+  theme(panel.grid.minor.y=element_blank(),panel.grid.minor.x=element_blank(),panel.grid.major.y=element_blank(),panel.grid.major.x=element_blank(), axis.text.x = element_text(angle = 90, hjust = 0)) +theme(axis.text=element_text(size=14),
+        axis.title=element_text(size=20,face="bold"), axis.text.x = element_text(angle = 45,hjust = 1)) + theme(legend.text=element_text(size=10), legend.title=element_text(size=20), legend.position = "right")+ labs(fill = "Mean 10-100m T ˚C \n Correlation") +scale_fill_gradient2(labels = c("0.8", "0.4", "0", "-0.4","-0.8"),
+           breaks = c(0.8, 0.4, 0, -0.4,-0.8), high = col3.gr[1], mid = "white",
+  low =col2.gr[2], midpoint = 0) +
+    guides(fill = guide_colorbar(barwidth = 0.5, barheight = 10)) + ggtitle(label = "Warm Associated Species")
+
+p
+
+```
+
+```{r}
+env.taxa.cor2 <- taxa.env.correlation(GPfr, "Sta_ID", select.variables="mean_100_T", adjustment = 5, num.taxa = 190)
+
+env.taxa.cor2 %>% 
+  as.data.frame() %>% 
+  filter(., Significance!="")  %>% 
+  separate(., Taxa, c("Phylum","Class","Order","Family","Genus","Species","Species2"), sep = "\\.") %>% 
+  unite(.,Taxa, "Family","Genus","Species2",sep = ".") %>% 
+  mutate(Env="Mean 10-100m T ˚C" )->env.taxa.cor_top2
+
+p <- plot_taxa_env(env.taxa.cor_top2) + theme_bw()  +
+  theme(panel.grid.minor.y=element_blank(),panel.grid.minor.x=element_blank(),panel.grid.major.y=element_blank(),panel.grid.major.x=element_blank(), axis.text.x = element_text(angle = 90, hjust = 0)) +theme(axis.text=element_text(size=14),
+        axis.title=element_text(size=20,face="bold"), axis.text.x = element_text(angle = 45,hjust = 1)) + theme(legend.text=element_text(size=14), legend.title=element_text(size=20), legend.position = "right")+ labs(fill = "Mean 10-100m T ˚C \n Correlation") +scale_fill_gradient2(labels = c("0.5", "0.25", "0", "-0.25", "-0.5"),
+           breaks = c(0.5, 0.25, 0, -0.25, -0.5), high = col3.gr[1], mid = "white",
+  low =col2.gr[2], midpoint = 0) +
+    guides(fill = guide_colorbar(barwidth = 0.5, barheight = 10))
+
+p$data$Type <- as.character(p$data$Type)
+p$data$Type <- factor(p$data$Type, levels=newSTorder)
+p
+
+
+View(temps)
+
+
+print(p)
+
+```
+
+
+```{r}
+goodTaxa = names(sort(eDNA_gradFor_small$result, decreasing=T))
+
+
+goodTaxa = goodTaxa[21]
+badTaxa <- setdiff(taxa_names(physeq_obj.step3_nan), goodTaxa)
+top_hits <- prune_taxa(goodTaxa, physeq_obj.step3_nan)
+
+#Comparison of Top Taxa per sites
+p <- plot_bar(top_hits,"Year","Abundance", "Species", facet_grid =~Species) + geom_bar(aes(fill=Year), stat="identity", position="stack") +
+  theme_bw()  +
+  theme(legend.position="none", panel.grid.minor.y=element_blank(),panel.grid.minor.x=element_blank(),panel.grid.major.y=element_blank(),panel.grid.major.x=element_blank(), axis.text.x = element_text(angle = 90, hjust = 0)) +theme(axis.text=element_text(size=16),
+        axis.title=element_text(size=20,face="bold"), axis.text.x = element_text(angle = 45,hjust = 1)) + theme(legend.text=element_text(size=24), legend.title=element_text(size=28))
+
+p  
+
+
+#Comparison of Top Taxa per sites
+t <- plot_bar(top_hits,"SS_Salinity","Abundance", "Species", facet_grid =~Species) + geom_bar(aes(fill=Year), stat="identity", position="stack") +
+  theme_bw()  +
+  theme(legend.position="none", panel.grid.minor.y=element_blank(),panel.grid.minor.x=element_blank(),panel.grid.major.y=element_blank(),panel.grid.major.x=element_blank(), axis.text.x = element_text(angle = 90, hjust = 0)) 
+
+t
+```
+
+```{r}
+melted_sample_metadata %>% 
+  filter(., variable =="mean_100_T") %>% 
+  group_by(Year) %>% 
+  mutate(., avg = mean(value)) %>% 
+  select(Year,avg) %>% 
+  distinct()-> temps
+
+melted_sample_metadata %>% 
+  filter(., variable =="mean_100_T") %>% 
+  group_by(Year,Sta_ID) %>% 
+  mutate(., avg = mean(value)) %>% 
+  select(Year,Sta_ID,avg) %>% 
+  distinct()-> temps_sta
+
+sample_metadata %>% 
+  separate(sample, into = c("Year","Month", "Lat","Lon") , sep = "\\_", remove = F) %>%
+  melt(., id = c("Year","Sta_ID"), measure = c("SS_Salinity")) -> melted_sample_metadata_psu
+
+melted_sample_metadata_psu %>% 
+  filter(., variable =="SS_Salinity") %>% 
+  group_by(Year) %>% 
+  mutate(., avg = mean(value)) %>% 
+  select(Year,avg) %>% 
+  distinct()-> ss_psu
+
+
+sample_metadata %>% 
+  separate(sample, into = c("Year","Month", "Lat","Lon") , sep = "\\_", remove = F) %>%
+  melt(., id = c("Year","Sta_ID"), measure = c("SS_T")) -> melted_sample_metadata_sst
+
+sample_metadata %>% 
+  separate(sample, into = c("Year","Month", "Lat","Lon") , sep = "\\_", remove = F) %>%
+  melt(., id = c("Year","Sta_ID"), measure = c("mean_100_T")) -> melted_sample_metadata_mean_100_T
+
+melted_sample_metadata_sst %>% 
+  filter(., variable =="SS_T") %>% 
+  group_by(Year) %>% 
+  mutate(., avg = mean(value)) %>% 
+  select(Year,avg) %>% 
+  distinct()-> temps_sst
+
+sst = ggplot()+geom_line(data=temps_sst, aes(x=Year, y=avg),group=1) +theme(panel.background = element_rect(fill = NA),
+        panel.grid.major.x=element_blank(),
+        panel.grid.minor.x=element_blank(),
+        panel.grid.major.y=element_blank(),
+        panel.grid.minor.y=element_blank()) +ylab("Temp (C)") + scale_y_continuous("Average T (˚C)", sec.axis = sec_axis(~ ., name = derive()))
+
+ss_salinity = ggplot()+geom_line(data=ss_psu, aes(x=Year, y=avg),group=1) +theme(panel.background = element_rect(fill = NA),
+        panel.grid.major.x=element_blank(),
+        panel.grid.minor.x=element_blank(),
+        panel.grid.major.y=element_blank(),
+        panel.grid.minor.y=element_blank()) +ylab("Temp (C)") + scale_y_continuous("Average T (˚C)", sec.axis = sec_axis(~ ., name = derive()))
+
+sst = melted_sample_metadata_sst %>% 
+  as.data.frame() %>% 
+  filter(., Sta_ID =="080.0 060.0") %>% 
+        ggplot(.,aes(x=Year, y=value))+geom_line(aes(x=Year, y=value),group=1) +theme(panel.background = element_rect(fill = NA),
+        panel.grid.major.x=element_blank(),
+        panel.grid.minor.x=element_blank(),
+        panel.grid.major.y=element_blank(),
+        panel.grid.minor.y=element_blank()) +ylab("Temp (C)") + scale_y_continuous("Average T (˚C)", sec.axis = sec_axis(~ ., name = derive()))
+
+sst = melted_sample_metadata_sst %>% 
+  as.data.frame() %>% 
+  filter(., Sta_ID =="086.7 050.0") %>% 
+        ggplot(.,aes(x=Year, y=value))+geom_line(aes(x=Year, y=value),group=1) +theme(panel.background = element_rect(fill = NA),
+        panel.grid.major.x=element_blank(),
+        panel.grid.minor.x=element_blank(),
+        panel.grid.major.y=element_blank(),
+        panel.grid.minor.y=element_blank()) +ylab("Temp (C)") + scale_y_continuous("Average T (˚C)", sec.axis = sec_axis(~ ., name = derive()))
+
+ss_psu_all = melted_sample_metadata_psu %>% 
+  as.data.frame() %>% 
+  ggplot(., aes(x=Year, y=value, color=Sta_ID,group= Sta_ID)) + geom_line(aes(group= Sta_ID)) + scale_color_manual(values=col_cofi) +
+  ggtitle("Mean Temperature (10-100m) Over Time") +
+  xlab("Year") + ylab("T˚C") + theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + labs(color = "Station ID") +theme(panel.background = element_rect(fill = NA),
+        panel.grid.major.x=element_blank(),
+        panel.grid.minor.x=element_blank(),
+        panel.grid.major.y=element_blank(),
+        panel.grid.minor.y=element_blank()) +ylab("Temp (C)") + scale_y_continuous("Average T (˚C)", sec.axis = sec_axis(~ ., name = derive()))
+
+sst = melted_sample_metadata_sst %>% 
+  as.data.frame() %>% 
+  ggplot(., aes(x=Year, y=value, color=Sta_ID,group= Sta_ID)) + geom_line(aes(group= Sta_ID)) + scale_color_manual(values=col_cofi) +
+  ggtitle("Mean Temperature (10-100m) Over Time") +
+  xlab("Year") + ylab("T˚C") + theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + labs(color = "Station ID") +theme(panel.background = element_rect(fill = NA),
+        panel.grid.major.x=element_blank(),
+        panel.grid.minor.x=element_blank(),
+        panel.grid.major.y=element_blank(),
+        panel.grid.minor.y=element_blank()) +ylab("Temp (C)") + scale_y_continuous("Average T (˚C)", sec.axis = sec_axis(~ ., name = derive()))
+
+
+
+q = ggplot()+geom_line(data=temps, aes(x=Year, y=avg),group=1) +theme(panel.background = element_rect(fill = NA),
+        panel.grid.major.x=element_blank(),
+        panel.grid.minor.x=element_blank(),
+        panel.grid.major.y=element_blank(),
+        panel.grid.minor.y=element_blank()) +ylab("Temp (C)") + scale_y_continuous("Average T (˚C)", sec.axis = sec_axis(~ ., name = derive())) +theme(axis.text=element_text(size=16),
+        axis.title=element_text(size=20,face="bold"), axis.text.x = element_text(angle = 45,hjust = 1)) + theme(legend.text=element_text(size=24), legend.title=element_text(size=28))
+
+
+qq <- ggplot(temperature_north, aes(x=Year, y=mean_100_T)) + geom_line(aes(group=1)) + scale_color_manual(values=col_cofi) +
+  ggtitle("Mean Temperature (10-100m) Over Time") +
+   ylab("T˚C") + theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + labs(color = "Station ID") +theme(panel.background = element_rect(fill = NA),
+        panel.grid.major.x=element_blank(),
+        panel.grid.minor.x=element_blank(),
+        panel.grid.major.y=element_blank(),
+        panel.grid.minor.y=element_blank())  
+
+grid.newpage()
+
+g1<-ggplot_gtable(ggplot_build(p))
+g2<-ggplot_gtable(ggplot_build(sst))
+
+pp<-c(subset(g1$layout,name=="panel-1-1",se=t:r))
+g<-gtable_add_grob(g1, g2$grobs[[which(g2$layout$name=="panel")]],pp$t,pp$l,pp$b,pp$l)
+
+ia<-which(g2$layout$name=="axis-l")
+ga <- g2$grobs[[ia]]
+ax <- ga$children[[2]]
+ax$widths <- rev(ax$widths)
+ax$grobs <- rev(ax$grobs)
+ax$grobs[[1]]$x <- ax$grobs[[1]]$x - unit(1, "npc") + unit(0.15, "cm")
+g <- gtable_add_cols(g, g2$widths[g2$layout[ia, ]$l], length(g$widths) - 1)
+g <- gtable_add_grob(g, ax, pp$t, length(g$widths) - 1, pp$b)
+
+grid.draw(g)
+
+
+
+
+```
+
+
+```{r}
+as.tibble(rownames_to_column(as.data.frame(eDNA_gradFor_small$imp.rsq))) %>% 
+  select(rowname,goodTaxa) %>% 
+  rename(taxa=goodTaxa) %>% 
+  arrange(desc(taxa))
+
+
+
+
+```
+
+```{r}
+
+mergedGP = merge_samples(physeq_obj.step3_nan, "Lat_Deg")
+x1 <- tax_glom(mergedGP, taxrank="Family")
+
+
+plot_heatmap(x1, "MDS", "bray", "Lat_Deg", "Family", low="#000033", high="#000033", na.value="white")
+heatmap(otu_table(x1))
+
+```
+```{r}
+#Method
+mergedGP = merge_samples(physeq_obj.step3_nan, "ST_ID")
+
+d = distance(mergedGP, method='bray')
+dend <- as.dendrogram(hclust(d, method="ward.D2"))
+
+
+# Manually define color-shading vector based on sample type.
+sample_data(mergedGP)$Lat_Deg <- factor(sample_data(mergedGP)$Lat_Deg, levels= unique(sample_data(mergedGP)$Lat_Deg))
+
+
+
+#Plot
+colorScale <- col_cofi
+cols <- colorScale[get_variable(mergedGP, "Lat_Deg")]
+colors_to_use <- cols[order.dendrogram(dend)]
+labels_colors(dend) <- colors_to_use
+par(mfrow = c(1,1), mar=c(10,4.1,4.1,2.1))
+plot(dend, main = "Complete Distance Cluster")
+
+```
+
+```{r}
+
+merge_samples(physeq_obj.step2_alpha, "ST_ID") -> phy_div
+  sample_data(physeq_obj.step2_alpha)
+alpha.diversity <- estimate_richness(phy_div, measures = c("Observed"))
+data <- cbind(sample_data(phy_div), alpha.diversity)
+rownames(data) -> data$names
+
+data %>% 
+  separate(.,names, into=c("y2","Lat","Lon"), sep="_") %>% 
+  unite(., "Sta_ID", Lat:Lon) -> data
+%>% dplyr::select(Year, Observed, Sta_ID) 
+data %>% arrange(Year) %>% dplyr::select(Year) %>% unique() -> list_time
+
+p <- data %>% 
+  as.data.frame() %>% 
+  ggplot(., aes(x=Year, y=Observed, color=Sta_ID,group= Sta_ID)) + geom_line(aes(group= Sta_ID,cex=2)) + scale_color_manual(values=col_cofi) + scale_x_continuous(breaks = list_time$Year) +
+  ggtitle("Observed Species via eDNA") +
+  xlab("Year") + ylab("Species") + theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) + labs(color = "Station ID") +theme(axis.text=element_text(size=16),
+        axis.title=element_text(size=20,face="bold"), axis.text.x = element_text(angle = 45,hjust = 1)) + theme(legend.text=element_text(size=24), legend.title=element_text(size=28))
+
+Torder = c("86.7_50", "80_60", "93.3_30", "93.3_60")
+
+p$data$Sta_ID <- as.character(p$data$Sta_ID)
+p$data$Sta_ID <- factor(p$data$Sta_ID, levels=Torder)
+p
+
+
+
+```
+
+

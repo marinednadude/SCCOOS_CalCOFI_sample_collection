@@ -1,0 +1,4670 @@
+---
+title: "CalCOFI_results_20210715"
+author: "Zack Gold"
+date: "7/15/2021"
+output: html_document
+---
+# Prep Code
+## Load Libraries
+```{r, hide = TRUE}
+
+
+library(tidyverse)
+library(rstanarm)
+options(mc.cores = parallel::detectCores())
+library(bayesplot)
+library(modelr)
+library(tidybayes)
+library(heatmaply)
+library(wesanderson)
+library(dendextend)
+library(ggpmisc)
+library(here)
+library(vegan)
+library(ggdendro)
+library(rioja)
+library(cluster)
+library(ggrepel)
+library(grid)
+library(RColorBrewer)
+library(ggallin)
+library(patchwork)
+library(ggpattern)
+library(corrplot)
+library(gclus)
+library(gllvm)
+library(lattice)
+
+```
+
+## Color Palletes
+```{r, Color Palletes ,results='hide'}
+# Colors
+wes_palette("Darjeeling2") -> dar2
+wes_palette("Darjeeling1") -> dar1
+wes_palette("FantasticFox1") -> moon1
+wes_palette("Royal1") -> br2
+wes_palette("Rushmore1") -> br1
+wes_palette("IsleofDogs1") -> id1
+wes_palette("Royal2") -> id2
+
+dar3 <- c(dar2[2], dar1[2], dar2[4], dar2[3], moon1[5])
+#show_col(dar3)
+
+dar4 <- c(id1[1], dar1[2], dar2[2], dar2[3])
+#show_col(dar4)
+wes_palette("Zissou1") -> moon2
+moon3 <- c(id1[1], moon2[1], br2[4], br1[4], br1[3], moon2[5])
+#show_col(moon3)
+
+col_27 <-
+  c(dar1,
+    dar2,
+    id1,
+    id2,
+    moon2[1],
+    moon1[5],
+    br1[3],
+    br2[1],
+    moon2[3],
+    "darkseagreen",
+    "dodgerblue")
+col_27[10] <- br2[4]
+col_27[13] <- br1[4]
+
+col_23 <- c(dar1, dar2, id1, id2, moon2[1], moon1[5])
+
+palette.new <- read_csv(here("data", "alternative.pallete.csv"))
+palette.new %>% 
+mutate(
+.,
+color = case_when(
+Type == "Benthic North" ~ "burlywood4",
+Type == "Benthic Central"  ~ "burlywood3"  ,
+Type == "Benthic Cosmopolitan"  ~
+"burlywood1"  ,
+Type == "Benthic South"  ~ "darksalmon"  ,
+Type == "Mesopelagic North" ~ "#08519c",
+Type == "Mesopelagic South"  ~ "#cb181d" ,
+Type == "Mesopelagic Cosmopolitan"  ~ "#6baed6" ,
+Type == "Mesopelagic Central" ~ "#3182bd" ,
+Type == "Coastal Pelagic Central" ~ "#969696",
+Type == "Coastal Pelagic North" ~ "black",
+Type == "Cosmopolitan"   ~ "grey80"   ,
+TRUE ~ "white"
+)) -> palette.new
+library(scales)
+show_col(palette.new$color)
+
+palette.new3 <-
+  read_csv(here("data", "alternative.pallete.csv")) %>% filter (!str_detect(Type, "Coastal Pelagic North"))
+
+palette.new3 %>% 
+mutate(
+.,
+color = case_when(
+Type == "Benthic North" ~ "burlywood4",
+Type == "Benthic Central"  ~ "burlywood3"  ,
+Type == "Benthic Cosmopolitan"  ~
+"burlywood1"  ,
+Type == "Benthic South"  ~ "darksalmon"  ,
+Type == "Mesopelagic North" ~ "#08519c",
+Type == "Mesopelagic South"  ~ "#cb181d" ,
+Type == "Mesopelagic Cosmopolitan"  ~ "#6baed6" ,
+Type == "Mesopelagic Central" ~ "#3182bd" ,
+Type == "Coastal Pelagic Central" ~ "#969696",
+Type == "Coastal Pelagic North" ~ "black",
+Type == "Cosmopolitan"   ~ "grey80"   ,
+TRUE ~ "white"
+)) -> palette.new3
+
+show_col(palette.new3$color)
+
+pallete.fib1b <-
+  palette.new %>% filter (!str_detect(Type, "Benthic Cosmopolitan")) %>% filter (!str_detect(Type, "Coastal Pelagic North"))
+
+
+```
+
+## Temperature
+
+```{r}
+
+
+
+metadata2 <-
+read.csv(file = "../data/calcofi_metadata_analysis_20210907.csv")
+
+metadata2 %>%
+mutate(
+.,
+station = fct_recode(
+Sta_ID,
+"80_60" =  "080.0 060.0" ,
+"86.7_50" = "086.7 050.0" ,
+"93.3_30" = "093.3 030.0",
+"93.3_60" = "093.3 060.0"
+)
+) %>%
+group_by(Year, station) %>%
+dplyr::summarise(two_month_sst = mean(two_month_sst)) -> two_month_sst
+
+metadata2 %>%
+mutate(
+.,
+station = fct_recode(
+Sta_ID,
+"80_60" =  "080.0 060.0" ,
+"86.7_50" = "086.7 050.0" ,
+"93.3_30" = "093.3 030.0",
+"93.3_60" = "093.3 060.0"
+)
+) %>%
+group_by(Year) %>%
+dplyr::summarise(mean_two_month_sst = mean(two_month_sst)) -> two_month_sst_mean
+
+
+
+metadata2 %>%
+mutate(
+.,
+station = fct_recode(
+Sta_ID,
+"80_60" =  "080.0 060.0" ,
+"86.7_50" = "086.7 050.0" ,
+"93.3_30" = "093.3 030.0",
+"93.3_60" = "093.3 060.0"
+)
+) %>%
+group_by(Year, station) %>%
+dplyr::summarise(mean_100_T = mean(mean_100_T)) -> mean_100_T
+
+metadata2 %>%
+mutate(
+.,
+station = fct_recode(
+Sta_ID,
+"80_60" =  "080.0 060.0" ,
+"86.7_50" = "086.7 050.0" ,
+"93.3_30" = "093.3 030.0",
+"93.3_60" = "093.3 060.0"
+)
+) %>%
+group_by(Year) %>%
+dplyr::summarise(mean_mean_100_T = mean(mean_100_T)) -> mean_100_T_mean
+```
+
+
+### SST Temp plot
+```{r}
+
+
+
+
+metadata2  %>%
+mutate(
+.,
+station = fct_recode(
+Sta_ID,
+"Pt. Conception" =  "080.0 060.0" ,
+"San Nicholas Island" = "086.7 050.0" ,
+"San Diego Inshore" = "093.3 030.0",
+"San Diego Offshore" = "093.3 060.0"
+)
+) %>%
+ggplot(., aes(
+x = Year,
+y = two_month_sst,
+group = station,
+color = station
+)) +
+geom_line(size = 1) +
+scale_color_manual(values = dar4) +
+annotate(
+"rect",
+xmin = 2014,
+xmax = 2019,
+ymin = 11.5,
+ymax = 19.5,
+alpha = .2,
+fill = "darkred"
+) +
+theme_bw() +
+theme(
+panel.background = element_rect(fill = 'white', colour = 'white'),
+panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),
+axis.text.x = element_text(
+size = 12,
+angle = 30,
+hjust = 1
+),
+axis.text.y = element_text(size = 12, angle = 0),
+axis.title.x = element_text(size = 16,  face = "bold"),
+axis.title.y = element_text(size = 16, angle = 90, face = "bold"),
+strip.background = element_rect(fill = 'grey90'),
+strip.text.x = element_text(size = 15, face = 'italic'),
+legend.text = element_text(size = 12),
+legend.position = c(0.5, 0.8),
+legend.title = element_blank(),
+legend.box = "vertical"
+) + ylab(" SST ˚C")  -> temp_plot
+
+temp_plot
+
+
+```
+
+### MWCT Temp plot
+```{r}
+
+
+
+
+metadata2  %>%
+mutate(
+.,
+station = fct_recode(
+Sta_ID,
+"Pt. Conception" =  "080.0 060.0" ,
+"San Nicholas Island" = "086.7 050.0" ,
+"San Diego Inshore" = "093.3 030.0",
+"San Diego Offshore" = "093.3 060.0"
+)
+) %>%
+ggplot(., aes(
+x = Year,
+y = mean_100_T,
+group = station,
+color = station
+)) +
+geom_line(size = 1) +
+scale_color_manual(values = dar4) +
+annotate(
+"rect",
+xmin = 2014,
+xmax = 2019,
+ymin = 9.5,
+ymax = 17.5,
+alpha = .2,
+fill = "darkred"
+) +
+theme_bw() +
+theme(
+panel.background = element_rect(fill = 'white', colour = 'white'),
+panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),
+axis.text.x = element_text(
+size = 12,
+angle = 30,
+hjust = 1
+),
+axis.text.y = element_text(size = 12, angle = 0),
+axis.title.x = element_text(size = 16,  face = "bold"),
+axis.title.y = element_text(size = 16, angle = 90, face = "bold"),
+strip.background = element_rect(fill = 'grey90'),
+strip.text.x = element_text(size = 15, face = 'italic'),
+legend.text = element_text(size = 12),
+legend.position = c(0.5, 0.8),
+legend.title = element_blank(),
+legend.box = "vertical"
+) + ylab("Average Water Column Temp ˚C")  -> temp_plot_wc
+
+temp_plot_wc
+
+
+
+```
+
+### SST vs. WC Temp plot
+```{r}
+
+metadata2  %>%
+mutate(
+.,
+station = fct_recode(
+Sta_ID,
+"Pt. Conception" =  "080.0 060.0" ,
+"San Nicholas Island" = "086.7 050.0" ,
+"San Diego Inshore" = "093.3 030.0",
+"San Diego Offshore" = "093.3 060.0"
+)
+) %>%
+ggplot(., aes(
+x = two_month_sst,
+y = mean_100_T
+)) +
+geom_point(size = 2) +
+theme_bw() +
+  geom_abline(colour="red",linetype = "dashed")+
+theme(
+panel.background = element_rect(fill = 'white', colour = 'white'),
+panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),
+axis.text.x = element_text(
+size = 12,
+angle = 30,
+hjust = 1
+),
+axis.text.y = element_text(size = 12, angle = 0),
+axis.title.x = element_text(size = 16,  face = "bold"),
+axis.title.y = element_text(size = 16, angle = 90, face = "bold"),
+strip.background = element_rect(fill = 'grey90'),
+strip.text.x = element_text(size = 15, face = 'italic'),
+legend.text = element_text(size = 12),
+legend.position = c(0.5, 0.8),
+legend.title = element_blank(),
+legend.box = "vertical"
+) + xlab("Average Water Column Temp ˚C") + ylab("SST ˚C")  + stat_poly_eq(formula = y~x, 
+                aes(label = paste(..rr.label..,..p.value.label.., sep = "~~~")), 
+                parse = TRUE,
+               label.x = 1.5,
+  label.y = 0.1, p.digits =2, rr.digits = 2,size = 7) -> temp_plot_wc_vs_sst
+
+temp_plot_wc_vs_sst
+
+
+
+```
+
+```{r}
+
+
+
+
+metadata2  %>%
+mutate(
+.,
+station = fct_recode(
+Sta_ID,
+"Pt. Conception" =  "080.0 060.0" ,
+"San Nicholas Island" = "086.7 050.0" ,
+"San Diego Inshore" = "093.3 030.0",
+"San Diego Offshore" = "093.3 060.0"
+)
+) %>%
+filter(., station == "Pt. Conception") -> conc_temp
+
+conc_temp %>%
+ggplot(., aes(
+x = Year,
+y = two_month_sst,
+group = station,
+color = station
+)) +
+geom_line(size = 1) +
+scale_color_manual(values = dar4) +
+annotate(
+"rect",
+xmin = 2014,
+xmax = 2019,
+ymin = 11.5,
+ymax = 15.5,
+alpha = .2,
+fill = "darkred"
+) +
+theme_bw() +
+theme(
+panel.background = element_rect(fill = 'white', colour = 'white'),
+panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),
+axis.text.x = element_blank(),
+axis.ticks.x = element_blank(),
+axis.text.y = element_text(size = 12, angle = 0),
+axis.title.x = element_blank(),
+axis.title.y = element_text(size = 16, angle = 90, face = "bold"),
+strip.background = element_rect(fill = 'grey90'),
+strip.text.x = element_text(size = 15, face = 'italic'),
+legend.text = element_text(size = 12),
+legend.position = c(0.5, 0.8),
+legend.title = element_blank(),
+legend.box = "vertical"
+) + ylab(" SST ˚C")  -> temp_plot_conc
+
+temp_plot_conc
+
+
+```
+
+```{r}
+
+
+metadata2  %>%
+mutate(
+.,
+station = fct_recode(
+Sta_ID,
+"Pt. Conception" =  "080.0 060.0" ,
+"San Nicholas Island" = "086.7 050.0" ,
+"San Diego Inshore" = "093.3 030.0",
+"San Diego Offshore" = "093.3 060.0"
+)
+) -> temp_holder
+
+temp_holder %>% 
+filter(., station == "Pt. Conception") -> conc_temp
+temp_holder %>% 
+filter(., station == "San Nicholas Island") -> sni_temp
+temp_holder %>% 
+filter(., station == "San Diego Inshore") -> sdi_temp
+temp_holder %>% 
+filter(., station == "San Diego Offshore") -> sdo_temp
+
+conc_temp %>%
+ggplot(., aes(
+x = Year,
+y = mean_100_T,
+group = station,
+color = station
+)) +
+geom_line(size = 1) +
+scale_color_manual(values = dar4) +
+annotate(
+"rect",
+xmin = 2014,
+xmax = 2019,
+ymin = 9.5,
+ymax = 15.5,
+alpha = .2,
+fill = "darkred"
+) +
+theme_bw() +
+theme(
+panel.background = element_rect(fill = 'white', colour = 'white'),
+panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),
+axis.text.x = element_blank(),
+axis.ticks.x = element_blank(),
+axis.text.y = element_text(size = 12, angle = 0),
+axis.title.x = element_blank(),
+axis.title.y = element_text(size = 16, angle = 90, face = "bold"),
+strip.background = element_rect(fill = 'grey90'),
+strip.text.x = element_text(size = 15, face = 'italic'),
+legend.text = element_text(size = 12),
+legend.position = c(0.5, 0.8),
+legend.title = element_blank(),
+legend.box = "vertical"
+) + ylab("Average Water Column Temp ˚C")  -> temp_plot_conc_wc
+
+temp_plot_conc_wc
+
+
+```
+
+## Trait Data
+```{r}
+
+#Trait Data
+trait_edna_1 <-
+read.csv("../data/habitat_association_to_check_art.csv", header = T)
+as.data.frame(trait_edna_1) -> trait_edna
+
+trait_edna %>%
+arrange(ID_main) %>% mutate(name = str_replace(ID_main, " ", ".")) %>%  mutate(., ID_main = str_replace(ID_main, "AANOTHER", "sp."))   %>% dplyr::select(-Type) %>%
+mutate(Type = str_c(Habitat, " ", Range)) -> trait_edna
+
+
+trait_edna %>%
+mutate(
+.,
+species_color = case_when(
+Type == "Benthic North" ~ "burlywood4",
+Type == "Benthic Central"  ~ "burlywood3"  ,
+Type == "Benthic Cosmopolitan"  ~
+"burlywood1"  ,
+Type == "Benthic South"  ~ "darksalmon"  ,
+Type == "Mesopelagic North" ~ "#08519c",
+Type == "Mesopelagic South"  ~ "#cb181d" ,
+Type == "Mesopelagic Cosmopolitan"  ~ "#6baed6" ,
+Type == "Mesopelagic Central" ~ "#3182bd" ,
+Type == "Coastal Pelagic Central" ~ "#969696",
+Type == "Coastal Pelagic North" ~ "black",
+Type == "Cosmopolitan"   ~ "grey80"   ,
+TRUE ~ "white"
+)
+) -> trait_edna
+
+
+```
+
+
+
+### STAN Data
+
+Code is commented out where it takes signficant computational power to run analyses. Outputs are saved in a google document for convenience. All code should run when uncommented.
+
+```{r, function for transforming eDNA Index,results='hide'}
+load(here("data","Stan_Fit_combined_20210929_1338.RData"))
+
+```
+
+```{r, Format Stan Data for SST Comparisons, results='hide'}
+#### SST Data
+# 
+# stanMod <- Output$stanMod
+# 
+# pars2 <- rstan::extract(stanMod, par = "b_main_grid")
+# 
+# Stations <- Output$Stations
+# Stations %>%
+#      separate(station_id, into = c("Year","Rpt_Line","Rpt_Sta"), remove = F, sep="_") %>%
+#      unite(., "station" , c("Rpt_Line","Rpt_Sta"), remove=FALSE) -> Stations
+# 
+#  species_mapping <-  Output$species_mapping %>%  mutate(., ID_main = str_replace(ID_main, "AANOTHER","sp."))
+# 
+#  rm(Output)
+# rm(stanMod)
+# 
+# pars2$b_main_grid %>%
+#   as_tibble() %>%
+#   pivot_longer(., cols = `1.1`:`84.56`, names_to="station.species", values_to = "est") %>%
+#   separate(station.species, into = c("station_idx","sp_index_main"), remove = F, sep="\\.") %>%
+#   mutate(., station_idx = as.numeric(station_idx),
+#          sp_index_main = as.numeric(sp_index_main)) %>%
+#    left_join(species_mapping) %>%
+#      left_join(Stations) -> b_grid_tibble
+# 
+# 
+# saveRDS(b_grid_tibble, here("data","b_grid_tibble_rpkn.RDS"))
+
+#b_grid_tibble <- readRDS(file = here("data", "b_grid_tibble_rpkn.RDS"))
+
+```
+
+### Year - Species Mean
+```{r}
+# b_grid_tibble %>%
+#   mutate(., log_est = log(est + 0.01)) %>%
+#   group_by(Year, ID_main) %>%
+#   dplyr::summarise(
+#   mean = mean(est),
+#   median = median(est),
+#   sd = sd(est),
+#   p05 = quantile(est, probs = 0.05),
+#   p95 = quantile(est, probs = 0.95)
+#   ) %>%
+#   mutate(mean_log = log(mean + 0.1), sd_log = log(sd + 0.1)) -> b_ID_main_out
+# 
+# 
+# saveRDS(b_ID_main_out, here("data","b_ID_main_out.RDS"))
+
+b_ID_main_out <- readRDS(file = here("data", "b_ID_main_out.RDS"))
+  
+
+```
+
+### Year - Type Mean
+```{r}
+# b_grid_tibble %>%
+#   mutate(., log_est = log(est + 0.01)) %>%
+#   left_join(trait_edna, by = c("ID_main")) %>%
+#   group_by(Year, Type) %>%
+#   dplyr::summarise(
+#   mean = mean(est),
+#   sum = sum(est),
+#   mean_log = mean(log_est),
+#   sd_log = sd(log_est),
+#   p05_log = quantile(log_est, probs = 0.05),
+#   p95_log = quantile(log_est, probs = 0.95)
+#   ) -> b_ID_main_out_type
+# 
+# b_ID_main_out_type %>%
+#   mutate(., log_sum = log(sum + 0.01)) -> b_ID_main_out_type
+# 
+# 
+# saveRDS(b_ID_main_out_type, here("data","b_ID_main_out_type.RDS"))
+
+b_ID_main_out_type <- readRDS(file = here("data", "b_ID_main_out_type.RDS"))
+
+```
+
+### Year - Site - Species
+```{r, results='hide'}
+
+# 
+# b_grid_tibble %>%
+# mutate(., log_est = log10(est + 0.01)) %>%
+# group_by(Year, station, ID_main) %>%
+# dplyr::summarise(
+# mean = mean(est),
+# median = median(est),
+# sd = sd(est),
+# p05 = quantile(est, probs = 0.05),
+# p95 = quantile(est, probs = 0.95)
+# ) %>%
+# mutate(mean_log = log10(mean + 0.01), sd_log = log10(sd + 0.01)) -> b_ID_main_out_site
+# 
+# b_ID_main_out_site$Year  <- as.numeric(b_ID_main_out_site$Year)
+# 
+# saveRDS(b_ID_main_out_site, here("data","b_ID_main_out_site.RDS"))
+
+b_ID_main_out_site <- readRDS(file = here("data", "b_ID_main_out_site.RDS"))
+
+# Format Data
+# test_nest_a <- b_ID_main_out_site %>%
+# mutate(.,
+# Normalized.biomass = mean,
+# log_Normalized.biomass = mean_log) %>%
+# left_join(two_month_sst) %>%
+# mutate(PA_biomass = if_else(Normalized.biomass > 0.01, 1, 0)) %>%  #NOTE change to small value, rather than actual zero, given model output
+# ungroup() %>%
+# mutate(temp_std = (two_month_sst - mean(two_month_sst)) / sd(two_month_sst)) %>%
+# mutate(., ID_main = str_replace(ID_main, "AANOTHER", "sp.")) %>%
+# group_by(ID_main) %>%
+# nest
+# 
+# saveRDS(test_nest_a, here("data","test_nest_a.RDS"))
+
+test_nest_a <- readRDS(file = here("data", "test_nest_a.RDS"))
+test_nest_a$data[1]
+#Format Data
+# test_nest_a_wc <- b_ID_main_out_site %>%
+# mutate(.,
+# Normalized.biomass = mean,
+# log_Normalized.biomass = mean_log) %>%
+# left_join(mean_100_T) %>%
+# mutate(PA_biomass = if_else(Normalized.biomass > 0.01, 1, 0)) %>%  #NOTE change to small value, rather than actual zero, given model output
+# ungroup() %>%
+# mutate(temp_std = (mean_100_T - mean(mean_100_T)) / sd(mean_100_T)) %>%
+# mutate(., ID_main = str_replace(ID_main, "AANOTHER", "sp.")) %>%
+# group_by(ID_main) %>%
+# nest
+# 
+# saveRDS(test_nest_a_wc, here("data","test_nest_a_wc.RDS"))
+
+test_nest_a_wc <- readRDS(file = here("data", "test_nest_a_wc.RDS"))
+
+
+
+test_a <- b_ID_main_out_site %>%
+mutate(.,
+Normalized.biomass = mean,
+log_Normalized.biomass = mean_log) %>%
+   mutate(., station = case_when(station =="80_60" ~"Pt.C",
+                                station =="86.7_50" ~"SaNI",
+                                station =="93.3_60" ~"SDOf",
+                                station =="93.3_30"~"SDIn"),
+         Year=as.integer(Year)) %>% 
+left_join(df_sub) %>%
+mutate(PA_biomass = if_else(Normalized.biomass > 0.01, 1, 0)) %>%  #NOTE change to small value, rather than actual zero, given model output
+ungroup() %>%
+mutate(temp_std = (two_month_sst - mean(two_month_sst)) / sd(two_month_sst)) %>%
+mutate(O2_std = (mean_100_O2 - mean(mean_100_O2)) / sd(mean_100_O2)) %>%
+mutate(PSU_std = (mean_100_Salinity - mean(mean_100_Salinity)) / sd(mean_100_Salinity)) %>%
+mutate(., ID_main = str_replace(ID_main, "AANOTHER", "sp."))
+
+saveRDS(test_a, here("data","test_a.RDS"))
+
+```
+
+### MHW Comparison - Species
+```{r, Format Stan Data for MHW Comparisons, results='hide'}
+
+
+##### MHW Data
+# 
+# pars2$b_main_grid  %>%
+# as_tibble() %>% mutate(id = row_number()) %>%
+# pivot_longer(.,
+# cols = `1.1`:`84.56`,
+# names_to = "station.species",
+# values_to = "est") %>%
+# separate(
+# station.species,
+# into = c("station_idx", "sp_index_main"),
+# remove = F,
+# sep = "\\."
+# ) %>%
+# mutate(
+# .,
+# station_idx = as.numeric(station_idx),
+# sp_index_main = as.numeric(sp_index_main)
+# ) %>%
+# left_join(species_mapping) %>%
+# left_join(Stations) -> b_grid_tibble_2
+# 
+# saveRDS(b_grid_tibble_2, here("data", "b_grid_tibble_2_rpkn.RDS"))
+
+#b_grid_tibble_2 <-readRDS(file = here("data", "b_grid_tibble_2_rpkn.RDS"))
+
+# b_grid_tibble_2 %>%
+# mutate(
+# .,
+# MHW = case_when(
+# Year == "2014" ~ "MHW",
+# Year == "2015" ~ "MHW",
+# Year == "2016" ~ "MHW",
+# Year == "2017" ~ "MHW",
+# Year == "2018" ~ "MHW",
+# Year == "2019" ~ "MHW",
+# TRUE ~ "Before"
+# )
+# ) %>%
+# mutate(., log_est = log(est + 0.01)) %>%
+# group_by(ID_main, MHW, id) %>%
+# dplyr::summarise(mean_b_est_log = mean(log_est),
+# mean_b_est = mean(est)) -> b_ID_main_dist_out
+# 
+# b_ID_main_dist_out %>% pivot_wider(
+# values_from = c(mean_b_est_log, mean_b_est),
+# names_glue = "{MHW}_{.value}",
+# names_from = MHW
+# ) %>%
+# mutate(., `MHW-Before` = MHW_mean_b_est - Before_mean_b_est) -> b_ID_main_dist_out
+# 
+# 
+# saveRDS(b_ID_main_dist_out, here("data","b_ID_main_dist_out.RDS"))
+
+b_ID_main_dist_out <- readRDS(file = here("data", "b_ID_main_dist_out.RDS"))
+
+```
+
+### MHW - Site
+```{r}
+# b_grid_tibble_2 %>%
+#   mutate(
+#   .,
+#   MHW = case_when(
+#   Year == "2014" ~ "MHW",
+#   Year == "2015" ~ "MHW",
+#   Year == "2016" ~ "MHW",
+#   Year == "2017" ~ "MHW",
+#   Year == "2018" ~ "MHW",
+#   Year == "2019" ~ "MHW",
+#   TRUE ~ "Before"
+#   )
+#   ) %>%
+#   mutate(., log_est = log(est + 0.01)) %>%
+#   group_by(ID_main, MHW, id, station) %>%
+#   dplyr::summarise(mean_b_est = mean(log_est)) -> b_ID_main_dist_out_station
+#   
+# b_ID_main_dist_out_station %>% 
+#     pivot_wider(values_from = mean_b_est, names_from =
+#   MHW) %>%
+#   mutate(., `MHW-Before` = MHW - Before) -> b_ID_main_dist_out_station
+#   
+# saveRDS(b_ID_main_dist_out_station, here("data","b_ID_main_dist_out_station.RDS"))
+
+b_ID_main_dist_out_station <- readRDS(file = here("data", "b_ID_main_dist_out_station.RDS"))
+```
+
+
+
+
+#SST Comparisons
+
+## Biomass
+
+### Site - Biomass vs. SST
+
+##### Log Biomass | Station Run models
+```{r}
+# 
+# glmer_stan_mod_log_combo<- stan_glmer(log_Normalized.biomass ~ 0 + (1 + temp_std | ID_main/station),   #mod3
+#                              family = "gaussian",
+#                              data = test_a,
+#                              #prior = normal(0, 4),
+#                             #prior_intercept = normal(0, 10),
+#                              adapt_delta = 0.99,
+#                              chains = 10,
+#                              iter = 4000,
+#                              cores = 2)
+# 
+# saveRDS(glmer_stan_mod_log_combo,here("data","glmer_stan_mod_log_combo.RDS"))
+
+glmer_stan_mod_log_combo <- readRDS(here("data","glmer_stan_mod_log_combo.RDS"))
+
+```
+
+```{r}
+prior_summary(glmer_stan_mod_log_combo)
+
+summary(glmer_stan_mod_log_combo,         probs = c(0.025, 0.975))
+
+sims <- as.matrix(glmer_stan_mod_log_combo)
+dim(sims)
+
+para_name <- colnames(sims)
+para_name
+
+plot(glmer_stan_mod_log_combo, plotfun = "trace")
+pp_check(glmer_stan_mod_log_combo, plotfun = "stat", stat = "mean")
+pp_check(glmer_stan_mod_log_combo, plotfun = "dens_overlay")
+```
+
+
+```{r}
+glmer_stan_mod_log_combo$coefficients
+
+model_coeff_holder <-cbind(
+glmer_stan_mod_log_combo$coefficients %>% as_tibble(rownames = "Coeff") %>% dplyr::select(Coeff,Coeff_value=value)
+,
+glmer_stan_mod_log_combo$ses %>% as_tibble(rownames = "ses") %>% dplyr::select(ses_value=value)
+,
+posterior_interval(glmer_stan_mod_log_combo, regex_pars = "b") %>%  as.data.frame() %>%  as_tibble(rownames = "b") %>% 
+  dplyr::select(`5%`,`95%`)
+)
+
+model_coeff_holder %>%
+separate(Coeff,into =c("c1","c2","station","Species"), sep=":",remove=F) %>% 
+  mutate(., Species = if_else(is.na(Species),c2,Species),
+T_statistic = Coeff_value / ses_value,
+Signficant = case_when(
+`5%` > 0 & `95%` > 0 ~ "+",
+`5%` < 0 & `95%` < 0 ~ "-",
+TRUE ~ ""
+),
+station = case_when(
+str_detect(Coeff, "Pt.C") ~ "Pt. Conception",
+str_detect(Coeff, "SaNI") ~ "San Nicholas Island",
+str_detect(Coeff, "SDIn") ~ "San Diego Inshore",
+str_detect(Coeff, "SDOf") ~ "San Diego Offshore",
+TRUE ~ "NA"
+)
+) %>% 
+  mutate(., Species = str_remove(Species,"]"))-> biomass_station_model_df
+
+biomass_station_model_df %>%
+filter(., str_detect(Coeff, "temp_std")) %>%
+filter(., Signficant != "") -> species_to_keep_fig1
+
+```
+
+
+
+
+##### S10 Log Biomass Site Figure
+```{r}
+
+
+
+
+log_station_model_df %>%
+  filter(., str_detect(Coeff_name, "temp_std")) %>%
+  filter(., Signficant != "") -> species_to_keep_fig3
+  
+  log_station_model_df %>%
+  filter(., ID_main %in% species_to_keep_fig3$ID_main) %>%
+  filter(., str_detect(Coeff_name, "temp_std")) ->  log_station_model_df_2_plot
+  
+  
+log_station_model_df_2_plot %>% 
+  group_by(ID_main) %>% 
+  dplyr::summarise(mean(T_statistic)) %>% 
+ arrange(`mean(T_statistic)`) -> species_order_s6
+
+log_station_model_df_2_plot$ID_main <- factor(log_station_model_df_2_plot$ID_main, levels=species_order_s6$ID_main)
+log_station_model_df_2_plot$station <- factor(log_station_model_df_2_plot$station, levels=c("Pt. Conception" ,     "San Nicholas Island", "San Diego Inshore" ,  "San Diego Offshore"))
+
+log_station_model_df_2_plot %>% 
+  left_join(trait_edna, by=c("ID_main")) %>% 
+  dplyr::select(ID_main,species_color) %>%  distinct()-> log_trait_color_pallete
+    
+log_trait_color_pallete$ID_main <- factor(log_trait_color_pallete$ID_main, levels=species_order_s6$ID_main)
+
+species_order_s6 %>% 
+left_join(log_trait_color_pallete) -> log_trait_color_pallete_s6
+
+log_station_model_df_2_plot %>% 
+         mutate(., ID_main=recode(ID_main,`Sebastes`="Sebastes sp.",
+                               `Stenobrachius nannochir`="Stenobrachius leucopsarus cold variant")) %>% 
+  ggplot(., aes(x = station, y = ID_main, fill = T_statistic)) + geom_tile()   + xlab("Station") + ylab("Species") + scale_fill_viridis_c( option = "plasma", limits=c(-4, 4), breaks=c(-4,-2,-1,-0,1,2,4)) + geom_text(aes(label =
+  Signficant),color="white", size=8)+
+  theme_bw() +
+  theme(axis.text.y=element_text(size=14,
+                              color=log_trait_color_pallete_s6$species_color),
+axis.text.x = element_text(
+size = 14,
+angle = 30,
+hjust = 1
+),
+panel.background = element_rect(fill = 'white', colour = 'white'),
+panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),
+axis.title.x = element_blank(),
+axis.title.y = element_text(size = 18, angle = 90, face = "bold"),
+strip.background = element_rect(fill = 'white'),
+strip.text.x = element_text(size = 15),
+legend.text = element_text(size = 10),
+legend.title = element_text(size = 15),
+axis.line = element_line(colour = 'black')
+) + guides(fill=guide_legend(title="T Statistic")) -> log_biomass_sites_fig
+log_biomass_sites_fig
+
+
+
+  
+  ggsave(
+  log_biomass_sites_fig,
+  file = here::here("analysis", "figures", "S10_log_biomass_sites_fig.png"),
+  width = 12,
+  height = 8
+  )
+
+```
+
+# Focal Species
+
+# Biomass Fit
+## Anchovy and Sardine
+```{r}
+b_ID_main_out_site %>% 
+ subset(., ID_main %in% c("Engraulis mordax","Sardinops sagax")) %>% 
+  mutate(.,Species= fct_recode(ID_main,
+   "Northern Anchovy"= "Engraulis mordax" , "Pacific Sardine"= "Sardinops sagax" ), Year=as.numeric(Year)) -> b_long_all_edit
+
+b_long_all_edit %>% 
+  group_by(Year, Species) %>% 
+  dplyr::summarise(abundance = mean(median), max_abundance = max(median), min_abundance = min(median)) %>% 
+  mutate(., mean_log = log(abundance+0.1), max_log = log(max_abundance+0.1), min_log = log(min_abundance+0.1)) -> b_long_all_edit
+
+biomass1 <- ggplot(data=b_long_all_edit, aes(x=Year, group=Species, color=Species)) + 
+  scale_color_manual(values=c("navy","darkred")) +
+  geom_point(aes(y=`mean_log`),size=2, na.rm = TRUE) +
+  geom_line(aes(y=`mean_log`),size=0.5, na.rm = TRUE) +
+  geom_errorbar(aes(ymin = min_log, ymax = max_log), width = 0.1)+
+  #annotate("rect", xmin = 2014, xmax = 2019, ymin = -500, ymax = 3000, alpha = .2,fill = "darkred")+
+  annotate("rect", xmin = 2014, xmax = 2019, ymin = -3, ymax = 10, alpha = .2,fill = "darkred")+
+  theme_bw() +		## makes background white
+  theme(  panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.x=element_text(size=10, angle=20, hjust = 0.65), 
+          axis.text.y=element_text(size=12, angle=0), 
+          axis.title.x=element_text(size=16, angle=0,face="bold"), 
+          axis.title.y=element_text(size=16, angle=90,face="bold"),
+          strip.background = element_rect(fill='grey90'), 
+          strip.text.x=element_text(size=14, face='italic'),
+          legend.text=element_text(size=12),
+          legend.position = c(0.2, 0.85),
+          legend.title = element_blank(),
+         legend.box = "vertical") + ylab("log(Abundance)")
+biomass1
+
+
+```
+
+## Anchovy and Sardine -Site
+```{r}
+b_ID_main_out_site %>% 
+ subset(., ID_main %in% c("Engraulis mordax","Sardinops sagax")) %>% 
+  mutate(.,Species= fct_recode(ID_main,
+   "Northern Anchovy"= "Engraulis mordax" , "Pacific Sardine"= "Sardinops sagax" ), Year=as.numeric(Year)) %>% 
+  mutate(., station= fct_recode(station,
+   "Pt. Conception"=  "80_60" , "San Nicholas Island"= "86.7_50" , "San Diego Inshore"="93.3_30", "San Diego Offshore"= "93.3_60")) -> b_long_all_edit
+
+b_long_all_edit %>% 
+  mutate(., median_log = log(median+0.1),sd_log = log(sd+0.1),p05_log = log(p05+0.1),p95_log = log(p95+0.1) ) -> b_long_all_edit_site
+
+ggplot(data=b_long_all_edit_site, aes(x=Year, group=Species, color=Species)) + 
+  scale_color_manual(values=c("navy","darkred")) +
+  geom_point(aes(y=`median_log`),size=2, na.rm = TRUE) +
+  geom_line(aes(y=`median_log`),size=0.5, na.rm = TRUE) +
+  geom_errorbar(aes(ymin = p05_log, ymax = p95_log), width = 0.1) +
+  facet_wrap(station~., ncol=1) +theme_bw() +		## makes background white
+  theme(  panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.x=element_text(size=10, angle=20, hjust = 0.65), 
+          axis.text.y=element_text(size=12, angle=0), 
+          axis.title.x=element_text(size=16, angle=0,face="bold"), 
+          axis.title.y=element_text(size=16, angle=90,face="bold"),
+          strip.background = element_rect(fill='grey90'), 
+          strip.text.x=element_text(size=14, face='italic'),
+          legend.text=element_text(size=12),
+          legend.title = element_blank(),
+         legend.box = "vertical") + ylab("log(Abundance)")+ annotate("rect", xmin = 2014, xmax = 2019, ymin = -3, ymax = 10, alpha = .2,fill = "darkred")-> biomass_site_chovy_sard
+biomass_site_chovy_sard
+
+
+
+
+```
+## Anchovy Sardine Pt. Conception
+
+```{r}
+b_long_all_edit_site %>% 
+  filter(., station ==  "Pt. Conception") -> b_long_all_edit_site_conception
+
+coeff1 <- 2.4
+coeff2 <- -24
+
+biomass_conc <- ggplot(data=b_long_all_edit_site_conception, aes(x=Year)) + 
+    geom_rect_pattern(
+    aes(
+      xmin=2014, ymin=-3, xmax=2019, ymax=20,
+      pattern_angle   = I(45),
+      pattern_colour  = I("grey90"),
+      pattern_spacing = I(0.05),
+      pattern_size    = I(0.25)
+    ),
+    pattern         = 'stripe',
+    fill            = 'white',
+    colour          = 'white',
+    pattern_density = 0.3
+  ) +
+  scale_color_manual(values=c("navy","darkred")) +
+  geom_point(aes(y=`median_log`, group=Species, color=Species),size=2, na.rm = TRUE) +
+  geom_line(aes(y=`median_log`,group=Species, color=Species),size=1, na.rm = TRUE) +
+  geom_errorbar(aes(ymin = p05_log, ymax = p95_log,group=Species, color=Species), width = 0.1)  +
+geom_line(data=conc_temp, aes(x=Year, y=(coeff2+two_month_sst*coeff1)), size = 2, color= "black") +
+scale_y_continuous(
+    
+    # Features of the first axis
+    name = "log(Abundance)",
+    
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~(.-coeff2)/coeff1, name="SST ˚C")
+  ) +
+  theme_bw() +		## makes background white
+  theme(  panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.x=element_text(size=10, angle=20, hjust = 0.65), 
+          axis.text.y=element_text(size=12, angle=0), 
+          axis.title.x=element_text(size=16, angle=0,face="bold"), 
+          axis.title.y=element_text(size=16, angle=90,face="bold"),
+          strip.background = element_rect(fill='grey90'), 
+          strip.text.x=element_text(size=14, face='italic'),
+          legend.text=element_text(size=12),
+          legend.position = c(0.3, 0.83),
+          legend.title = element_blank(),
+         legend.box = "vertical")+facet_wrap(station~., ncol=1) 
+
+biomass_conc
+
+
+ggsave(biomass_conc, file =here::here("analysis","figures","anchovy_sardine_time_pt.conception.png"), width = 14, height = 8)
+
+```
+
+## Anchovy Sardine San Nicholas Island
+
+```{r}
+b_long_all_edit_site %>% 
+  filter(., station ==  "San Nicholas Island") -> b_long_all_edit_site_sni
+
+
+biomass_sni <- ggplot(data=b_long_all_edit_site_sni, aes(x=Year)) + 
+    geom_rect_pattern(
+    aes(
+      xmin=2014, ymin=-3, xmax=2019, ymax=20,
+      pattern_angle   = I(45),
+      pattern_colour  = I("grey90"),
+      pattern_spacing = I(0.05),
+      pattern_size    = I(0.25)
+    ),
+    pattern         = 'stripe',
+    fill            = 'white',
+    colour          = 'white',
+    pattern_density = 0.3
+  ) +
+  scale_color_manual(values=c("navy","darkred")) +
+  geom_point(aes(y=`median_log`, group=Species, color=Species),size=2, na.rm = TRUE) +
+  geom_line(aes(y=`median_log`,group=Species, color=Species),size=1, na.rm = TRUE) +
+  geom_errorbar(aes(ymin = p05_log, ymax = p95_log,group=Species, color=Species), width = 0.1)  +
+geom_line(data=sni_temp, aes(x=Year, y=(coeff2+two_month_sst*coeff1)), size = 2, color= "black") +
+scale_y_continuous(
+    
+    # Features of the first axis
+    name = "log(Abundance)",
+    
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~(.-coeff2)/coeff1, name="SST ˚C")
+  ) +
+  theme_bw() +		## makes background white
+  theme(  panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.x=element_text(size=10, angle=20, hjust = 0.65), 
+          axis.text.y=element_text(size=12, angle=0), 
+          axis.title.x=element_text(size=16, angle=0,face="bold"), 
+          axis.title.y=element_text(size=16, angle=90,face="bold"),
+          strip.background = element_rect(fill='grey90'), 
+          strip.text.x=element_text(size=14, face='italic'),
+          legend.text=element_text(size=12),
+          legend.position = c(0.3, 0.83),
+          legend.title = element_blank(),
+         legend.box = "vertical") +facet_wrap(station~., ncol=1) 
+
+biomass_sni
+
+
+```
+
+## Anchovy Sardine San Diego Inshore
+
+```{r}
+b_long_all_edit_site %>% 
+  filter(., station ==  "San Diego Inshore") -> b_long_all_edit_site_sdi
+
+
+coeff1i <- 2.4
+coeff2i <- -27
+
+
+biomass_sdi <- ggplot(data=b_long_all_edit_site_sdi, aes(x=Year)) + 
+    geom_rect_pattern(
+    aes(
+      xmin=2014, ymin=-3, xmax=2019, ymax=20,
+      pattern_angle   = I(45),
+      pattern_colour  = I("grey90"),
+      pattern_spacing = I(0.05),
+      pattern_size    = I(0.25)
+    ),
+    pattern         = 'stripe',
+    fill            = 'white',
+    colour          = 'white',
+    pattern_density = 0.3
+  ) +
+  scale_color_manual(values=c("navy","darkred")) +
+  geom_point(aes(y=`median_log`, group=Species, color=Species),size=2, na.rm = TRUE) +
+  geom_line(aes(y=`median_log`,group=Species, color=Species),size=1, na.rm = TRUE) +
+  geom_errorbar(aes(ymin = p05_log, ymax = p95_log,group=Species, color=Species), width = 0.1)  +
+geom_line(data=sdi_temp, aes(x=Year, y=(coeff2i+two_month_sst*coeff1i)), size = 2, color= "black") +
+scale_y_continuous(
+    
+    # Features of the first axis
+    name = "log(Abundance)",
+    
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~(.-coeff2)/coeff1, name="SST ˚C")
+  ) +
+  theme_bw() +		## makes background white
+  theme(  panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.x=element_text(size=10, angle=20, hjust = 0.65), 
+          axis.text.y=element_text(size=12, angle=0), 
+          axis.title.x=element_text(size=16, angle=0,face="bold"), 
+          axis.title.y=element_text(size=16, angle=90,face="bold"),
+          strip.background = element_rect(fill='grey90'), 
+          strip.text.x=element_text(size=14, face='italic'),
+          legend.text=element_text(size=12),
+          legend.position = c(0.3, 0.83),
+          legend.title = element_blank(),
+         legend.box = "vertical") + facet_wrap(station~., ncol=1) 
+
+biomass_sdi
+
+
+
+```
+
+## Anchovy Sardine San Diego Offshore
+
+```{r}
+b_long_all_edit_site %>% 
+  filter(., station ==  "San Diego Offshore") -> b_long_all_edit_site_sdo
+
+biomass_sdo <- ggplot(data=b_long_all_edit_site_sdo, aes(x=Year)) + 
+    geom_rect_pattern(
+    aes(
+      xmin=2014, ymin=-3, xmax=2019, ymax=20,
+      pattern_angle   = I(45),
+      pattern_colour  = I("grey90"),
+      pattern_spacing = I(0.05),
+      pattern_size    = I(0.25)
+    ),
+    pattern         = 'stripe',
+    fill            = 'white',
+    colour          = 'white',
+    pattern_density = 0.3
+  ) +
+  scale_color_manual(values=c("navy","darkred")) +
+  geom_point(aes(y=`median_log`, group=Species, color=Species),size=2, na.rm = TRUE) +
+  geom_line(aes(y=`median_log`,group=Species, color=Species),size=1, na.rm = TRUE) +
+  geom_errorbar(aes(ymin = p05_log, ymax = p95_log,group=Species, color=Species), width = 0.1)  +
+geom_line(data=sdo_temp, aes(x=Year, y=(coeff2+two_month_sst*coeff1)), size = 2, color= "black") +
+scale_y_continuous(
+    
+    # Features of the first axis
+    name = "log(Abundance)",
+    
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~(.-coeff2)/coeff1, name="SST ˚C")
+  ) +
+  theme_bw() +		## makes background white
+  theme(  panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.x=element_text(size=10, angle=20, hjust = 0.65), 
+          axis.text.y=element_text(size=12, angle=0), 
+          axis.title.x=element_text(size=16, angle=0,face="bold"), 
+          axis.title.y=element_text(size=16, angle=90,face="bold"),
+          strip.background = element_rect(fill='grey90'), 
+          strip.text.x=element_text(size=14, face='italic'),
+          legend.text=element_text(size=12),
+          legend.position = c(0.3, 0.83),
+          legend.title = element_blank(),
+         legend.box = "vertical") + facet_wrap(station~., ncol=1) 
+
+biomass_sdo
+
+```
+
+
+## Anchovy and Sardine - Pt.Conception Site WC
+```{r}
+
+coeff1 <- 3.2
+coeff2 <- -30
+
+biomass_conc_wc <- ggplot(data=b_long_all_edit_site_conception, aes(x=Year)) + 
+    geom_rect_pattern(
+    aes(
+      xmin=2014, ymin=-3, xmax=2019, ymax=12,
+      pattern_angle   = I(45),
+      pattern_colour  = I("grey90"),
+      pattern_spacing = I(0.05),
+      pattern_size    = I(0.25)
+    ),
+    pattern         = 'stripe',
+    fill            = 'white',
+    colour          = 'white',
+    pattern_density = 0.3
+  ) +
+  scale_color_manual(values=c("navy","darkred")) +
+  geom_point(aes(y=`median_log`, group=Species, color=Species),size=2, na.rm = TRUE) +
+  geom_line(aes(y=`median_log`,group=Species, color=Species),size=1, na.rm = TRUE) +
+  geom_errorbar(aes(ymin = p05_log, ymax = p95_log,group=Species, color=Species), width = 0.1)  +
+geom_line(data=conc_temp, aes(x=Year, y=(coeff2+mean_100_T*coeff1)), size = 2, color= "black") +
+scale_y_continuous(
+    
+    # Features of the first axis
+    name = "log(Abundance",
+    
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~(.-coeff2)/coeff1, name="SST ˚C")
+  ) +
+  theme_bw() +		## makes background white
+  theme(  panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.x=element_text(size=10, angle=20, hjust = 0.65), 
+          axis.text.y=element_text(size=12, angle=0), 
+          axis.title.x=element_text(size=16, angle=0,face="bold"), 
+          axis.title.y=element_text(size=16, angle=90,face="bold"),
+          strip.background = element_rect(fill='grey90'), 
+          strip.text.x=element_text(size=14, face='italic'),
+          legend.text=element_text(size=12),
+          legend.position = c(0.2, 0.83),
+          legend.title = element_blank(),
+         legend.box = "vertical")
+
+biomass_conc_wc
+
+
+ggsave(biomass_conc_wc, file =here::here("analysis","figures","anchovy_sardine_time_pt.conception_wc.png"), width = 14, height = 8)
+
+```
+
+
+# Box Plots
+
+### Biogeographic Region SST
+
+```{r}
+
+
+palette.new
+
+
+palette.new$Type <- factor(palette.new$Type, levels=c("Benthic North" ,"Benthic Central","Benthic Cosmopolitan","Benthic South", "Coastal Pelagic North", "Coastal Pelagic Central","Mesopelagic North","Mesopelagic Central" , "Mesopelagic Cosmopolitan"  ,"Mesopelagic South"))
+
+palette.new %>% arrange(Type) -> palette.new
+
+log_sst_model_df2$Type <- factor(log_sst_model_df2$Type, levels=c("Benthic North" ,"Benthic Central","Benthic Cosmopolitan","Benthic South", "Coastal Pelagic North", "Coastal Pelagic Central","Mesopelagic North","Mesopelagic Central" , "Mesopelagic Cosmopolitan"  ,"Mesopelagic South"))
+
+
+log_sst_model_df2 %>% 
+  filter(., str_detect(Coeff_name,"temp_std"))  %>% 
+ # filter(., Type %in% type_to_plot$Type) %>% 
+  ggplot(., aes(y= Coeff_value, x = Type, colour=Type,fill=Type)) +
+  geom_hline(yintercept = 0, linetype =2)+
+  geom_violin(alpha=0.2, outlier.shape = NA) + 
+  geom_point(size=2, alpha=.6) +
+  scale_colour_manual(values= palette.new$color, breaks=palette.new$Type) + 
+  scale_fill_manual(values= palette.new$color, breaks=palette.new$Type) + 
+  theme(axis.text.x = element_text(size=14,angle= 50, hjust= 1), 
+        panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.y=element_text(size=14, angle=0), 
+          axis.title.x=element_text(size=18, angle=0, face="bold"), 
+          axis.title.y=element_text(size=18, angle=90,face="bold"),
+          strip.background = element_rect(fill='white'), 
+          strip.text.x=element_text(size=15),
+          legend.text=element_text(size=10),
+          legend.title=element_text(size=15),
+          axis.line=element_line(colour='black'),
+          legend.position="none")	+ xlab("Habitat Association") + ylab("Log(Abundance)/˚C") -> habitat_association_fig_all
+
+habitat_association_fig_all
+
+ggsave(habitat_association_fig_all, file =here::here("analysis","figures","habitat_association_fig_all.png"), width = 14, height = 8)
+
+```
+### Biogeographic Region WC
+
+```{r}
+
+log_sst_model_df2_wc %>% 
+  filter(., str_detect(Coeff_name,"temp_std"))  %>% 
+  filter(., Type %in% type_to_plot$Type) %>% 
+  ggplot(., aes(y= Coeff_value, x = Type, fill=Type)) +
+  geom_hline(yintercept = 0, linetype =2)+
+  geom_boxplot() + scale_fill_manual(values= pallete.fib1b$color) +  
+  theme(axis.text.x = element_text(size=14,angle= 50, hjust= 1), 
+        panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.y=element_text(size=14, angle=0), 
+          axis.title.x=element_text(size=18, angle=0, face="bold"), 
+          axis.title.y=element_text(size=18, angle=90,face="bold"),
+          strip.background = element_rect(fill='white'), 
+          strip.text.x=element_text(size=15),
+          legend.text=element_text(size=10),
+          legend.title=element_text(size=15),
+          axis.line=element_line(colour='black'),
+          legend.position="none")	+ xlab("Habitat Association") + ylab("Log(Abundance)/˚C") -> habitat_association_fig_all_wc
+
+habitat_association_fig_all_wc
+
+ggsave(habitat_association_fig_all_wc, file =here::here("analysis","figures","habitat_association_fig_all_wc.png"), width = 14, height = 8)
+
+```
+
+# MHW Comparisons
+
+### Averaged Across Sites
+
+```{r}
+b_ID_main_dist_out  -> b_MHW
+
+b_MHW %>% 
+  group_by(ID_main) %>% 
+  dplyr::summarise(mean=mean(`MHW-Before`), median=median(`MHW-Before`),sd=sd(`MHW-Before`), p05= quantile(`MHW-Before`, probs=0.05), p95= quantile(`MHW-Before`, probs=0.95)) -> MHW_species_summary
+  
+MHW_species_summary %>% 
+  mutate(., Sig_MHW = case_when(p05 > 0 & mean > 0 & p95 > 0 ~"+",
+                                p05 < 0 & mean < 0 & p95 < 0 ~"-",
+                                TRUE ~"")) %>% 
+  filter(., Sig_MHW != "")-> MHW_species_summary_sig
+
+MHW_species_summary_sig %>% 
+     left_join(trait_edna, by=c("ID_main")) %>% 
+  arrange(desc(mean)) %>%  dplyr::select(species_color) -> MHW_species_summary_sig_colors
+
+
+MHW_species_summary_sig %>%
+  left_join(trait_edna) -> MHW_species_summary_sig
+
+MHW_species_summary_sig %>% 
+  dplyr::select(Type, species_color) %>%  unique()-> species_color_mhw
+
+
+species_color_mhw$Type <- as.character(species_color_mhw$Type)
+species_color_mhw$Type <- factor(species_color_mhw$Type, levels=c("Benthic North" ,"Benthic Central","Benthic Cosmopolitan","Benthic South", "Coastal Pelagic North", "Coastal Pelagic Central","Mesopelagic North","Mesopelagic Central" , "Mesopelagic Cosmopolitan"  ,"Mesopelagic South"))
+
+species_color_mhw %>% arrange(Type) -> species_color_mhw
+
+MHW_species_summary_sig$Type <- as.character(MHW_species_summary_sig$Type)
+MHW_species_summary_sig$Type <- factor(MHW_species_summary_sig$Type, levels=c("Benthic North" ,"Benthic Central","Benthic Cosmopolitan","Benthic South", "Coastal Pelagic North", "Coastal Pelagic Central","Mesopelagic North","Mesopelagic Central" , "Mesopelagic Cosmopolitan"  ,"Mesopelagic South"))
+
+
+
+
+MHW_species_summary_sig %>% 
+          mutate(., ID_main=recode(ID_main,`Sebastes`="Sebastes sp.",
+                               `Stenobrachius nannochir`="Stenobrachius leucopsarus cold variant")) %>% 
+  ggplot(., aes(y= mean, x= reorder(ID_main, -mean), fill=Type)) +  geom_bar(position="stack", stat="identity") +
+  scale_fill_manual( values = palette.new3$color) + ylab(expression(Delta*"Abundance")) + guides(fill=guide_legend(title="Habitat Association")) + scale_y_continuous(trans = pseudolog10_trans, breaks = c(-40, 0,40,80,400 )) +
+  theme(axis.text.x = element_text(size=12,angle= 45, hjust= 1), 
+        panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.y=element_text(size=16, angle=0), 
+          axis.title.x=element_blank(), 
+          axis.title.y=element_text(size=20, angle=90,face="bold"),
+          strip.background = element_rect(fill='white'), 
+          strip.text.x=element_text(size=15),
+          legend.text=element_text(size=16),
+          legend.title=element_text(size=18),
+          axis.line=element_line(colour='black'), 
+        legend.position = c(0.9, 0.7) )   -> mhw_differential_abundance
+mhw_differential_abundance
+
+ggsave(mhw_differential_abundance, file =here::here("analysis","figures","mhw_differential_abundance.png"), width = 12, height = 8)
+
+```
+
+### All Sites Individually
+```{r}
+
+b_ID_main_dist_out_station %>% 
+  group_by(ID_main, station) %>% 
+  dplyr::summarise(mean=mean(`MHW-Before`), median=median(`MHW-Before`),sd=sd(`MHW-Before`), p05= quantile(`MHW-Before`, probs=0.05), p95= quantile(`MHW-Before`, probs=0.95))  %>% mutate(.,
+station = fct_recode(station,
+"Pt. Conception" =  "80_60" ,
+"San Nicholas Island" = "86.7_50" ,
+"San Diego Inshore" = "93.3_30",
+"San Diego Offshore" = "93.3_60")
+) -> MHW_species_summary_site
+  
+MHW_species_summary_site %>% 
+  mutate(., Sig_MHW = case_when(p05 > 0 & mean > 0 & p95 > 0 ~"+",
+                                p05 < 0 & mean < 0 & p95 < 0 ~"-",
+                                TRUE ~"")) -> MHW_species_summary_sig_site_all
+
+
+MHW_species_summary_sig_site_all %>% 
+     left_join(trait_edna, by=c("ID_main")) %>% 
+  arrange(desc(mean)) %>%  dplyr::select(species_color) -> MHW_species_summary_sig_colors_all
+
+
+MHW_species_summary_sig_site_all %>%
+  left_join(trait_edna) -> MHW_species_summary_sig_all
+
+MHW_species_summary_sig_all %>% 
+  dplyr::select(Type, species_color) %>%  unique()-> species_color_mhw_all
+
+
+species_color_mhw_all$Type <- as.character(species_color_mhw_all$Type)
+species_color_mhw_all$Type <- factor(species_color_mhw_all$Type, levels=c("Benthic North" ,"Benthic Central","Benthic Cosmopolitan","Benthic South", "Coastal Pelagic North", "Coastal Pelagic Central","Mesopelagic North","Mesopelagic Central" , "Mesopelagic Cosmopolitan"  ,"Mesopelagic South"))
+
+species_color_mhw_all %>% arrange(Type) -> species_color_mhw_all
+
+MHW_species_summary_sig_all$Type <- as.character(MHW_species_summary_sig_all$Type)
+
+MHW_species_summary_sig_all$Type <- factor(MHW_species_summary_sig_all$Type, levels=c("Benthic North" ,"Benthic Central","Benthic Cosmopolitan","Benthic South", "Coastal Pelagic North", "Coastal Pelagic Central","Mesopelagic North","Mesopelagic Central" , "Mesopelagic Cosmopolitan"  ,"Mesopelagic South"))
+
+MHW_species_summary_sig_all$Type %>% unique() -> all_type
+
+palette.new %>% 
+ filter(., Type %in% all_type) -> palette.new8
+
+palette.new8$Type <- factor(palette.new8$Type, levels=c("Benthic North" ,"Benthic Central","Benthic Cosmopolitan","Benthic South", "Coastal Pelagic North", "Coastal Pelagic Central","Mesopelagic North","Mesopelagic Central" , "Mesopelagic Cosmopolitan"  ,"Mesopelagic South"))
+
+palette.new8 %>% arrange(Type) -> palette.new8
+
+
+MHW_species_summary_sig_all %>% 
+          mutate(., ID_main=recode(ID_main,`Sebastes`="Sebastes sp.",
+                               `Stenobrachius nannochir`="Stenobrachius leucopsarus cold variant"))%>% 
+  ggplot(., aes(y= mean, x= reorder(ID_main, -mean), fill=Type)) +  geom_bar(position="stack", stat="identity") +
+  scale_fill_manual( values = palette.new8$color) + ylab(expression(Delta*"Abundance")) + guides(fill=guide_legend(title="Habitat Association"))  +geom_text(aes(label=Sig_MHW, y = mean + 0.3 * sign(mean)),size=8)+
+  theme(axis.text.x = element_text(size=14,angle= 75, hjust= 1), 
+        panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.y=element_text(size=20, angle=0), 
+          axis.title.x=element_blank(), 
+          axis.title.y=element_text(size=24, angle=90,face="bold"),
+          strip.background = element_rect(fill='white'), 
+          strip.text.y=element_text(size=18,face="bold"),
+          legend.text=element_text(size=14),
+          legend.title=element_text(size=18,face="bold"),
+          axis.line=element_line(colour='black'),
+        panel.spacing = unit(2, "lines"))  + facet_grid(station~ .)   -> mhw_differential_abundance_all
+mhw_differential_abundance_all
+
+```
+
+### SD Offshore
+
+```{r}
+
+MHW_species_summary_sig_site_all %>% 
+  filter(., station =="San Diego Offshore") -> sig_sd_off_mhw
+
+
+sig_sd_off_mhw %>% 
+     left_join(trait_edna, by=c("ID_main")) %>% 
+  arrange(desc(mean)) %>%  dplyr::select(species_color) -> MHW_species_summary_sig_colors_south
+
+
+sig_sd_off_mhw %>%
+  left_join(trait_edna) -> MHW_species_summary_sig_south
+
+MHW_species_summary_sig_south %>% 
+  dplyr::select(Type, species_color) %>%  unique()-> species_color_mhw_south
+
+
+species_color_mhw_south$Type <- as.character(species_color_mhw_south$Type)
+species_color_mhw_south$Type <- factor(species_color_mhw_south$Type, levels=c("Benthic North" ,"Benthic Central","Benthic Cosmopolitan","Benthic South", "Coastal Pelagic North", "Coastal Pelagic Central","Mesopelagic North","Mesopelagic Central" , "Mesopelagic Cosmopolitan"  ,"Mesopelagic South"))
+
+species_color_mhw_south %>% arrange(Type) -> species_color_mhw_south
+
+MHW_species_summary_sig_south$Type <- as.character(MHW_species_summary_sig_south$Type)
+
+MHW_species_summary_sig_south$Type <- factor(MHW_species_summary_sig_south$Type, levels=c("Benthic North" ,"Benthic Central","Benthic Cosmopolitan","Benthic South", "Coastal Pelagic North", "Coastal Pelagic Central","Mesopelagic North","Mesopelagic Central" , "Mesopelagic Cosmopolitan"  ,"Mesopelagic South"))
+
+MHW_species_summary_sig_south$Type %>% unique() -> south_type
+
+palette.new %>% 
+ filter(., Type %in% south_type) -> palette.new4
+
+MHW_species_summary_sig_south %>% 
+          mutate(., ID_main=recode(ID_main,`Sebastes`="Sebastes sp.",
+                               `Stenobrachius nannochir`="Stenobrachius leucopsarus cold variant"))%>% 
+  ggplot(., aes(y= mean, x= reorder(ID_main, -mean), fill=Type)) +  geom_bar(position="stack", stat="identity") +
+  scale_fill_manual( values = palette.new4$color) + ylab(expression(Delta*"Abundance")) + guides(fill=guide_legend(title="Habitat Association"))  +
+  theme(axis.text.x = element_text(size=12,angle= 45, hjust= 1), 
+        panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.y=element_text(size=16, angle=0), 
+          axis.title.x=element_blank(), 
+          axis.title.y=element_text(size=20, angle=90,face="bold"),
+          strip.background = element_rect(fill='white'), 
+          strip.text.x=element_text(size=15),
+          legend.text=element_text(size=10),
+          legend.title=element_text(size=12),
+          axis.line=element_line(colour='black'), 
+        legend.position = c(.9, 0.85) )  +ylim(-6,4) -> mhw_differential_abundance_south
+mhw_differential_abundance_south
+
+ggsave(mhw_differential_abundance_south, file =here::here("analysis","figures","mhw_differential_abundance_sd_off.png"), width = 12, height = 8)
+
+
+```
+### SD Inshore
+
+```{r}
+
+MHW_species_summary_sig_site_all %>% 
+  filter(., station =="San Diego Inshore") -> sig_sd_in_mhw
+
+sig_sd_in_mhw %>% 
+     left_join(trait_edna, by=c("ID_main")) %>% 
+  arrange(desc(mean)) %>%  dplyr::select(species_color) -> MHW_species_summary_sig_colors_south
+
+
+sig_sd_in_mhw %>%
+  left_join(trait_edna) -> MHW_species_summary_sig_south
+
+MHW_species_summary_sig_south %>% 
+  dplyr::select(Type, species_color) %>%  unique()-> species_color_mhw_south
+
+
+species_color_mhw_south$Type <- as.character(species_color_mhw_south$Type)
+species_color_mhw_south$Type <- factor(species_color_mhw_south$Type, levels=c("Benthic North" ,"Benthic Central","Benthic Cosmopolitan","Benthic South", "Coastal Pelagic North", "Coastal Pelagic Central","Mesopelagic North","Mesopelagic Central" , "Mesopelagic Cosmopolitan"  ,"Mesopelagic South"))
+
+species_color_mhw_south %>% arrange(Type) -> species_color_mhw_south
+
+MHW_species_summary_sig_south$Type <- as.character(MHW_species_summary_sig_south$Type)
+
+MHW_species_summary_sig_south$Type <- factor(MHW_species_summary_sig_south$Type, levels=c("Benthic North" ,"Benthic Central","Benthic Cosmopolitan","Benthic South", "Coastal Pelagic North", "Coastal Pelagic Central","Mesopelagic North","Mesopelagic Central" , "Mesopelagic Cosmopolitan"  ,"Mesopelagic South"))
+
+MHW_species_summary_sig_south$Type %>% unique() -> south_type
+
+palette.new %>% 
+ filter(., Type %in% south_type) -> palette.new4
+
+
+palette.new4$Type <- factor(palette.new4$Type, levels=c("Benthic North" ,"Benthic Central","Benthic Cosmopolitan","Benthic South", "Coastal Pelagic North", "Coastal Pelagic Central","Mesopelagic North","Mesopelagic Central" , "Mesopelagic Cosmopolitan"  ,"Mesopelagic South"))
+
+palette.new4 %>% arrange(Type)  ->palette.new4
+
+
+MHW_species_summary_sig_south %>% 
+          mutate(., ID_main=recode(ID_main,`Sebastes`="Sebastes sp.",
+                               `Stenobrachius nannochir`="Stenobrachius leucopsarus cold variant"))%>% 
+  ggplot(., aes(y= mean, x= reorder(ID_main, -mean), fill=Type)) +  geom_bar(position="stack", stat="identity") +
+  scale_fill_manual( values = palette.new4$color) + ylab(expression(Delta*"Abundance")) + guides(fill=guide_legend(title="Habitat Association"))  +
+  theme(axis.text.x = element_text(size=12,angle= 45, hjust= 1), 
+        panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.y=element_text(size=16, angle=0), 
+          axis.title.x=element_blank(), 
+          axis.title.y=element_text(size=20, angle=90,face="bold"),
+          strip.background = element_rect(fill='white'), 
+          strip.text.x=element_text(size=15),
+          legend.text=element_text(size=10),
+          legend.title=element_text(size=12),
+          axis.line=element_line(colour='black'), 
+        legend.position = c(.9, 0.85) )  +ylim(-6,4) -> mhw_differential_abundance_south
+mhw_differential_abundance_south
+
+ggsave(mhw_differential_abundance_south, file =here::here("analysis","figures","mhw_differential_abundance_sd_off.png"), width = 12, height = 8)
+
+
+
+```
+
+### Legend of Species w/ Colors
+```{r}
+library(ggpubr)
+
+MHW_species_summary_sig_south %>% 
+          mutate(., ID_main=recode(ID_main,`Sebastes`="Sebastes sp.",
+                               `Stenobrachius nannochir`="Stenobrachius leucopsarus cold variant"))%>% 
+  ggplot(., aes(y= mean, x= reorder(ID_main, -mean), fill=Type)) +  geom_bar(position="stack", stat="identity") +
+  scale_fill_manual( values = palette.new4$color) + ylab(expression(Delta*"Abundance")) + guides(fill=guide_legend(title="Species Habitat Association"))  +
+  theme(axis.text.x = element_text(size=12,angle= 45, hjust= 1), 
+        panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.y=element_text(size=16, angle=0), 
+          axis.title.x=element_blank(), 
+          axis.title.y=element_text(size=20, angle=90,face="bold"),
+          strip.background = element_rect(fill='white'), 
+          strip.text.x=element_text(size=15),
+          legend.text=element_text(size=10),
+          legend.title=element_text(size=12),
+          axis.line=element_line(colour='black'), 
+        legend.position = c(.5, 0.5) )  +ylim(-6,4) -> legend_holder
+leg <- get_legend(legend_holder) 
+leg 
+# Convert to a ggplot and print
+as_ggplot(leg) + plot_layout(tag_level = 'new') -> leggers 
+as_ggplot(leg)  -> leggest
+
+```
+
+### SD Inshore
+
+```{r}
+MHW_species_summary_sig_site_all %>% 
+  filter(., station =="San Diego Inshore") -> sig_sd_in_mhw
+
+sig_sd_in_mhw %>% 
+     left_join(trait_edna, by=c("ID_main")) %>% 
+  arrange(desc(mean)) %>%  dplyr::select(species_color) -> MHW_species_summary_sig_colors_sd_in
+
+
+sig_sd_in_mhw %>%
+  left_join(trait_edna) -> MHW_species_summary_sig_sd_in
+
+MHW_species_summary_sig_sd_in %>% 
+  dplyr::select(Type, species_color) %>%  unique()-> species_color_mhw_sd_in
+
+
+MHW_species_summary_sig_sd_in$Type <- as.character(MHW_species_summary_sig_sd_in$Type)
+MHW_species_summary_sig_sd_in$Type <- factor(MHW_species_summary_sig_sd_in$Type, levels=c("Benthic North" ,"Benthic Central","Benthic Cosmopolitan","Benthic South", "Coastal Pelagic North", "Coastal Pelagic Central","Mesopelagic North","Mesopelagic Central" , "Mesopelagic Cosmopolitan"  ,"Mesopelagic South"))
+
+MHW_species_summary_sig_sd_in %>% arrange(Type) -> MHW_species_summary_sig_sd_in
+
+MHW_species_summary_sig_sd_in$Type <- as.character(MHW_species_summary_sig_sd_in$Type)
+
+MHW_species_summary_sig_sd_in$Type <- factor(MHW_species_summary_sig_sd_in$Type, levels=c("Benthic North" ,"Benthic Central","Benthic Cosmopolitan","Benthic South", "Coastal Pelagic North", "Coastal Pelagic Central","Mesopelagic North","Mesopelagic Central" , "Mesopelagic Cosmopolitan"  ,"Mesopelagic South"))
+
+MHW_species_summary_sig_sd_in$Type %>% unique() -> south_type
+
+palette.new %>% 
+ filter(., Type %in% south_type) -> palette.new4
+
+MHW_species_summary_sig_sd_in %>% 
+          mutate(., ID_main=recode(ID_main,`Sebastes`="Sebastes sp.",
+                               `Stenobrachius nannochir`="Stenobrachius leucopsarus cold variant")) %>% 
+  ggplot(., aes(y= mean, x= reorder(ID_main, -mean), fill=Type)) +  geom_bar(position="stack", stat="identity") +
+  scale_fill_manual( values = palette.new4$color) + ylab(expression(Delta*"Abundance")) + guides(fill=guide_legend(title="Habitat Association"))  +
+  theme(axis.text.x = element_text(size=8,angle= 45, hjust= 1), 
+        panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.y=element_text(size=16, angle=0), 
+          axis.title.x=element_blank(), 
+          axis.title.y=element_text(size=20, angle=90,face="bold"),
+          strip.background = element_rect(fill='white'), 
+          strip.text.x=element_text(size=15),
+          legend.text=element_text(size=16),
+          legend.title=element_text(size=18),
+          axis.line=element_line(colour='black'), 
+        legend.position = c(.9, 0.8) )   -> mhw_differential_abundance_sd_in
+mhw_differential_abundance_sd_in
+
+
+```
+
+
+### Pt. Conception
+
+```{r}
+MHW_species_summary_sig_site_all %>% 
+  filter(., station =="Pt. Conception") -> sig_pc_mhw
+
+sig_pc_mhw %>% 
+     left_join(trait_edna, by=c("ID_main")) %>% 
+  arrange(desc(mean)) %>%  dplyr::select(species_color) -> MHW_species_summary_sig_colors_pc
+
+
+sig_pc_mhw %>%
+  left_join(trait_edna) -> MHW_species_summary_sig_pc
+
+MHW_species_summary_sig_pc %>% 
+  dplyr::select(Type, species_color) %>%  unique()-> species_color_mhw_pc
+
+
+MHW_species_summary_sig_pc$Type <- as.character(MHW_species_summary_sig_pc$Type)
+MHW_species_summary_sig_pc$Type <- factor(MHW_species_summary_sig_pc$Type, levels=c("Benthic North" ,"Benthic Central","Benthic Cosmopolitan","Benthic South", "Coastal Pelagic North", "Coastal Pelagic Central","Mesopelagic North","Mesopelagic Central" , "Mesopelagic Cosmopolitan"  ,"Mesopelagic South"))
+
+MHW_species_summary_sig_pc %>% arrange(Type) -> MHW_species_summary_sig_pc
+
+MHW_species_summary_sig_pc$Type <- as.character(MHW_species_summary_sig_pc$Type)
+
+MHW_species_summary_sig_pc$Type <- factor(MHW_species_summary_sig_pc$Type, levels=c("Benthic North" ,"Benthic Central","Benthic Cosmopolitan","Benthic South", "Coastal Pelagic North", "Coastal Pelagic Central","Mesopelagic North","Mesopelagic Central" , "Mesopelagic Cosmopolitan"  ,"Mesopelagic South"))
+
+MHW_species_summary_sig_pc$Type %>% unique() -> south_type
+
+palette.new %>% 
+ filter(., Type %in% south_type) -> palette.new4
+
+MHW_species_summary_sig_pc %>% 
+          mutate(., ID_main=recode(ID_main,`Sebastes`="Sebastes sp.",
+                               `Stenobrachius nannochir`="Stenobrachius leucopsarus cold variant")) %>% 
+  ggplot(., aes(y= mean, x= reorder(ID_main, -mean), fill=Type)) +  geom_bar(position="stack", stat="identity") +
+  scale_fill_manual( values = palette.new4$color) + ylab(expression(Delta*"Abundance")) + guides(fill=guide_legend(title="Habitat Association"))  +
+  theme(axis.text.x = element_text(size=8,angle= 45, hjust= 1), 
+        panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.y=element_text(size=16, angle=0), 
+          axis.title.x=element_blank(), 
+          axis.title.y=element_text(size=20, angle=90,face="bold"),
+          strip.background = element_rect(fill='white'), 
+          strip.text.x=element_text(size=15),
+          legend.text=element_text(size=12),
+          legend.title=element_text(size=14),
+          axis.line=element_line(colour='black'), 
+        legend.position = c(.9, 0.8) ) +ylim(-6,4)  -> mhw_differential_abundance_pc
+mhw_differential_abundance_pc
+
+
+```
+
+### San Nicholas Island
+
+```{r}
+MHW_species_summary_sig_site_all %>% 
+  filter(., station =="San Nicholas Island") -> sig_sni_mhw
+
+sig_sni_mhw %>% 
+     left_join(trait_edna, by=c("ID_main")) %>% 
+  arrange(desc(mean)) %>%  dplyr::select(species_color) -> MHW_species_summary_sig_colors_sni
+
+
+sig_sni_mhw %>%
+  left_join(trait_edna) -> MHW_species_summary_sig_sni
+
+MHW_species_summary_sig_sni %>% 
+  dplyr::select(Type, species_color) %>%  unique()-> species_color_mhw_sni
+
+
+MHW_species_summary_sig_sni$Type <- as.character(MHW_species_summary_sig_sni$Type)
+MHW_species_summary_sig_sni$Type <- factor(MHW_species_summary_sig_sni$Type, levels=c("Benthic North" ,"Benthic Central","Benthic Cosmopolitan","Benthic South", "Coastal Pelagic North", "Coastal Pelagic Central","Mesopelagic North","Mesopelagic Central" , "Mesopelagic Cosmopolitan"  ,"Mesopelagic South"))
+
+MHW_species_summary_sig_sni %>% arrange(Type) -> MHW_species_summary_sig_sni
+
+MHW_species_summary_sig_sni$Type <- as.character(MHW_species_summary_sig_sni$Type)
+
+MHW_species_summary_sig_sni$Type <- factor(MHW_species_summary_sig_sni$Type, levels=c("Benthic North" ,"Benthic Central","Benthic Cosmopolitan","Benthic South", "Coastal Pelagic North", "Coastal Pelagic Central","Mesopelagic North","Mesopelagic Central" , "Mesopelagic Cosmopolitan"  ,"Mesopelagic South"))
+
+MHW_species_summary_sig_sni$Type %>% unique() -> south_type
+
+palette.new %>% 
+ filter(., Type %in% south_type) -> palette.new4
+
+MHW_species_summary_sig_sni %>% 
+         mutate(., ID_main=recode(ID_main,`Sebastes`="Sebastes sp.",
+                               `Stenobrachius nannochir`="Stenobrachius leucopsarus cold variant")) %>% 
+  ggplot(., aes(y= mean, x= reorder(ID_main, -mean), fill=Type)) +  geom_bar(position="stack", stat="identity") +
+  scale_fill_manual( values = palette.new4$color) + ylab(expression(Delta*"Abundance")) + guides(fill=guide_legend(title="Habitat Association"))  +
+  theme(axis.text.x = element_text(size=8,angle= 45, hjust= 1), 
+        panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.y=element_text(size=16, angle=0), 
+          axis.title.x=element_blank(), 
+          axis.title.y=element_text(size=20, angle=90,face="bold"),
+          strip.background = element_rect(fill='white'), 
+          strip.text.x=element_text(size=15),
+          legend.text=element_text(size=16),
+          legend.title=element_text(size=18),
+          axis.line=element_line(colour='black'), 
+        legend.position = c(.9, 0.8) )   -> mhw_differential_abundance_sni
+mhw_differential_abundance_sni
+
+
+```
+
+
+# Figure Sum Habitat vs. SST
+
+```{r}
+b_ID_main_out_type$Year <- as.numeric(b_ID_main_out_type$Year)
+b_ID_main_out_type$Type <- factor(b_ID_main_out_type$Type, levels=c("Benthic North" ,"Benthic Central","Benthic Cosmopolitan","Benthic South", "Coastal Pelagic North", "Coastal Pelagic Central","Mesopelagic North","Mesopelagic Central" , "Mesopelagic Cosmopolitan"  ,"Mesopelagic South"))
+
+b_ID_main_out_type %>% 
+  left_join(two_month_sst_mean) %>%
+  filter(., Type =="Mesopelagic South") %>% 
+  ggplot(., aes(y=log_sum, x=mean_two_month_sst, colour=Type, fill = Type, group=Type)) +geom_point() +geom_smooth(method="lm") +facet_wrap(.~Type) + scale_fill_manual(values="#B40F20") + scale_colour_manual(values="#B40F20") +
+  stat_poly_eq(formula = y~x, 
+                aes(label = paste(..rr.label..,..p.value.label.., sep = "~~~")), 
+                parse = TRUE,
+               label.x = 1.5,
+  label.y = 0.1, p.digits =2, rr.digits = 2,size = 7) +
+  theme( panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.x=element_text(size=12, angle=0), 
+          axis.text.y=element_text(size=12, angle=0), 
+          axis.title.x=element_text(size=16, angle=0,face="bold"), 
+          axis.title.y=element_text(size=16, angle=90,face="bold"),
+          strip.background = element_rect(fill='grey90'), 
+          strip.text.x=element_text(size=14, face='italic'),
+          legend.text=element_text(size=10),
+          legend.title=element_text(size=15),
+         axis.line=element_line(colour='black'),
+         legend.position = "none") + xlab("SST (˚C)") + ylab("Log(Abundance)")  -> sum_habitat_temp_regression 
+sum_habitat_temp_regression
+
+
+```
+
+
+#### S15 SST
+```{r}
+
+b_ID_main_out_type %>% 
+  left_join(two_month_sst_mean) %>% 
+  ggplot(., aes(y=log_sum, x=mean_two_month_sst, colour=Type, fill = Type, group=Type)) +geom_point() +geom_smooth(method="lm") +facet_wrap(.~Type, scales="free") + scale_fill_manual(values=palette.new$color) + scale_colour_manual(values=palette.new$color) +
+  stat_poly_eq(formula = y~x, 
+                aes(label = paste(..eq.label.., ..rr.label..,..p.value.label.., sep = "~~~")), 
+                parse = TRUE,
+               label.x = 0.5,
+  label.y = 0.1) +
+  theme( panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.x=element_text(size=12, angle=0), 
+          axis.text.y=element_text(size=12, angle=0), 
+          axis.title.x=element_text(size=16, angle=0,face="bold"), 
+          axis.title.y=element_text(size=16, angle=90,face="bold"),
+          strip.background = element_rect(fill='grey90'), 
+          strip.text.x=element_text(size=14, face='italic'),
+          legend.text=element_text(size=10),
+          legend.title=element_text(size=15)) + xlab("SST ˚C") + ylab("Mean of Log Abundance Estimates")  -> mean_habitat_temp_regression 
+
+mean_habitat_temp_regression
+
+ggsave(mean_habitat_temp_regression, file =here::here("analysis","figures","S15_mean_habitat_temp_regression.png"), width = 18, height = 12)
+
+```
+
+
+
+
+
+
+#### S14 SST
+
+```{r}
+
+
+b_ID_main_out %>%
+  left_join(trait_edna) %>% 
+  filter(., Type == "Mesopelagic South") -> b_long_meso_S_edit
+
+b_long_meso_S_edit$Year <- as.numeric(b_long_meso_S_edit$Year)
+
+b_long_meso_S_edit %>% 
+  left_join(two_month_sst) %>% 
+  ggplot(., aes(y=mean_log, x=two_month_sst, colour=ID_main, fill = ID_main, group=ID_main)) +geom_point() +geom_smooth(method="lm")+facet_wrap(.~ID_main)   + scale_fill_manual(values = c("orangered2","tomato","red3","red4")) + scale_colour_manual(values = c("orangered2","tomato","red3","red4")) +
+  stat_poly_eq(formula = y~x, 
+                aes(label = paste(..eq.label.., ..rr.label..,..p.value.label.., sep = "~~~")), 
+                parse = TRUE,
+               label.x = 0.5,
+  label.y = 0.1) +
+  theme( panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.x=element_text(size=12, angle=0), 
+          axis.text.y=element_text(size=12, angle=0), 
+          axis.title.x=element_text(size=16, angle=0,face="bold"), 
+          axis.title.y=element_text(size=16, angle=90,face="bold"),
+          strip.background = element_rect(fill='grey90'), 
+          strip.text.x=element_text(size=14, face='italic'),
+          legend.text=element_text(size=10),
+          legend.title=element_text(size=15),
+         legend.position = "none") + xlab("SST (˚C)") + ylab("Log(Abundance)") +ylim(-4,2) -> habitat_temp_regression_meso_pelagic
+
+habitat_temp_regression_meso_pelagic
+
+ggsave(habitat_temp_regression_meso_pelagic, file =here::here("analysis","figures","S14_habitat_temp_regression_meso_pelagic.png"), width = 16, height = 12)
+
+```
+
+
+
+
+
+
+
+
+### Figure 1 SST Biomass
+```{r}
+
+log_biomass_sites_fig +labs(tag = "A") -> log_biomass_sites_fig_tagged
+habitat_association_fig_all + labs(tag = "B") -> habitat_association_fig_all_tagged
+sum_habitat_temp_regression + labs(tag = "C") -> sum_habitat_temp_regression_tagged
+
+(leggest + log_biomass_sites_fig_tagged  + plot_layout(byrow = F, widths = c(1,3), ncol = 2)) -> a2
+
+ b2 <-  (habitat_association_fig_all_tagged + sum_habitat_temp_regression_tagged + plot_layout(byrow = F, widths = c(3,3), ncol = 2))
+ 
+ a2/b2
+
+ggsave(filename = here("analysis","figures","Figure_2.png"),
+       width=18,
+       height = 12,
+       dpi = 400,
+       units = c("in"))
+```
+### Figure 2 MHW
+```{r}
+
+mhw_differential_abundance_all 
+
+ggsave(filename = here("analysis","figures","Figure_3_MHW_dif_all.png"),
+       width=14,
+       height = 16,
+       dpi = 400,
+      units = c("in"))
+
+
+
+```
+# Figure 3
+```{r}
+
+
+biomass_conc+biomass_sni+biomass_sdi+biomass_sdo +plot_layout(ncol=1)
+
+ggsave(file =here::here("analysis","figures","Figure_4_anchovy_sardine_time_combined.png"), width = 8, height = 18)
+
+```
+
+
+
+
+
+
+
+### Figure S7 SST Biomass
+```{r}
+
+log_biomass_sst_fig_wc +labs(tag = "A") -> log_biomass_sites_fig_tagged_wc
+habitat_association_fig_all_wc + labs(tag = "B") -> habitat_association_fig_all_tagged_wc
+sum_habitat_temp_regression_wc + labs(tag = "C") -> sum_habitat_temp_regression_tagged_wc
+
+(leggest + log_biomass_sites_fig_tagged_wc  + plot_layout(byrow = F, widths = c(1,3), ncol = 2)) -> a2_wc
+
+ b2_wc <-  (habitat_association_fig_all_tagged_wc + sum_habitat_temp_regression_tagged_wc + plot_layout(byrow = F, widths = c(3,3), ncol = 2))
+ 
+ a2_wc/b2_wc
+
+ggsave(filename = here("analysis","figures","Figure_S7_comob_wc.png"),
+       width=18,
+       height = 12,
+       dpi = 400,
+      units = c("in"))
+
+
+
+```
+
+
+# All Sites Combined NMDS & Heatmap
+
+### Pre processing NMDs and Heatmaps
+```{r, functions used, include=FALSE}
+#Another version of the dendrogram.  
+
+dendro_data_k <- function(hc, k) {
+  
+  hcdata    <-  ggdendro::dendro_data(hc, type = "rectangle")
+  seg       <-  hcdata$segments
+  labclust  <-  cutree(hc, k)[hc$order]
+  segclust  <-  rep(0L, nrow(seg))
+  heights   <-  sort(hc$height, decreasing = TRUE)
+  height    <-  mean(c(heights[k], heights[k - 1L]), na.rm = TRUE)
+  
+  for (i in 1:k) {
+    xi      <-  hcdata$labels$x[labclust == i]
+    idx1    <-  seg$x    >= min(xi) & seg$x    <= max(xi)
+    idx2    <-  seg$xend >= min(xi) & seg$xend <= max(xi)
+    idx3    <-  seg$yend < height
+    idx     <-  idx1 & idx2 & idx3
+    segclust[idx] <- i
+  }
+  
+  idx                    <-  which(segclust == 0L)
+  segclust[idx]          <-  segclust[idx + 1L]
+  hcdata$segments$clust  <-  segclust
+  hcdata$segments$line   <-  as.integer(segclust < 1L)
+  hcdata$labels$clust    <-  labclust
+  
+  hcdata
+}
+
+set_labels_params <- function(nbLabels,
+                              direction = c("tb", "bt", "lr", "rl"),
+                              fan       = FALSE) {
+  if (fan) {
+    angle       <-  360 / nbLabels * 1:nbLabels + 90
+    idx         <-  angle >= 90 & angle <= 270
+    angle[idx]  <-  angle[idx] + 180
+    hjust       <-  rep(0, nbLabels)
+    hjust[idx]  <-  1
+  } else {
+    angle       <-  rep(0, nbLabels)
+    hjust       <-  0
+    if (direction %in% c("tb", "bt")) { angle <- angle + 45 }
+    if (direction %in% c("tb", "rl")) { hjust <- 1 }
+  }
+  list(angle = angle, hjust = hjust, vjust = 0.5)
+}
+
+plot_ggdendro <- function(hcdata,
+                          direction   = c("lr", "rl", "tb", "bt"),
+                          fan         = FALSE,
+                          scale.color = NULL,
+                          branch.size = 1,
+                          label.size  = 3,
+                          nudge.label = 0.01,
+                          expand.y    = 0.1) {
+  
+  direction <- match.arg(direction) # if fan = FALSE
+  ybreaks   <- pretty(segment(hcdata)$y, n = 5)
+  ymax      <- max(segment(hcdata)$y)
+  
+  ## branches
+  p <- ggplot() +
+    geom_segment(data         =  segment(hcdata),
+                 aes(x        =  x,
+                     y        =  y,
+                     xend     =  xend,
+                     yend     =  yend,
+                     linetype =  factor(line),
+                     colour   =  factor(clust)),
+                 lineend      =  "round",
+                 show.legend  =  FALSE,
+                 size         =  branch.size)
+  
+  ## orientation
+  if (fan) {
+    p <- p +
+      coord_polar(direction = -1) +
+      scale_x_continuous(breaks = NULL,
+                         limits = c(0, nrow(ggdendro::label(hcdata)))) +
+      scale_y_reverse(breaks = ybreaks)
+  } else {
+    p <- p + scale_x_continuous(breaks = NULL)
+    if (direction %in% c("rl", "lr")) {
+      p <- p + coord_flip()
+    }
+    if (direction %in% c("bt", "lr")) {
+      p <- p + scale_y_reverse(breaks = ybreaks)
+    } else {
+      p <- p + scale_y_continuous(breaks = ybreaks)
+      nudge.label <- -(nudge.label)
+    }
+  }
+  
+  # labels
+  labelParams <- set_labels_params(nrow(hcdata$labels), direction, fan)
+  hcdata$labels$angle <- labelParams$angle
+  
+  p <- p +
+    geom_text(data        =  ggdendro::label(hcdata),
+              aes(x       =  x,
+                  y       =  y,
+                  label   =  label,
+                  colour  =  factor(clust),
+                  angle   =  angle),
+              vjust       =  labelParams$vjust,
+              hjust       =  labelParams$hjust,
+              nudge_y     =  ymax * nudge.label,
+              size        =  label.size,
+              show.legend =  FALSE)
+  
+  # colors and limits
+  if (!is.null(scale.color)) {
+    p <- p + scale_color_manual(values = scale.color)
+  }
+  
+  ylim <- -round(ymax * expand.y, 1)
+  p    <- p + expand_limits(y = ylim)
+  
+  p
+}
+
+
+```
+##### Chronological Clustering
+
+<br />
+```{r}
+#Format for dend and clustering
+b_ID_main_out %>% 
+  dplyr::select(Year,  ID_main,Normalized.biomass=  mean) %>% 
+  filter(., Normalized.biomass >0) %>% 
+  ungroup() %>% 
+  group_by(ID_main) %>% 
+  dplyr::count() %>% 
+  filter(., n> 5) -> species_to_keep
+
+b_ID_main_out %>% 
+  dplyr::select(Year,  ID_main,Normalized.biomass=  mean) %>% 
+  #filter(., ID_main %in% species_to_keep$ID_main) %>% 
+  pivot_wider(names_from=ID_main, values_from=Normalized.biomass) %>% 
+  as.data.frame()-> eDNA_long_all_wide
+
+eDNA_long_all_wide$Year -> rownames(eDNA_long_all_wide)
+eDNA_long_all_wide[,-1] -> eDNA_long_all_wide
+
+#Create a bray-curtis distance matrix
+diss <- vegdist(eDNA_long_all_wide, method='bray')
+
+#Run the chronological cluster; chclust is the main function from rioja
+clust <- chclust(diss)
+
+
+```
+
+```{r}
+##Look at the number of clusters.  Then make a category for each cluster
+ddata1 <- dendro_data_k(clust,8)
+
+labs <- ggdendro::label(ddata1)
+moon4 <- c("black","navy",moon3,"darkred")
+p1 <- plot_ggdendro(ddata1,
+                    direction   = "tb",
+                    label.size  = 2.5,
+                    scale.color = moon4,
+                    branch.size = 0.5,
+                    expand.y    = 0.2)
+
+p1 <- p1 + theme_void() + expand_limits(x = c(-1, 32))
+p1
+
+```
+```{r, results='hide'}
+
+#Recreate above chronological clustering dendrogram but using same format as species clustering for figure
+
+BPA_9 <- data.frame(eDNA_long_all_wide)
+
+dend2 <- BPA_9 %>% vegdist(., method='bray') %>% chclust() %>% as.dendrogram %>% 
+  color_branches(k=6, col = moon3)
+
+```
+
+```{r}
+#Color code names of species based on trait information
+as.data.frame(moon3) -> mooner
+mooner$clust <- seq(1,6)
+labs %>% 
+  left_join(mooner) -> labs
+
+```
+
+<br />
+
+##### Species Clustering
+
+<br />
+```{r,fig.height=8, fig.width=8}
+## Input is the distance matrix (abundance, etc), with years on x and species on y. and species names as the rownames.
+BPA <- data.frame(t(eDNA_long_all_wide))
+
+colnames(BPA) <- rownames(eDNA_long_all_wide)
+#BPA_1 <- BPA %>% vegdist(., method='bray') %>% hclust %>% as.dendrogram 
+
+BPA_1 <- BPA %>% vegdist(., method='bray') %>% hclust %>% as.dendrogram %>% sort(type = "nodes")
+
+#Decide on the number of branches for species, k=3
+dend <- BPA %>% vegdist(., method='bray')%>% hclust(method = "complete") %>% as.dendrogram %>% sort(type = "nodes") %>% 
+  color_branches(k=5, col=dar3)
+plot(dend)
+```
+
+
+
+```{r}
+#Color code names of species based on trait information
+as.data.frame(rownames(BPA)) -> species_names
+
+species_names %>% 
+  left_join(trait_edna, by=c("rownames(BPA)"="ID_main")) -> species_names
+
+```
+
+##### Figure S16 Heatmap
+
+```{r, fig.height=16, fig.width=8}
+#Color palette
+some_col_func <- colorspace::sequential_hcl(100,palette="BluYl")
+
+
+BPA2 <- as.matrix(log10(BPA))
+BPA2[BPA2 < 0] <- NA
+
+
+
+colseperator <- labs %>% 
+  group_by(clust) %>% 
+  dplyr::summarise(label =max(label)) %>% 
+  left_join(labs)
+
+jpeg(file = here("analysis","figures","S16_All_sites_heatmap.png")
+     , width=16,
+       height = 12,
+       res = 400,
+      units = c("in"))
+gplots::heatmap.2(BPA2, 
+                  main = "",
+                  srtCol = 60,
+                  dendrogram = "both",
+                  #density.info="none",
+                  Rowv = dend,
+                  Colv = dend2, # this to make sure the columns are not ordered
+                  trace="none",          
+                  #key.xlab = "",
+                  #labCol = "",
+                  denscol = "lightseagreen",
+                  colRow = species_names$species_color,
+                  colCol = labs$moon3,
+                  margins = c(3,12),
+                  density.info = "density",
+                  key= TRUE,
+                  na.color = "White",
+                  colsep= colseperator$x, 
+                  sepcolor = "black",
+                  col = some_col_func)
+dev.off()
+
+
+gplots::heatmap.2(BPA2, 
+                  main = "eDNA All Sites",
+                  srtCol = 60,
+                  dendrogram = "both",
+                  #density.info="none",
+                  Rowv = dend,
+                  Colv = dend2, # this to make sure the columns are not ordered
+                  trace="none",          
+                  #key.xlab = "",
+                  #labCol = "",
+                  denscol = "lightseagreen",
+                  colRow = species_names$species_color,
+                  colCol = labs$moon3,
+                  margins = c(3,12),
+                  density.info = "density",
+                  key= TRUE,
+                  na.color = "White",
+                  colsep= colseperator$x, 
+                  sepcolor = "black",
+                  col = some_col_func)
+```
+
+
+##### Figure S17 NMDS
+
+```{r}
+
+b_ID_main_out %>% 
+  dplyr::select(Year,  ID_main,Normalized.biomass=  mean) %>% 
+ # filter(., ID_main %in% species_to_keep$ID_main) %>% 
+  #mutate(., ID_main = str_replace(ID_main," ",".")) %>% 
+  pivot_wider(names_from=ID_main, values_from=Normalized.biomass) %>% 
+  as.data.frame()-> eDNA_long_all_wide2
+
+eDNA_long_all_wide2$Year -> rownames(eDNA_long_all_wide2)
+eDNA_long_all_wide2[,-1] -> eDNA_long_all_wide2
+
+#NMDS analysis
+
+#Start with the data frame, not the distance matrix
+
+sptran1 <- eDNA_long_all_wide2
+
+mds <- vegan::metaMDS(sptran1,k=2, trace=FALSE, distance = "bray",trymax=100, autotransform = FALSE)
+mds ### if stress is under .20, we are okay; if over, may need the change k to 3; 
+#stress = .157 at K3
+stressplot(mds)
+```
+
+
+
+
+```{r}
+
+#Make the nmds plot with ggplot2
+###Pull out species info
+mdssp <- mds$species
+spdf <- data.frame(mdssp)
+spdf %>%  drop_na() ->spdf
+spdf$species <- rownames(spdf)
+#spdf$species1 <- gsub(" ", ".", spdf$species)
+spdf1 <- spdf
+
+### This has the habitat and geographic affinities for each species
+spdf1 %>% 
+  left_join(trait_edna, by=c("species"="ID_main")) -> spdf1
+as.factor(spdf1$Type) ->spdf1$Type
+
+
+#Pull out site info
+scor <- scores(mds, display=c("sites","species"))
+score1 <- data.frame(eDNA_long_all_wide,scor)
+score1$rowname <- rownames(score1)
+labs$label -> years
+
+as.data.frame(years) -> nmdscov
+rownames(nmdscov) <- nmdscov$years
+nmdscov$rowname <- rownames(nmdscov)
+score2 <- merge(score1, nmdscov, by="rowname", all.x=T, all.y=F)
+score2 <- score2[order(score2$year),] 
+
+### from chron cluster
+### assign a cluster to each year
+score2$cluster <- as.character(labs$clust)
+
+
+spdf1 %>% 
+  dplyr::select(Type,species_color)%>% distinct() %>% 
+  arrange(Type) %>%  dplyr::select(species_color) -> color_order_nmds
+  
+ggplot()+ 
+  geom_vline(xintercept=0,colour="grey50") +
+  geom_hline(yintercept=0,colour="grey50") +
+  geom_path (data=score2, aes(x = NMDS1, y = NMDS2, alpha=0.2)) +
+  geom_text_repel(data=spdf1,  aes(x = MDS1, y = MDS2, label= species, color=Type), size=6, fontface='italic') + 	
+  geom_text_repel(data=score2, aes(x = NMDS1, y = NMDS2,label= years, colour=cluster), size=10) + 
+  scale_colour_manual(values = c("navy","darkred",moon3,color_order_nmds$species_color)) +
+  theme_bw() +
+  labs(list(title="", x="NMDS1",y="NMDS2"))  + xlab("NMDS1") +ylab("NMDS2")+
+  theme(  panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.x=element_text(size=14, angle=0), 
+          axis.text.y=element_text(size=14, angle=0), 
+          axis.title.x=element_text(size=18, angle=0), 
+          axis.title.y=element_text(size=18, angle=90),
+          strip.background = element_rect(fill='white'), 
+          strip.text.x=element_text(size=15),
+          legend.text=element_text(size=10),
+          legend.title=element_text(size=15),
+          axis.line=element_line(colour='black'),
+          legend.position="none")	
+
+ggsave(filename = here("analysis","figures","S17_All_sites_NMDS.png"),
+       width=30,
+       height = 30,
+       dpi = 400,
+      units = c("in"))
+```
+
+# All Sites Separate NMDS
+
+
+```{r}
+
+b_ID_main_out_site %>% 
+  mutate(.,
+station = fct_recode(station,
+"Pt.C" =  "80_60" ,
+"SaNI" = "86.7_50" ,
+"SDIn" = "93.3_30",
+"SDOf" = "93.3_60")
+) %>% 
+  dplyr::select(Year,  station, ID_main,Normalized.biomass=  mean) %>% 
+ # filter(., ID_main %in% species_to_keep$ID_main) %>% 
+  #mutate(., ID_main = str_replace(ID_main," ",".")) %>% 
+  unite(., "Year", c("Year","station"), sep=":") %>% 
+  pivot_wider(names_from=ID_main, values_from=Normalized.biomass) %>% 
+  as.data.frame()-> eDNA_long_all_wide2_sep
+
+eDNA_long_all_wide2_sep %>% dplyr::select(Year) %>% as.data.frame()-> sampledf_year_site
+eDNA_long_all_wide2_sep$Year -> rownames(sampledf_year_site)
+
+sampledf_year_site %>% 
+  separate(Year, into = c("Year","station"), sep=":", remove=FALSE) -> sampledf_year_site
+
+sampledf_year_site %>% 
+  mutate(., station2 = case_when(station =="Pt.C"~"80_60",
+                                station =="SaNI"~"86.7_50",
+                                station =="SDOf"~"93.3_60",
+                                station =="SDIn"~"93.3_30"),
+         Year=as.integer(Year)) %>%  
+  left_join(two_month_sst, by=c("Year"="Year","station2"="station")) -> sampledf_year_site
+
+eDNA_long_all_wide2_sep$Year -> rownames(eDNA_long_all_wide2_sep)
+eDNA_long_all_wide2_sep[,-1] -> eDNA_long_all_wide2_sep
+
+#NMDS analysis
+
+#Start with the data frame, not the distance matrix
+
+sptran1_sep <- eDNA_long_all_wide2_sep
+
+mds <- vegan::metaMDS(sptran1_sep,k=2, trace=FALSE, distance = "bray",trymax=100, autotransform = FALSE)
+mds ### if stress is under .20, we are okay; if over, may need the change k to 3; 
+#stress = .157 at K3
+stressplot(mds)
+
+```
+
+###### PERMANOVA
+
+```{r}
+
+adonis2(eDNA_long_all_wide2_sep~Year+two_month_sst+station, data=sampledf_year_site)
+
+```
+
+###### Homogeneity of Dispersions
+```{r}
+
+d_carn <- vegdist(eDNA_long_all_wide2_sep, method="bray") 
+  
+#Homogeneity of dispersions test
+betadisper(d_carn, getElement(sampledf_year_site, "station"))
+anova(betadisper(d_carn, getElement(sampledf_year_site, "station")))
+broom::tidy(TukeyHSD(betadisper(d_carn, getElement(sampledf_year_site, "station")))) %>% 
+  arrange(adj.p.value)
+```
+
+
+```{r}
+#Homogeneity of dispersions test
+betadisper(d_carn, getElement(sampledf_year_site, "Year"))
+anova(betadisper(d_carn, getElement(sampledf_year_site, "Year")))
+broom::tidy(TukeyHSD(betadisper(d_carn, getElement(sampledf_year_site, "Year")))) %>% 
+  arrange(adj.p.value)
+
+```
+
+
+##### Figure S18 NMDS
+
+```{r}
+
+#Make the nmds plot with ggplot2
+###Pull out species info
+mdssp <- mds$species
+spdf <- data.frame(mdssp)
+spdf %>%  drop_na() ->spdf
+spdf$species <- rownames(spdf)
+#spdf$species1 <- gsub(" ", ".", spdf$species)
+spdf1 <- spdf
+
+### This has the habitat and geographic affinities for each species
+spdf1 %>% 
+  left_join(trait_edna, by=c("species"="ID_main")) -> spdf1
+as.factor(spdf1$Type) ->spdf1$Type
+
+
+#Pull out site info
+scor <- scores(mds, display=c("sites","species"))
+score1 <- data.frame(eDNA_long_all_wide2_sep,scor)
+score1$rowname <- rownames(score1)
+
+score1 %>% 
+separate(rowname, into=c("Year","Station"), sep=":", remove = F) -> score2
+
+ggplot()+ 
+  geom_vline(xintercept=0,colour="grey50") +
+  geom_hline(yintercept=0,colour="grey50") +
+  geom_path(data=score2, aes(x = NMDS1, y = NMDS2, alpha=0.2, group=Station, colour=Station)) +
+  geom_text_repel(data=score2, aes(x = NMDS1, y = NMDS2,label= rowname, group=Station, colour=Station), size=10)+
+    geom_text_repel(data=spdf1,  aes(x = MDS1, y = MDS2, label= species, color=Type), size=6, fontface='italic') + 	
+    scale_colour_manual(values = c(color_order_nmds$species_color,dar4)) +
+  theme_bw() +
+  labs(list(title="", x="NMDS1",y="NMDS2"))  + xlab("NMDS1") +ylab("NMDS2")+
+  theme(  panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.x=element_text(size=14, angle=0), 
+          axis.text.y=element_text(size=14, angle=0), 
+          axis.title.x=element_text(size=18, angle=0), 
+          axis.title.y=element_text(size=18, angle=90),
+          strip.background = element_rect(fill='white'), 
+          strip.text.x=element_text(size=15),
+          legend.text=element_text(size=10),
+          legend.title=element_text(size=15),
+          axis.line=element_line(colour='black'),
+          legend.position="none")	
+
+ggsave(filename = here("analysis","figures","S18_All_sites_sep_NMDS.png"),
+       width=50,
+       height = 50,
+       dpi = 400,
+       limitsize = FALSE,
+      units = c("in"))
+```
+### Figure Site Only
+```{r}
+score2 %>% 
+  mutate(., station = case_when(Station =="Pt.C"~"Pt. Conception",
+                                Station =="SaNI"~"San Nicholas Island",
+                                Station =="SDOf"~"San Diego Offshore",
+                                Station =="SDIn"~"San Diego Inshore")) -> score3
+
+score3$station <- factor(score3$station, levels = c("Pt. Conception", "San Nicholas Island", "San Diego Inshore","San Diego Offshore"))
+  
+  
+ggplot()+ 
+  geom_vline(xintercept=0,colour="grey50") +
+  geom_hline(yintercept=0,colour="grey50") +
+  geom_path(data=score3, aes(x = NMDS1, y = NMDS2, group=station, colour=station),alpha=0.8) +
+  geom_text_repel(data=score3, aes(x = NMDS1, y = NMDS2,label= Year, group=station, colour=station), size=10)+
+    scale_colour_manual(values = c(dar4)) +
+  theme_bw() +
+  labs(list(title="", x="NMDS1",y="NMDS2"))  + xlab("NMDS1") +ylab("NMDS2")+
+  theme(  panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.x=element_text(size=14, angle=0), 
+          axis.text.y=element_text(size=14, angle=0), 
+          axis.title.x=element_text(size=18, angle=0), 
+          axis.title.y=element_text(size=18, angle=90),
+          strip.background = element_rect(fill='white'), 
+          strip.text.x=element_text(size=15),
+          legend.text=element_text(size=10),
+          legend.title=element_text(size=15),
+          axis.line=element_line(colour='black'))	+ guides(colour=guide_legend(title="Station"))
+
+```
+
+##### CAP ordination
+<br />
+
+```{r, results="hide",warning=FALSE}
+#Run CAP analysis to identify predictor species
+vare.cap <- capscale(eDNA_long_all_wide2_sep ~ Year+two_month_sst+station , data=sampledf_year_site, dist="bray")
+summary(vare.cap) -> cap_sum
+
+#Retain species scores
+sppscores(vare.cap) <- eDNA_long_all_wide2_sep
+
+as.data.frame(vegan::scores(vare.cap, display="species")) %>% 
+  rownames_to_column(var = "sample") %>% 
+  as.tibble %>% 
+ mutate(dist = sqrt((CAP1 - 0)^2 + (CAP2 - 0)^2)) %>% 
+  top_n(10, dist) -> top_species
+top_species <- as.data.frame(top_species)
+rownames(top_species) <- top_species$sample
+
+# Now add the environmental variables as arrows
+arrowmat <- top_species
+
+
+# Add labels, make a data.frame
+arrowdf <- data.frame(labels = rownames(arrowmat), arrowmat)
+
+# Define the arrow aesthetic mapping
+arrow_map <- aes(xend = CAP1, 
+                 yend = CAP2, 
+                 x = 0, 
+                 y = 0, 
+                 shape = NULL, 
+                 color = NULL, 
+                 label = labels)
+
+label_map <- aes(x = .75 * CAP1, 
+                 y = 1.3 * CAP2, 
+                 shape = NULL, 
+                 color = NULL, 
+                 label = labels)
+
+arrowhead = arrow(length = unit(0.02, "npc"))
+
+# Plot CAP
+as.data.frame(vare.cap$CCA$wa) %>% 
+  rownames_to_column(var = "sample") %>% 
+  as.tibble() %>% 
+  separate(sample, into = c("Year","station"), sep=":", remove=FALSE) %>% 
+  mutate(., Year =as.integer(Year)) %>% 
+  left_join(sampledf_year_site) %>% 
+   mutate(., Station = case_when(station =="Pt.C"~"Pt. Conception",
+                                station =="SaNI"~"San Nicholas Island",
+                                station =="SDOf"~"San Diego Offshore",
+                                station =="SDIn"~"San Diego Inshore")) %>% 
+  ggplot(aes(x=CAP1, y=CAP2)) + geom_point(aes(shape=Station, col=Year), size =3) + scale_color_viridis_c() +
+  geom_segment(
+    mapping = arrow_map, 
+    size = .5, 
+    data = arrowdf, 
+    color = "grey", 
+    arrow = arrowhead
+  ) +
+  geom_text(
+    mapping = label_map, 
+    size = 4,  
+    data = arrowdf, 
+    show.legend = FALSE
+  ) + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(),  panel.border = element_rect(colour = "black", fill=NA, size=2)) +xlab(paste0("CAP1 ","(",label_percent()(cap_sum$cont$importance[2,1]),")")) +ylab(paste("CAP2","(",label_percent()(cap_sum$cont$importance[2,2]),")")) 
+
+ggsave(filename = here("analysis","figures","CAP_ord_species.png"),
+       width=24,
+       height = 12,
+       dpi = 400,
+      units = c("in"))
+
+```
+##### CAP Environmental Variables
+
+```{r, results="hide",warning=FALSE}
+#Run CAP analysis to identify predictor species
+vare.cap <- capscale(eDNA_long_all_wide2_sep ~ Year+two_month_sst+station , data=sampledf_year_site, dist="bray")
+summary(vare.cap) -> cap_sum
+
+ 
+#Retain species scores
+sppscores(vare.cap) <- eDNA_long_all_wide2_sep
+
+as.data.frame(vegan::scores(vare.cap, display="bp")) %>% 
+  rownames_to_column(var = "sample") %>% 
+  as.tibble %>% 
+ mutate(dist = sqrt((CAP1 - 0)^2 + (CAP2 - 0)^2)) %>% 
+  mutate(., new_name= case_when(sample=="Year" ~"Year",
+                                sample=="two_month_sst" ~"SST ˚C",
+                                sample=="stationSaNI" ~ "San Nicholas Island",
+                                sample =="stationSDIn" ~"San Diego Inshore",
+                                sample=="stationSDOf"~"San Diego Offshore"  ))-> cap_vars
+
+cap_vars <- as.data.frame(cap_vars)
+rownames(cap_vars) <- cap_vars$new_name
+
+# Now add the environmental variables as arrows
+arrowmat <- cap_vars
+
+
+# Add labels, make a data.frame
+arrowdf <- data.frame(labels = rownames(arrowmat), arrowmat)
+
+# Define the arrow aesthetic mapping
+arrow_map <- aes(xend = CAP1, 
+                 yend = CAP2, 
+                 x = 0, 
+                 y = 0, 
+                 shape = NULL, 
+                 color = NULL, 
+                 label = labels)
+
+label_map <- aes(x = .75 * CAP1, 
+                 y = 1.3 * CAP2, 
+                 shape = NULL, 
+                 color = NULL, 
+                 label = labels)
+
+arrowhead = arrow(length = unit(0.02, "npc"))
+library(scales)
+
+# Plot CAP
+as.data.frame(vare.cap$CCA$wa) %>% 
+  rownames_to_column(var = "sample") %>% 
+  as.tibble() %>% 
+  separate(sample, into = c("Year","station"), sep=":", remove=FALSE) %>% 
+  mutate(., Year =as.integer(Year)) %>% 
+  left_join(sampledf_year_site) %>% 
+   mutate(., Station = case_when(station =="Pt.C"~"Pt. Conception",
+                                station =="SaNI"~"San Nicholas Island",
+                                station =="SDOf"~"San Diego Offshore",
+                                station =="SDIn"~"San Diego Inshore")) %>% 
+  ggplot(aes(x=CAP1, y=CAP2)) + geom_point(aes(shape=Station, col=Year), size =3) + scale_color_viridis_c() +
+  geom_segment(
+    mapping = arrow_map, 
+    size = .5, 
+    data = arrowdf, 
+    color = "grey", 
+    arrow = arrowhead
+  ) +
+  geom_text(
+    mapping = label_map, 
+    size = 4,  
+    data = arrowdf, 
+    show.legend = FALSE
+  ) + xlab(paste0("CAP1 ","(",label_percent()(cap_sum$cont$importance[2,1]),")")) +ylab(paste("CAP2","(",label_percent()(cap_sum$cont$importance[2,2]),")")) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(),  panel.border = element_rect(colour = "black", fill=NA, size=2))
+
+
+ggsave(filename = here("analysis","figures","CAP_ord_sites.png"),
+       width=16,
+       height = 8,
+       dpi = 400,
+      units = c("in"))
+
+```
+
+# SD Offshore NMDS & Heatmap
+##### Chronological Clustering
+
+<br />
+```{r}
+#Format for dend and clustering
+b_ID_main_out_site %>% 
+mutate(.,
+station = fct_recode(station,
+"Pt. Conception" =  "80_60" ,
+"San Nicholas Island" = "86.7_50" ,
+"San Diego Inshore" = "93.3_30",
+"San Diego Offshore" = "93.3_60")
+) -> b_ID_main_out_site_f
+  
+b_ID_main_out_site_f %>%   
+  filter(., station =="San Diego Offshore") %>% 
+  dplyr::select(Year, ID_main,Normalized.biomass=  mean) %>% 
+  filter(., Normalized.biomass >0) %>% 
+  ungroup() %>% 
+  group_by(ID_main) %>% 
+  dplyr::count() %>% 
+  filter(., n> 5) -> species_to_keep_sd
+
+b_ID_main_out_site_f %>% 
+    filter(., station =="San Diego Offshore") %>% 
+  dplyr::select(Year,  ID_main,Normalized.biomass=  mean) %>% 
+  filter(., ID_main %in% species_to_keep_sd$ID_main) %>% 
+  pivot_wider(names_from=ID_main, values_from=Normalized.biomass) %>% 
+  as.data.frame()-> eDNA_long_all_wide_sd
+
+eDNA_long_all_wide_sd %>% dplyr::select(Year,station) %>% as.data.frame()-> sampledf_year_sd
+eDNA_long_all_wide_sd$Year -> rownames(sampledf_year_sd)
+
+sampledf_year_sd %>% 
+  mutate(., station2 = case_when(station =="Pt. Conception"~"80_60",
+                                station =="San Nicholas Island"~"86.7_50",
+                                station =="San Diego Offshore"~"93.3_60",
+                                station =="San Diego Inshore"~"93.3_30"),
+         Year=as.integer(Year)) %>%  
+  left_join(two_month_sst, by=c("Year"="Year","station2"="station")) -> sampledf_year_sd
+
+
+eDNA_long_all_wide_sd$Year -> rownames(eDNA_long_all_wide_sd)
+eDNA_long_all_wide_sd[,-1:-2] -> eDNA_long_all_wide_sd
+
+#Create a bray-curtis distance matrix
+diss_sd_off <- vegdist(eDNA_long_all_wide_sd, method='bray')
+
+#Run the chronological cluster; chclust is the main function from rioja
+clust_sd_off <- chclust(diss_sd_off)
+
+
+```
+
+```{r}
+##Look at the number of clusters.  Then make a category for each cluster
+ddata1 <- dendro_data_k(clust_sd_off,8)
+
+labs <- ggdendro::label(ddata1)
+moon4 <- c("black","navy",moon3,"darkred")
+p1 <- plot_ggdendro(ddata1,
+                    direction   = "tb",
+                    label.size  = 2.5,
+                    scale.color = moon4,
+                    branch.size = 0.5,
+                    expand.y    = 0.2)
+
+p1 <- p1 + theme_void() + expand_limits(x = c(-1, 32))
+p1
+
+```
+```{r, results='hide'}
+
+#Recreate above chronological clustering dendrogram but using same format as species clustering for figure
+
+BPA_9 <- data.frame(eDNA_long_all_wide_sd)
+
+dend2 <- BPA_9 %>% vegdist(., method='bray') %>% chclust() %>% as.dendrogram %>% 
+  color_branches(k=6, col = moon3)
+
+```
+
+```{r}
+#Color code names of species based on trait information
+as.data.frame(moon3) -> mooner
+mooner$clust <- seq(1,6)
+labs %>% 
+  left_join(mooner) -> labs
+
+```
+
+<br />
+
+##### Species Clustering
+
+<br />
+```{r,fig.height=8, fig.width=8}
+## Input is the distance matrix (abundance, etc), with years on x and species on y. and species names as the rownames.
+BPA <- data.frame(t(eDNA_long_all_wide_sd))
+
+colnames(BPA) <- rownames(eDNA_long_all_wide_sd)
+#BPA_1 <- BPA %>% vegdist(., method='bray') %>% hclust %>% as.dendrogram 
+
+BPA_1 <- BPA %>% vegdist(., method='bray') %>% hclust %>% as.dendrogram %>% sort(type = "nodes")
+
+#Decide on the number of branches for species, k=3
+dend <- BPA %>% vegdist(., method='bray')%>% hclust(method = "complete") %>% as.dendrogram %>% sort(type = "nodes") %>% 
+  color_branches(k=5, col=dar3)
+plot(dend)
+```
+
+
+
+```{r}
+#Color code names of species based on trait information
+as.data.frame(rownames(BPA)) -> species_names
+
+species_names %>% 
+  left_join(trait_edna, by=c("rownames(BPA)"="ID_main")) -> species_names
+
+```
+
+##### Figure S19 Heatmap
+
+```{r, fig.height=16, fig.width=8}
+#Color palette
+some_col_func <- colorspace::sequential_hcl(100,palette="BluYl")
+
+
+BPA2 <- as.matrix(log10(BPA))
+BPA2[BPA2 < 0] <- NA
+
+
+
+colseperator <- labs %>% 
+  group_by(clust) %>% 
+  dplyr::summarise(label =max(label)) %>% 
+  left_join(labs)
+
+jpeg(file = here("analysis","figures","S19_SD_Offshore_heatmap.png")
+     , width=16,
+       height = 12,
+       res = 400,
+      units = c("in"))
+gplots::heatmap.2(BPA2, 
+                  main = "",
+                  srtCol = 60,
+                  dendrogram = "both",
+                  #density.info="none",
+                  Rowv = dend,
+                  Colv = dend2, # this to make sure the columns are not ordered
+                  trace="none",          
+                  #key.xlab = "",
+                  #labCol = "",
+                  denscol = "lightseagreen",
+                  colRow = species_names$species_color,
+                  colCol = labs$moon3,
+                  margins = c(3,12),
+                  density.info = "density",
+                  key= TRUE,
+                  na.color = "White",
+                  colsep= colseperator$x, 
+                  sepcolor = "black",
+                  col = some_col_func)
+dev.off()
+
+
+gplots::heatmap.2(BPA2, 
+                  main = "eDNA All Sites",
+                  srtCol = 60,
+                  dendrogram = "both",
+                  #density.info="none",
+                  Rowv = dend,
+                  Colv = dend2, # this to make sure the columns are not ordered
+                  trace="none",          
+                  #key.xlab = "",
+                  #labCol = "",
+                  denscol = "lightseagreen",
+                  colRow = species_names$species_color,
+                  colCol = labs$moon3,
+                  margins = c(3,12),
+                  density.info = "density",
+                  key= TRUE,
+                  na.color = "White",
+                  colsep= colseperator$x, 
+                  sepcolor = "black",
+                  col = some_col_func)
+```
+
+
+##### Figure S20 NMDS
+
+```{r}
+b_ID_main_out_site_f %>% 
+    filter(., station =="San Diego Offshore") %>% 
+  dplyr::select(Year,  ID_main,Normalized.biomass=  mean) %>% 
+  filter(., ID_main %in% species_to_keep_sd$ID_main) %>% 
+  pivot_wider(names_from=ID_main, values_from=Normalized.biomass) %>% 
+  as.data.frame()-> eDNA_long_all_wide2_sd
+
+
+eDNA_long_all_wide2_sd$Year -> rownames(eDNA_long_all_wide2_sd)
+eDNA_long_all_wide2_sd[,-1:-2] -> eDNA_long_all_wide2_sd
+
+#NMDS analysis
+
+#Start with the data frame, not the distance matrix
+
+sptran1 <- eDNA_long_all_wide2_sd
+
+mds <- vegan::metaMDS(sptran1,k=2, trace=FALSE, distance = "bray",trymax=100, autotransform = FALSE)
+mds ### if stress is under .20, we are okay; if over, may need the change k to 3; 
+#stress = .157 at K3
+stressplot(mds)
+
+```
+
+
+
+
+```{r}
+
+#Make the nmds plot with ggplot2
+###Pull out species info
+mdssp <- mds$species
+spdf <- data.frame(mdssp)
+spdf %>%  drop_na() ->spdf
+spdf$species <- rownames(spdf)
+#spdf$species1 <- gsub(" ", ".", spdf$species)
+spdf1 <- spdf
+
+### This has the habitat and geographic affinities for each species
+spdf1 %>% 
+  left_join(trait_edna, by=c("species"="ID_main")) -> spdf1
+as.factor(spdf1$Type) ->spdf1$Type
+
+
+#Pull out site info
+scor <- scores(mds, display=c("sites","species"))
+score1 <- data.frame(eDNA_long_all_wide2_sd,scor)
+score1$rowname <- rownames(score1)
+labs$label -> years
+
+as.data.frame(years) -> nmdscov
+rownames(nmdscov) <- nmdscov$years
+nmdscov$rowname <- rownames(nmdscov)
+score2 <- merge(score1, nmdscov, by="rowname", all.x=T, all.y=F)
+score2 <- score2[order(score2$year),] 
+
+### from chron cluster
+### assign a cluster to each year
+score2$cluster <- as.character(labs$clust)
+
+
+spdf1 %>% 
+  dplyr::select(Type,species_color)%>% distinct() %>% 
+  arrange(Type) %>%  dplyr::select(species_color) -> color_order_nmds
+  
+ggplot()+ 
+  geom_vline(xintercept=0,colour="grey50") +
+  geom_hline(yintercept=0,colour="grey50") +
+  geom_path (data=score2, aes(x = NMDS1, y = NMDS2, alpha=0.2)) +
+  geom_text_repel(data=spdf1,  aes(x = MDS1, y = MDS2, label= species, color=Type), size=6, fontface='italic') + 	
+  geom_text_repel(data=score2, aes(x = NMDS1, y = NMDS2,label= years, colour=cluster), size=10) + 
+  scale_colour_manual(values = c("navy","darkred",moon3,color_order_nmds$species_color)) +
+  theme_bw() +
+  labs(list(title="", x="NMDS1",y="NMDS2"))  + xlab("NMDS1") +ylab("NMDS2")+
+  theme(  panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.x=element_text(size=14, angle=0), 
+          axis.text.y=element_text(size=14, angle=0), 
+          axis.title.x=element_text(size=18, angle=0), 
+          axis.title.y=element_text(size=18, angle=90),
+          strip.background = element_rect(fill='white'), 
+          strip.text.x=element_text(size=15),
+          legend.text=element_text(size=10),
+          legend.title=element_text(size=15),
+          axis.line=element_line(colour='black'),
+          legend.position="none")	
+
+ggsave(filename = here("analysis","figures","S20_SD_offshore_NMDS.png"),
+       width=30,
+       height = 30,
+       dpi = 400,
+      units = c("in"))
+```
+
+##### CAP ordination
+<br />
+
+```{r, results="hide",warning=FALSE}
+#Run CAP analysis to identify predictor species
+vare.cap <- capscale(eDNA_long_all_wide2_sd ~ two_month_sst + Year , data=sampledf_year_sd, dist="bray")
+summary(vare.cap) -> cap_sum
+
+#Retain species scores
+sppscores(vare.cap) <- eDNA_long_all_wide2_sd
+
+as.data.frame(vegan::scores(vare.cap, display="species")) %>% 
+  rownames_to_column(var = "sample") %>% 
+  as.tibble %>% 
+ mutate(dist = sqrt((CAP1 - 0)^2 + (CAP2 - 0)^2)) %>% 
+  top_n(5, dist) -> top_species
+top_species <- as.data.frame(top_species)
+rownames(top_species) <- top_species$sample
+
+# Now add the environmental variables as arrows
+arrowmat <- top_species
+
+
+# Add labels, make a data.frame
+arrowdf <- data.frame(labels = rownames(arrowmat), arrowmat)
+
+# Define the arrow aesthetic mapping
+arrow_map <- aes(xend = CAP1, 
+                 yend = CAP2, 
+                 x = 0, 
+                 y = 0, 
+                 shape = NULL, 
+                 color = NULL, 
+                 label = labels)
+
+label_map <- aes(x = .75 * CAP1, 
+                 y = 1.3 * CAP2, 
+                 shape = NULL, 
+                 color = NULL, 
+                 label = labels)
+
+arrowhead = arrow(length = unit(0.02, "npc"))
+
+# Plot CAP
+as.data.frame(vare.cap$CCA$wa) %>% 
+  rownames_to_column(var = "sample") %>% 
+  as.tibble() %>% 
+  mutate(., Station ="San Diego Offshore",
+         Year =as.integer(sample)) %>% 
+  left_join(sampledf_year_sd) %>% 
+  mutate(.,          `SST ˚C` = two_month_sst) %>% 
+  ggplot(aes(x=CAP1, y=CAP2))  + 
+  geom_text_repel(aes(label= Year, color=`SST ˚C`), size=6, fontface='italic') + 	
+  scale_color_viridis_c() +
+  geom_segment(
+    mapping = arrow_map, 
+    size = .5, 
+    data = arrowdf, 
+    color = "grey", 
+    arrow = arrowhead
+  ) +
+  geom_text(
+    mapping = label_map, 
+    size = 4,  
+    data = arrowdf, 
+    show.legend = FALSE
+  ) + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(),  panel.border = element_rect(colour = "black", fill=NA, size=2)) +xlab(paste0("CAP1 ","(",label_percent()(cap_sum$cont$importance[2,1]),")")) +ylab(paste("CAP2","(",label_percent()(cap_sum$cont$importance[2,2]),")")) 
+
+ggsave(filename = here("analysis","figures","CAP_ord_species_sdoff.png"),
+       width=24,
+       height = 12,
+       dpi = 400,
+      units = c("in"))
+
+```
+##### CAP Environmental Variables
+
+```{r, results="hide",warning=FALSE}
+#Run CAP analysis to identify predictor species
+vare.cap <- capscale(eDNA_long_all_wide2_sd ~ two_month_sst + Year , data=sampledf_year_sd, dist="bray")
+summary(vare.cap) -> cap_sum
+
+ 
+#Retain species scores
+sppscores(vare.cap) <- eDNA_long_all_wide2_sd
+
+as.data.frame(vegan::scores(vare.cap, display="bp")) %>% 
+  rownames_to_column(var = "sample") %>% 
+  as.tibble %>% 
+ mutate(dist = sqrt((CAP1 - 0)^2 + (CAP2 - 0)^2)) %>% 
+  mutate(., new_name= case_when(sample=="Year" ~"Year",
+                                sample=="two_month_sst" ~"SST ˚C"))-> cap_vars
+
+cap_vars <- as.data.frame(cap_vars)
+rownames(cap_vars) <- cap_vars$new_name
+
+# Now add the environmental variables as arrows
+arrowmat <- cap_vars
+
+
+# Add labels, make a data.frame
+arrowdf <- data.frame(labels = rownames(arrowmat), arrowmat)
+
+# Define the arrow aesthetic mapping
+arrow_map <- aes(xend = CAP1, 
+                 yend = CAP2, 
+                 x = 0, 
+                 y = 0, 
+                 shape = NULL, 
+                 color = NULL, 
+                 label = labels)
+
+label_map <- aes(x = .75 * CAP1, 
+                 y = 1.3 * CAP2, 
+                 shape = NULL, 
+                 color = NULL, 
+                 label = labels)
+
+arrowhead = arrow(length = unit(0.02, "npc"))
+
+# Plot CAP
+as.data.frame(vare.cap$CCA$wa) %>% 
+  rownames_to_column(var = "sample") %>% 
+  as.tibble() %>% 
+ mutate(., Station ="San Diego Offshore",
+         Year =as.integer(sample)) %>% 
+  left_join(sampledf_year_sd) %>% 
+  mutate(.,`SST ˚C` = two_month_sst) %>% 
+  ggplot(aes(x=CAP1, y=CAP2)) +   geom_text_repel(aes(label= Year, color=`SST ˚C`), size=6, fontface='italic') + 	
+   scale_color_viridis_c() +
+  geom_segment(
+    mapping = arrow_map, 
+    size = .5, 
+    data = arrowdf, 
+    color = "grey", 
+    arrow = arrowhead
+  ) +
+  geom_text(
+    mapping = label_map, 
+    size = 4,  
+    data = arrowdf, 
+    show.legend = FALSE
+  ) + xlab(paste0("CAP1 ","(",label_percent()(cap_sum$cont$importance[2,1]),")")) +ylab(paste("CAP2","(",label_percent()(cap_sum$cont$importance[2,2]),")")) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(),  panel.border = element_rect(colour = "black", fill=NA, size=2))
+
+
+ggsave(filename = here("analysis","figures","CAP_ord_sd_env.png"),
+       width=16,
+       height = 8,
+       dpi = 400,
+      units = c("in"))
+
+```
+
+
+# SD Inshore NMDS & Heatmap
+##### Chronological Clustering
+
+<br />
+```{r}
+b_ID_main_out_site_f %>%   
+  filter(., station =="San Diego Inshore") %>% 
+  dplyr::select(Year, ID_main,Normalized.biomass=  mean) %>% 
+  filter(., Normalized.biomass >0) %>% 
+  ungroup() %>% 
+  group_by(ID_main) %>% 
+  dplyr::count() %>% 
+  filter(., n> 5) -> species_to_keep_sdi
+
+b_ID_main_out_site_f %>% 
+    filter(., station =="San Diego Inshore") %>% 
+  dplyr::select(Year,  ID_main,Normalized.biomass=  mean) %>% 
+  filter(., ID_main %in% species_to_keep_sdi$ID_main) %>% 
+  pivot_wider(names_from=ID_main, values_from=Normalized.biomass) %>% 
+  as.data.frame()-> eDNA_long_all_wide_sdi
+
+
+eDNA_long_all_wide_sdi %>% dplyr::select(Year,station) %>% as.data.frame()-> sampledf_year_sdi
+eDNA_long_all_wide_sdi$Year -> rownames(sampledf_year_sdi)
+
+sampledf_year_sdi %>% 
+  mutate(., station2 = case_when(station =="Pt. Conception"~"80_60",
+                                station =="San Nicholas Island"~"86.7_50",
+                                station =="San Diego Offshore"~"93.3_60",
+                                station =="San Diego Inshore"~"93.3_30"),
+         Year=as.integer(Year)) %>%  
+  left_join(two_month_sst, by=c("Year"="Year","station2"="station")) -> sampledf_year_sdi
+
+eDNA_long_all_wide_sdi$Year -> rownames(eDNA_long_all_wide_sdi)
+eDNA_long_all_wide_sdi[,-1:-2] -> eDNA_long_all_wide_sdi
+
+#Create a bray-curtis distance matrix
+diss_sd_in <- vegdist(eDNA_long_all_wide_sdi, method='bray')
+
+#Run the chronological cluster; chclust is the main function from rioja
+clust_sd_in <- chclust(diss_sd_in)
+
+
+```
+
+```{r}
+##Look at the number of clusters.  Then make a category for each cluster
+ddata1 <- dendro_data_k(clust_sd_in,8)
+
+labs <- ggdendro::label(ddata1)
+
+moon4 <- c("black","navy",moon3,"darkred")
+p1 <- plot_ggdendro(ddata1,
+                    direction   = "tb",
+                    label.size  = 2.5,
+                    scale.color = moon4,
+                    branch.size = 0.5,
+                    expand.y    = 0.2)
+
+p1 <- p1 + theme_void() + expand_limits(x = c(-1, 32))
+p1
+
+```
+```{r, results='hide'}
+
+#Recreate above chronological clustering dendrogram but using same format as species clustering for figure
+
+BPA_9 <- data.frame(eDNA_long_all_wide_sdi)
+
+dend2 <- BPA_9 %>% vegdist(., method='bray') %>% chclust() %>% as.dendrogram %>% 
+  color_branches(k=6, col = moon3)
+
+```
+
+```{r}
+#Color code names of species based on trait information
+as.data.frame(moon3) -> mooner
+mooner$clust <- seq(1,6)
+
+labs %>% 
+  left_join(mooner) -> labs
+
+```
+
+<br />
+
+##### Species Clustering
+
+<br />
+```{r,fig.height=8, fig.width=8}
+## Input is the distance matrix (abundance, etc), with years on x and species on y. and species names as the rownames.
+BPA <- data.frame(t(eDNA_long_all_wide_sdi))
+
+colnames(BPA) <- rownames(eDNA_long_all_wide_sdi)
+#BPA_1 <- BPA %>% vegdist(., method='bray') %>% hclust %>% as.dendrogram 
+
+BPA_1 <- BPA %>% vegdist(., method='bray') %>% hclust %>% as.dendrogram %>% sort(type = "nodes")
+
+#Decide on the number of branches for species, k=3
+dend <- BPA %>% vegdist(., method='bray')%>% hclust(method = "complete") %>% as.dendrogram %>% sort(type = "nodes") %>% 
+  color_branches(k=5, col=dar3)
+plot(dend)
+```
+
+
+
+```{r}
+#Color code names of species based on trait information
+as.data.frame(rownames(BPA)) -> species_names
+
+species_names %>% 
+  left_join(trait_edna, by=c("rownames(BPA)"="ID_main")) -> species_names
+
+```
+
+##### Figure S21 Heatmap
+
+```{r, fig.height=16, fig.width=8}
+#Color palette
+some_col_func <- colorspace::sequential_hcl(100,palette="BluYl")
+
+
+BPA2 <- as.matrix(log10(BPA))
+BPA2[BPA2 < 0] <- NA
+
+
+
+colseperator <- labs %>% 
+  group_by(clust) %>% 
+  dplyr::summarise(label =max(label)) %>% 
+  left_join(labs)
+
+jpeg(file = here("analysis","figures","S21_SD_Inshore_heatmap.png")
+     , width=16,
+       height = 12,
+       res = 400,
+      units = c("in"))
+gplots::heatmap.2(BPA2, 
+                  main = "",
+                  srtCol = 60,
+                  dendrogram = "both",
+                  #density.info="none",
+                  Rowv = dend,
+                  Colv = dend2, # this to make sure the columns are not ordered
+                  trace="none",          
+                  #key.xlab = "",
+                  #labCol = "",
+                  denscol = "lightseagreen",
+                  colRow = species_names$species_color,
+                  colCol = labs$moon3,
+                  margins = c(3,12),
+                  density.info = "density",
+                  key= TRUE,
+                  na.color = "White",
+                  colsep= colseperator$x, 
+                  sepcolor = "black",
+                  col = some_col_func)
+dev.off()
+
+
+gplots::heatmap.2(BPA2, 
+                  main = "eDNA SD Inshore",
+                  srtCol = 60,
+                  dendrogram = "both",
+                  #density.info="none",
+                  Rowv = dend,
+                  Colv = dend2, # this to make sure the columns are not ordered
+                  trace="none",          
+                  #key.xlab = "",
+                  #labCol = "",
+                  denscol = "lightseagreen",
+                  colRow = species_names$species_color,
+                  colCol = labs$moon3,
+                  margins = c(3,12),
+                  density.info = "density",
+                  key= TRUE,
+                  na.color = "White",
+                  colsep= colseperator$x, 
+                  sepcolor = "black",
+                  col = some_col_func)
+```
+
+
+##### Figure S22 NMDS
+
+```{r}
+b_ID_main_out_site_f %>% 
+    filter(., station =="San Diego Inshore") %>% 
+  dplyr::select(Year,  ID_main,Normalized.biomass=  mean) %>% 
+  filter(., ID_main %in% species_to_keep_sd$ID_main) %>% 
+  pivot_wider(names_from=ID_main, values_from=Normalized.biomass) %>% 
+  as.data.frame()-> eDNA_long_all_wide2_sdi
+
+
+eDNA_long_all_wide2_sdi$Year -> rownames(eDNA_long_all_wide2_sdi)
+eDNA_long_all_wide2_sdi[,-1:-2] -> eDNA_long_all_wide2_sdi
+
+#NMDS analysis
+
+#Start with the data frame, not the distance matrix
+
+sptran1 <- eDNA_long_all_wide2_sdi
+
+mds <- vegan::metaMDS(sptran1,k=2, trace=FALSE, distance = "bray",trymax=100, autotransform = FALSE)
+mds ### if stress is under .20, we are okay; if over, may need the change k to 3; 
+#stress = .157 at K3
+stressplot(mds)
+
+```
+
+
+```{r}
+
+#Make the nmds plot with ggplot2
+###Pull out species info
+mdssp <- mds$species
+spdf <- data.frame(mdssp)
+spdf %>%  drop_na() ->spdf
+spdf$species <- rownames(spdf)
+#spdf$species1 <- gsub(" ", ".", spdf$species)
+spdf1 <- spdf
+
+### This has the habitat and geographic affinities for each species
+spdf1 %>% 
+  left_join(trait_edna, by=c("species"="ID_main")) -> spdf1
+as.factor(spdf1$Type) ->spdf1$Type
+
+
+#Pull out site info
+scor <- scores(mds, display=c("sites","species"))
+score1 <- data.frame(eDNA_long_all_wide2_sdi,scor)
+score1$rowname <- rownames(score1)
+labs$label -> years
+
+as.data.frame(years) -> nmdscov
+rownames(nmdscov) <- nmdscov$years
+nmdscov$rowname <- rownames(nmdscov)
+score2 <- merge(score1, nmdscov, by="rowname", all.x=T, all.y=F)
+score2 <- score2[order(score2$year),] 
+
+### from chron cluster
+### assign a cluster to each year
+score2$cluster <- as.character(labs$clust)
+
+
+spdf1 %>% 
+  dplyr::select(Type,species_color)%>% distinct() %>% 
+  arrange(Type) %>%  dplyr::select(species_color) -> color_order_nmds
+  
+ggplot()+ 
+  geom_vline(xintercept=0,colour="grey50") +
+  geom_hline(yintercept=0,colour="grey50") +
+  geom_path (data=score2, aes(x = NMDS1, y = NMDS2, alpha=0.2)) +
+  geom_text_repel(data=spdf1,  aes(x = MDS1, y = MDS2, label= species, color=Type), size=6, fontface='italic') + 	
+  geom_text_repel(data=score2, aes(x = NMDS1, y = NMDS2,label= years, colour=cluster), size=10) + 
+  scale_colour_manual(values = c("navy","darkred",moon3,color_order_nmds$species_color)) +
+  theme_bw() +
+  labs(list(title="", x="NMDS1",y="NMDS2"))  + xlab("NMDS1") +ylab("NMDS2")+
+  theme(  panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.x=element_text(size=14, angle=0), 
+          axis.text.y=element_text(size=14, angle=0), 
+          axis.title.x=element_text(size=18, angle=0), 
+          axis.title.y=element_text(size=18, angle=90),
+          strip.background = element_rect(fill='white'), 
+          strip.text.x=element_text(size=15),
+          legend.text=element_text(size=10),
+          legend.title=element_text(size=15),
+          axis.line=element_line(colour='black'),
+          legend.position="none")	
+
+ggsave(filename = here("analysis","figures","S22_SD_inshore_NMDS.png"),
+       width=30,
+       height = 30,
+       dpi = 400,
+      units = c("in"))
+```
+
+##### CAP ordination
+<br />
+
+```{r, results="hide",warning=FALSE}
+#Run CAP analysis to identify predictor species
+vare.cap <- capscale(eDNA_long_all_wide_sdi ~ two_month_sst + Year , data=sampledf_year_sdi, dist="bray")
+summary(vare.cap) -> cap_sum
+
+#Retain species scores
+sppscores(vare.cap) <- eDNA_long_all_wide_sdi
+
+as.data.frame(vegan::scores(vare.cap, display="species")) %>% 
+  rownames_to_column(var = "sample") %>% 
+  as.tibble %>% 
+ mutate(dist = sqrt((CAP1 - 0)^2 + (CAP2 - 0)^2)) %>% 
+  top_n(5, dist) -> top_species
+top_species <- as.data.frame(top_species)
+rownames(top_species) <- top_species$sample
+
+# Now add the environmental variables as arrows
+arrowmat <- top_species
+
+
+# Add labels, make a data.frame
+arrowdf <- data.frame(labels = rownames(arrowmat), arrowmat)
+
+# Define the arrow aesthetic mapping
+arrow_map <- aes(xend = CAP1, 
+                 yend = CAP2, 
+                 x = 0, 
+                 y = 0, 
+                 shape = NULL, 
+                 color = NULL, 
+                 label = labels)
+
+label_map <- aes(x = .75 * CAP1, 
+                 y = 1.3 * CAP2, 
+                 shape = NULL, 
+                 color = NULL, 
+                 label = labels)
+
+arrowhead = arrow(length = unit(0.02, "npc"))
+
+# Plot CAP
+as.data.frame(vare.cap$CCA$wa) %>% 
+  rownames_to_column(var = "sample") %>% 
+  as.tibble() %>% 
+  mutate(., Station ="San Diego Inshore",
+         Year =as.integer(sample)) %>% 
+  left_join(sampledf_year_sdi) %>% 
+  mutate(.,          `SST ˚C` = two_month_sst) %>% 
+  ggplot(aes(x=CAP1, y=CAP2))  + 
+  geom_text_repel(aes(label= Year, color=`SST ˚C`), size=6, fontface='italic') + 	
+  scale_color_viridis_c() +
+  geom_segment(
+    mapping = arrow_map, 
+    size = .5, 
+    data = arrowdf, 
+    color = "grey", 
+    arrow = arrowhead
+  ) +
+  geom_text(
+    mapping = label_map, 
+    size = 4,  
+    data = arrowdf, 
+    show.legend = FALSE
+  ) + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(),  panel.border = element_rect(colour = "black", fill=NA, size=2)) +xlab(paste0("CAP1 ","(",label_percent()(cap_sum$cont$importance[2,1]),")")) +ylab(paste("CAP2","(",label_percent()(cap_sum$cont$importance[2,2]),")")) 
+
+ggsave(filename = here("analysis","figures","CAP_ord_species_sdi.png"),
+       width=24,
+       height = 12,
+       dpi = 400,
+      units = c("in"))
+
+```
+##### CAP Environmental Variables
+
+```{r, results="hide",warning=FALSE}
+#Run CAP analysis to identify predictor species
+vare.cap <- capscale(eDNA_long_all_wide_sdi ~ two_month_sst + Year , data=sampledf_year_sdi, dist="bray")
+summary(vare.cap) -> cap_sum
+
+ 
+#Retain species scores
+sppscores(vare.cap) <- eDNA_long_all_wide_sdi
+
+as.data.frame(vegan::scores(vare.cap, display="bp")) %>% 
+  rownames_to_column(var = "sample") %>% 
+  as.tibble %>% 
+ mutate(dist = sqrt((CAP1 - 0)^2 + (CAP2 - 0)^2)) %>% 
+  mutate(., new_name= case_when(sample=="Year" ~"Year",
+                                sample=="two_month_sst" ~"SST ˚C"))-> cap_vars
+
+cap_vars <- as.data.frame(cap_vars)
+rownames(cap_vars) <- cap_vars$new_name
+
+# Now add the environmental variables as arrows
+arrowmat <- cap_vars
+
+
+# Add labels, make a data.frame
+arrowdf <- data.frame(labels = rownames(arrowmat), arrowmat)
+
+# Define the arrow aesthetic mapping
+arrow_map <- aes(xend = CAP1, 
+                 yend = CAP2, 
+                 x = 0, 
+                 y = 0, 
+                 shape = NULL, 
+                 color = NULL, 
+                 label = labels)
+
+label_map <- aes(x = .75 * CAP1, 
+                 y = 1.3 * CAP2, 
+                 shape = NULL, 
+                 color = NULL, 
+                 label = labels)
+
+arrowhead = arrow(length = unit(0.02, "npc"))
+
+# Plot CAP
+as.data.frame(vare.cap$CCA$wa) %>% 
+  rownames_to_column(var = "sample") %>% 
+  as.tibble() %>% 
+ mutate(., Station ="San Diego Offshore",
+         Year =as.integer(sample)) %>% 
+  left_join(sampledf_year_sdi) %>% 
+  mutate(.,`SST ˚C` = two_month_sst) %>% 
+  ggplot(aes(x=CAP1, y=CAP2)) +   geom_text_repel(aes(label= Year, color=`SST ˚C`), size=6, fontface='italic') + 	
+   scale_color_viridis_c() +
+  geom_segment(
+    mapping = arrow_map, 
+    size = .5, 
+    data = arrowdf, 
+    color = "grey", 
+    arrow = arrowhead
+  ) +
+  geom_text(
+    mapping = label_map, 
+    size = 4,  
+    data = arrowdf, 
+    show.legend = FALSE
+  ) + xlab(paste0("CAP1 ","(",label_percent()(cap_sum$cont$importance[2,1]),")")) +ylab(paste("CAP2","(",label_percent()(cap_sum$cont$importance[2,2]),")")) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(),  panel.border = element_rect(colour = "black", fill=NA, size=2))
+
+
+ggsave(filename = here("analysis","figures","CAP_ord_sdi_env.png"),
+       width=16,
+       height = 8,
+       dpi = 400,
+      units = c("in"))
+
+```
+
+
+# Pt. Conception NMDS & Heatmap
+##### Chronological Clustering
+
+<br />
+```{r}
+b_ID_main_out_site_f %>%   
+  filter(., station =="Pt. Conception") %>% 
+  dplyr::select(Year, ID_main,Normalized.biomass=  mean) %>% 
+  filter(., Normalized.biomass >0) %>% 
+  ungroup() %>% 
+  group_by(ID_main) %>% 
+  dplyr::count() %>% 
+  filter(., n> 5) -> species_to_keep_p.c
+
+b_ID_main_out_site_f %>% 
+    filter(., station =="Pt. Conception") %>% 
+  dplyr::select(Year,  ID_main,Normalized.biomass=  mean) %>% 
+  filter(., ID_main %in% species_to_keep_sdi$ID_main) %>% 
+  pivot_wider(names_from=ID_main, values_from=Normalized.biomass) %>% 
+  as.data.frame()-> eDNA_long_all_wide_p.c
+
+eDNA_long_all_wide_p.c %>% dplyr::select(Year,station) %>% as.data.frame()-> sampledf_year_ptc
+eDNA_long_all_wide_p.c$Year -> rownames(sampledf_year_ptc)
+
+sampledf_year_ptc %>% 
+  mutate(., station2 = case_when(station =="Pt. Conception"~"80_60",
+                                station =="San Nicholas Island"~"86.7_50",
+                                station =="San Diego Offshore"~"93.3_60",
+                                station =="San Diego Inshore"~"93.3_30"),
+         Year=as.integer(Year)) %>%  
+  left_join(two_month_sst, by=c("Year"="Year","station2"="station")) -> sampledf_year_ptc
+
+eDNA_long_all_wide_p.c$Year -> rownames(eDNA_long_all_wide_p.c)
+eDNA_long_all_wide_p.c[,-1:-2] -> eDNA_long_all_wide_p.c
+
+#Create a bray-curtis distance matrix
+diss_p.c <- vegdist(eDNA_long_all_wide_p.c, method='bray')
+
+#Run the chronological cluster; chclust is the main function from rioja
+clust_p.c <- chclust(diss_p.c)
+
+
+```
+
+```{r}
+##Look at the number of clusters.  Then make a category for each cluster
+ddata1 <- dendro_data_k(clust_p.c,8)
+
+labs <- ggdendro::label(ddata1)
+
+moon4 <- c("black","navy",moon3,"darkred")
+p1 <- plot_ggdendro(ddata1,
+                    direction   = "tb",
+                    label.size  = 2.5,
+                    scale.color = moon4,
+                    branch.size = 0.5,
+                    expand.y    = 0.2)
+
+p1 <- p1 + theme_void() + expand_limits(x = c(-1, 32))
+p1
+
+```
+```{r, results='hide'}
+
+#Recreate above chronological clustering dendrogram but using same format as species clustering for figure
+
+BPA_9 <- data.frame(eDNA_long_all_wide_p.c)
+
+dend2 <- BPA_9 %>% vegdist(., method='bray') %>% chclust() %>% as.dendrogram %>% 
+  color_branches(k=6, col = moon3)
+
+```
+
+```{r}
+#Color code names of species based on trait information
+as.data.frame(moon3) -> mooner
+mooner$clust <- seq(1,6)
+
+labs %>% 
+  left_join(mooner) -> labs
+
+```
+
+<br />
+
+##### Species Clustering
+
+<br />
+```{r,fig.height=8, fig.width=8}
+## Input is the distance matrix (abundance, etc), with years on x and species on y. and species names as the rownames.
+BPA <- data.frame(t(eDNA_long_all_wide_p.c))
+
+colnames(BPA) <- rownames(eDNA_long_all_wide_p.c)
+#BPA_1 <- BPA %>% vegdist(., method='bray') %>% hclust %>% as.dendrogram 
+
+BPA_1 <- BPA %>% vegdist(., method='bray') %>% hclust %>% as.dendrogram %>% sort(type = "nodes")
+
+#Decide on the number of branches for species, k=3
+dend <- BPA %>% vegdist(., method='bray')%>% hclust(method = "complete") %>% as.dendrogram %>% sort(type = "nodes") %>% 
+  color_branches(k=5, col=dar3)
+plot(dend)
+```
+
+
+
+```{r}
+#Color code names of species based on trait information
+as.data.frame(rownames(BPA)) -> species_names
+
+species_names %>% 
+  left_join(trait_edna, by=c("rownames(BPA)"="ID_main")) -> species_names
+
+```
+
+##### Figure S23 Heatmap
+
+```{r, fig.height=16, fig.width=8}
+#Color palette
+some_col_func <- colorspace::sequential_hcl(100,palette="BluYl")
+
+
+BPA2 <- as.matrix(log10(BPA))
+BPA2[BPA2 < 0] <- NA
+
+
+
+colseperator <- labs %>% 
+  group_by(clust) %>% 
+  dplyr::summarise(label =max(label)) %>% 
+  left_join(labs)
+
+jpeg(file = here("analysis","figures","S23_Pt.Conception_heatmap.png")
+     , width=16,
+       height = 12,
+       res = 400,
+      units = c("in"))
+gplots::heatmap.2(BPA2, 
+                  main = "",
+                  srtCol = 60,
+                  dendrogram = "both",
+                  #density.info="none",
+                  Rowv = dend,
+                  Colv = dend2, # this to make sure the columns are not ordered
+                  trace="none",          
+                  #key.xlab = "",
+                  #labCol = "",
+                  denscol = "lightseagreen",
+                  colRow = species_names$species_color,
+                  colCol = labs$moon3,
+                  margins = c(3,12),
+                  density.info = "density",
+                  key= TRUE,
+                  na.color = "White",
+                  colsep= colseperator$x, 
+                  sepcolor = "black",
+                  col = some_col_func)
+dev.off()
+
+
+gplots::heatmap.2(BPA2, 
+                  main = "eDNA Pt. Conception",
+                  srtCol = 60,
+                  dendrogram = "both",
+                  #density.info="none",
+                  Rowv = dend,
+                  Colv = dend2, # this to make sure the columns are not ordered
+                  trace="none",          
+                  #key.xlab = "",
+                  #labCol = "",
+                  denscol = "lightseagreen",
+                  colRow = species_names$species_color,
+                  colCol = labs$moon3,
+                  margins = c(3,12),
+                  density.info = "density",
+                  key= TRUE,
+                  na.color = "White",
+                  colsep= colseperator$x, 
+                  sepcolor = "black",
+                  col = some_col_func)
+```
+
+
+##### Figure S24 NMDS
+
+```{r}
+b_ID_main_out_site_f %>% 
+    filter(., station =="Pt. Conception") %>% 
+  dplyr::select(Year,  ID_main,Normalized.biomass=  mean) %>% 
+  filter(., ID_main %in% species_to_keep_sd$ID_main) %>% 
+  pivot_wider(names_from=ID_main, values_from=Normalized.biomass) %>% 
+  as.data.frame()-> eDNA_long_all_wide2_p.c
+
+
+eDNA_long_all_wide2_p.c$Year -> rownames(eDNA_long_all_wide2_p.c)
+eDNA_long_all_wide2_p.c[,-1:-2] -> eDNA_long_all_wide2_p.c
+
+#NMDS analysis
+
+#Start with the data frame, not the distance matrix
+
+sptran1 <- eDNA_long_all_wide2_p.c
+
+mds <- vegan::metaMDS(sptran1,k=2, trace=FALSE, distance = "bray",trymax=100, autotransform = FALSE)
+mds ### if stress is under .20, we are okay; if over, may need the change k to 3; 
+#stress = .157 at K3
+stressplot(mds)
+
+```
+
+
+```{r}
+
+#Make the nmds plot with ggplot2
+###Pull out species info
+mdssp <- mds$species
+spdf <- data.frame(mdssp)
+spdf %>%  drop_na() ->spdf
+spdf$species <- rownames(spdf)
+#spdf$species1 <- gsub(" ", ".", spdf$species)
+spdf1 <- spdf
+
+### This has the habitat and geographic affinities for each species
+spdf1 %>% 
+  left_join(trait_edna, by=c("species"="ID_main")) -> spdf1
+as.factor(spdf1$Type) ->spdf1$Type
+
+
+#Pull out site info
+scor <- scores(mds, display=c("sites","species"))
+score1 <- data.frame(eDNA_long_all_wide2_p.c,scor)
+score1$rowname <- rownames(score1)
+labs$label -> years
+
+as.data.frame(years) -> nmdscov
+rownames(nmdscov) <- nmdscov$years
+nmdscov$rowname <- rownames(nmdscov)
+score2 <- merge(score1, nmdscov, by="rowname", all.x=T, all.y=F)
+score2 <- score2[order(score2$year),] 
+
+### from chron cluster
+### assign a cluster to each year
+score2$cluster <- as.character(labs$clust)
+
+
+spdf1 %>% 
+  dplyr::select(Type,species_color)%>% distinct() %>% 
+  arrange(Type) %>%  dplyr::select(species_color) -> color_order_nmds
+  
+ggplot()+ 
+  geom_vline(xintercept=0,colour="grey50") +
+  geom_hline(yintercept=0,colour="grey50") +
+  geom_path (data=score2, aes(x = NMDS1, y = NMDS2, alpha=0.2)) +
+  geom_text_repel(data=spdf1,  aes(x = MDS1, y = MDS2, label= species, color=Type), size=6, fontface='italic') + 	
+  geom_text_repel(data=score2, aes(x = NMDS1, y = NMDS2,label= years, colour=cluster), size=10) + 
+  scale_colour_manual(values = c("navy","darkred",moon3,color_order_nmds$species_color)) +
+  theme_bw() +
+  labs(list(title="", x="NMDS1",y="NMDS2"))  + xlab("NMDS1") +ylab("NMDS2")+
+  theme(  panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.x=element_text(size=14, angle=0), 
+          axis.text.y=element_text(size=14, angle=0), 
+          axis.title.x=element_text(size=18, angle=0), 
+          axis.title.y=element_text(size=18, angle=90),
+          strip.background = element_rect(fill='white'), 
+          strip.text.x=element_text(size=15),
+          legend.text=element_text(size=10),
+          legend.title=element_text(size=15),
+          axis.line=element_line(colour='black'),
+          legend.position="none")	
+
+ggsave(filename = here("analysis","figures","S24_Pt.Conception_NMDS.png"),
+       width=30,
+       height = 30,
+       dpi = 400,
+      units = c("in"))
+```
+##### CAP ordination
+<br />
+
+```{r, results="hide",warning=FALSE}
+#Run CAP analysis to identify predictor species
+vare.cap <- capscale(eDNA_long_all_wide_p.c ~ two_month_sst + Year , data=sampledf_year_ptc, dist="bray")
+summary(vare.cap) -> cap_sum
+
+#Retain species scores
+sppscores(vare.cap) <- eDNA_long_all_wide_p.c
+
+as.data.frame(vegan::scores(vare.cap, display="species")) %>% 
+  rownames_to_column(var = "sample") %>% 
+  as.tibble %>% 
+ mutate(dist = sqrt((CAP1 - 0)^2 + (CAP2 - 0)^2)) %>% 
+  top_n(5, dist) -> top_species
+top_species <- as.data.frame(top_species)
+rownames(top_species) <- top_species$sample
+
+# Now add the environmental variables as arrows
+arrowmat <- top_species
+
+
+# Add labels, make a data.frame
+arrowdf <- data.frame(labels = rownames(arrowmat), arrowmat)
+
+# Define the arrow aesthetic mapping
+arrow_map <- aes(xend = CAP1, 
+                 yend = CAP2, 
+                 x = 0, 
+                 y = 0, 
+                 shape = NULL, 
+                 color = NULL, 
+                 label = labels)
+
+label_map <- aes(x = .75 * CAP1, 
+                 y = 1.3 * CAP2, 
+                 shape = NULL, 
+                 color = NULL, 
+                 label = labels)
+
+arrowhead = arrow(length = unit(0.02, "npc"))
+
+# Plot CAP
+as.data.frame(vare.cap$CCA$wa) %>% 
+  rownames_to_column(var = "sample") %>% 
+  as.tibble() %>% 
+  mutate(., Station ="Pt. Conception",
+         Year =as.integer(sample)) %>% 
+  left_join(sampledf_year_ptc) %>% 
+  mutate(.,          `SST ˚C` = two_month_sst) %>% 
+  ggplot(aes(x=CAP1, y=CAP2))  + 
+  geom_text_repel(aes(label= Year, color=`SST ˚C`), size=6, fontface='italic') + 	
+  scale_color_viridis_c() +
+  geom_segment(
+    mapping = arrow_map, 
+    size = .5, 
+    data = arrowdf, 
+    color = "grey", 
+    arrow = arrowhead
+  ) +
+  geom_text(
+    mapping = label_map, 
+    size = 4,  
+    data = arrowdf, 
+    show.legend = FALSE
+  ) + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(),  panel.border = element_rect(colour = "black", fill=NA, size=2)) +xlab(paste0("CAP1 ","(",label_percent()(cap_sum$cont$importance[2,1]),")")) +ylab(paste("CAP2","(",label_percent()(cap_sum$cont$importance[2,2]),")")) 
+
+ggsave(filename = here("analysis","figures","CAP_ord_species_ptc.png"),
+       width=24,
+       height = 12,
+       dpi = 400,
+      units = c("in"))
+
+```
+##### CAP Environmental Variables
+
+```{r, results="hide",warning=FALSE}
+#Run CAP analysis to identify predictor species
+vare.cap <- capscale(eDNA_long_all_wide_p.c ~ two_month_sst + Year , data=sampledf_year_ptc, dist="bray")
+summary(vare.cap) -> cap_sum
+
+ 
+#Retain species scores
+sppscores(vare.cap) <- eDNA_long_all_wide_p.c
+
+as.data.frame(vegan::scores(vare.cap, display="bp")) %>% 
+  rownames_to_column(var = "sample") %>% 
+  as.tibble %>% 
+ mutate(dist = sqrt((CAP1 - 0)^2 + (CAP2 - 0)^2)) %>% 
+  mutate(., new_name= case_when(sample=="Year" ~"Year",
+                                sample=="two_month_sst" ~"SST ˚C"))-> cap_vars
+
+cap_vars <- as.data.frame(cap_vars)
+rownames(cap_vars) <- cap_vars$new_name
+
+# Now add the environmental variables as arrows
+arrowmat <- cap_vars
+
+
+# Add labels, make a data.frame
+arrowdf <- data.frame(labels = rownames(arrowmat), arrowmat)
+
+# Define the arrow aesthetic mapping
+arrow_map <- aes(xend = CAP1, 
+                 yend = CAP2, 
+                 x = 0, 
+                 y = 0, 
+                 shape = NULL, 
+                 color = NULL, 
+                 label = labels)
+
+label_map <- aes(x = .75 * CAP1, 
+                 y = 1.3 * CAP2, 
+                 shape = NULL, 
+                 color = NULL, 
+                 label = labels)
+
+arrowhead = arrow(length = unit(0.02, "npc"))
+
+# Plot CAP
+as.data.frame(vare.cap$CCA$wa) %>% 
+  rownames_to_column(var = "sample") %>% 
+  as.tibble() %>% 
+ mutate(., Station ="Pt. Conception",
+         Year =as.integer(sample)) %>% 
+  left_join(sampledf_year_ptc) %>% 
+  mutate(.,`SST ˚C` = two_month_sst) %>% 
+  ggplot(aes(x=CAP1, y=CAP2)) +   geom_text_repel(aes(label= Year, color=`SST ˚C`), size=6, fontface='italic') + 	
+   scale_color_viridis_c() +
+  geom_segment(
+    mapping = arrow_map, 
+    size = .5, 
+    data = arrowdf, 
+    color = "grey", 
+    arrow = arrowhead
+  ) +
+  geom_text(
+    mapping = label_map, 
+    size = 4,  
+    data = arrowdf, 
+    show.legend = FALSE
+  ) + xlab(paste0("CAP1 ","(",label_percent()(cap_sum$cont$importance[2,1]),")")) +ylab(paste("CAP2","(",label_percent()(cap_sum$cont$importance[2,2]),")")) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(),  panel.border = element_rect(colour = "black", fill=NA, size=2))
+
+
+ggsave(filename = here("analysis","figures","CAP_ord_ptc_env.png"),
+       width=16,
+       height = 8,
+       dpi = 400,
+      units = c("in"))
+
+```
+
+
+# San Nicholas Island NMDS & Heatmap
+##### Chronological Clustering
+
+<br />
+```{r}
+b_ID_main_out_site_f %>%   
+  filter(., station =="San Nicholas Island") %>% 
+  dplyr::select(Year, ID_main,Normalized.biomass=  mean) %>% 
+  filter(., Normalized.biomass >0) %>% 
+  ungroup() %>% 
+  group_by(ID_main) %>% 
+  dplyr::count() %>% 
+  filter(., n> 5) -> species_to_keep_sni
+
+b_ID_main_out_site_f %>% 
+    filter(., station =="San Nicholas Island") %>% 
+  dplyr::select(Year,  ID_main,Normalized.biomass=  mean) %>% 
+  filter(., ID_main %in% species_to_keep_sdi$ID_main) %>% 
+  pivot_wider(names_from=ID_main, values_from=Normalized.biomass) %>% 
+  as.data.frame()-> eDNA_long_all_wide_sni
+
+
+eDNA_long_all_wide_sni %>% dplyr::select(Year,station) %>% as.data.frame()-> sampledf_year_sni
+eDNA_long_all_wide_sni$Year -> rownames(sampledf_year_sni)
+
+sampledf_year_sni %>% 
+  mutate(., station2 = case_when(station =="Pt. Conception"~"80_60",
+                                station =="San Nicholas Island"~"86.7_50",
+                                station =="San Diego Offshore"~"93.3_60",
+                                station =="San Diego Inshore"~"93.3_30"),
+         Year=as.integer(Year)) %>%  
+  left_join(two_month_sst, by=c("Year"="Year","station2"="station")) -> sampledf_year_sni
+
+eDNA_long_all_wide_sni$Year -> rownames(eDNA_long_all_wide_sni)
+eDNA_long_all_wide_sni[,-1:-2] -> eDNA_long_all_wide_sni
+
+#Create a bray-curtis distance matrix
+diss_sni <- vegdist(eDNA_long_all_wide_sni, method='bray')
+
+#Run the chronological cluster; chclust is the main function from rioja
+clust_sni <- chclust(diss_sni)
+
+
+```
+
+```{r}
+##Look at the number of clusters.  Then make a category for each cluster
+ddata1 <- dendro_data_k(clust_sni,8)
+
+labs <- ggdendro::label(ddata1)
+
+moon4 <- c("black","navy",moon3,"darkred")
+p1 <- plot_ggdendro(ddata1,
+                    direction   = "tb",
+                    label.size  = 2.5,
+                    scale.color = moon4,
+                    branch.size = 0.5,
+                    expand.y    = 0.2)
+
+p1 <- p1 + theme_void() + expand_limits(x = c(-1, 32))
+p1
+
+```
+```{r, results='hide'}
+
+#Recreate above chronological clustering dendrogram but using same format as species clustering for figure
+
+BPA_9 <- data.frame(eDNA_long_all_wide_sni)
+
+dend2 <- BPA_9 %>% vegdist(., method='bray') %>% chclust() %>% as.dendrogram %>% 
+  color_branches(k=6, col = moon3)
+
+```
+
+```{r}
+#Color code names of species based on trait information
+as.data.frame(moon3) -> mooner
+mooner$clust <- seq(1,6)
+
+labs %>% 
+  left_join(mooner) -> labs
+
+```
+
+<br />
+
+##### Species Clustering
+
+<br />
+```{r,fig.height=8, fig.width=8}
+## Input is the distance matrix (abundance, etc), with years on x and species on y. and species names as the rownames.
+BPA <- data.frame(t(eDNA_long_all_wide_sni))
+
+colnames(BPA) <- rownames(eDNA_long_all_wide_sni)
+#BPA_1 <- BPA %>% vegdist(., method='bray') %>% hclust %>% as.dendrogram 
+
+BPA_1 <- BPA %>% vegdist(., method='bray') %>% hclust %>% as.dendrogram %>% sort(type = "nodes")
+
+#Decide on the number of branches for species, k=3
+dend <- BPA %>% vegdist(., method='bray')%>% hclust(method = "complete") %>% as.dendrogram %>% sort(type = "nodes") %>% 
+  color_branches(k=5, col=dar3)
+plot(dend)
+```
+
+
+
+```{r}
+#Color code names of species based on trait information
+as.data.frame(rownames(BPA)) -> species_names
+
+species_names %>% 
+  left_join(trait_edna, by=c("rownames(BPA)"="ID_main")) -> species_names
+
+```
+
+##### Figure S25 Heatmap
+
+```{r, fig.height=16, fig.width=8}
+#Color palette
+some_col_func <- colorspace::sequential_hcl(100,palette="BluYl")
+
+
+BPA2 <- as.matrix(log10(BPA))
+BPA2[BPA2 < 0] <- NA
+
+
+
+colseperator <- labs %>% 
+  group_by(clust) %>% 
+  dplyr::summarise(label =max(label)) %>% 
+  left_join(labs)
+
+jpeg(file = here("analysis","figures","S25_San_Nicholas_Island_heatmap.png")
+     , width=16,
+       height = 12,
+       res = 400,
+      units = c("in"))
+gplots::heatmap.2(BPA2, 
+                  main = "",
+                  srtCol = 60,
+                  dendrogram = "both",
+                  #density.info="none",
+                  Rowv = dend,
+                  Colv = dend2, # this to make sure the columns are not ordered
+                  trace="none",          
+                  #key.xlab = "",
+                  #labCol = "",
+                  denscol = "lightseagreen",
+                  colRow = species_names$species_color,
+                  colCol = labs$moon3,
+                  margins = c(3,12),
+                  density.info = "density",
+                  key= TRUE,
+                  na.color = "White",
+                  colsep= colseperator$x, 
+                  sepcolor = "black",
+                  col = some_col_func)
+dev.off()
+
+
+gplots::heatmap.2(BPA2, 
+                  main = "eDNA San Nicholas Island",
+                  srtCol = 60,
+                  dendrogram = "both",
+                  #density.info="none",
+                  Rowv = dend,
+                  Colv = dend2, # this to make sure the columns are not ordered
+                  trace="none",          
+                  #key.xlab = "",
+                  #labCol = "",
+                  denscol = "lightseagreen",
+                  colRow = species_names$species_color,
+                  colCol = labs$moon3,
+                  margins = c(3,12),
+                  density.info = "density",
+                  key= TRUE,
+                  na.color = "White",
+                  colsep= colseperator$x, 
+                  sepcolor = "black",
+                  col = some_col_func)
+```
+
+
+##### Figure S26 NMDS
+
+```{r}
+b_ID_main_out_site_f %>% 
+    filter(., station =="San Nicholas Island") %>% 
+  dplyr::select(Year,  ID_main,Normalized.biomass=  mean) %>% 
+  filter(., ID_main %in% species_to_keep_sd$ID_main) %>% 
+  pivot_wider(names_from=ID_main, values_from=Normalized.biomass) %>% 
+  as.data.frame()-> eDNA_long_all_wide2_sni
+
+
+eDNA_long_all_wide2_sni$Year -> rownames(eDNA_long_all_wide2_sni)
+eDNA_long_all_wide2_sni[,-1:-2] -> eDNA_long_all_wide2_sni
+
+#NMDS analysis
+
+#Start with the data frame, not the distance matrix
+
+sptran1 <- eDNA_long_all_wide2_sni
+
+mds <- vegan::metaMDS(sptran1,k=2, trace=FALSE, distance = "bray",trymax=100, autotransform = FALSE)
+mds ### if stress is under .20, we are okay; if over, may need the change k to 3; 
+#stress = .157 at K3
+stressplot(mds)
+
+```
+
+
+```{r}
+
+#Make the nmds plot with ggplot2
+###Pull out species info
+mdssp <- mds$species
+spdf <- data.frame(mdssp)
+spdf %>%  drop_na() ->spdf
+spdf$species <- rownames(spdf)
+#spdf$species1 <- gsub(" ", ".", spdf$species)
+spdf1 <- spdf
+
+### This has the habitat and geographic affinities for each species
+spdf1 %>% 
+  left_join(trait_edna, by=c("species"="ID_main")) -> spdf1
+as.factor(spdf1$Type) ->spdf1$Type
+
+
+#Pull out site info
+scor <- scores(mds, display=c("sites","species"))
+score1 <- data.frame(eDNA_long_all_wide2_sni,scor)
+score1$rowname <- rownames(score1)
+labs$label -> years
+
+as.data.frame(years) -> nmdscov
+rownames(nmdscov) <- nmdscov$years
+nmdscov$rowname <- rownames(nmdscov)
+score2 <- merge(score1, nmdscov, by="rowname", all.x=T, all.y=F)
+score2 <- score2[order(score2$year),] 
+
+### from chron cluster
+### assign a cluster to each year
+score2$cluster <- as.character(labs$clust)
+
+
+spdf1 %>% 
+  dplyr::select(Type,species_color)%>% distinct() %>% 
+  arrange(Type) %>%  dplyr::select(species_color) -> color_order_nmds
+  
+ggplot()+ 
+  geom_vline(xintercept=0,colour="grey50") +
+  geom_hline(yintercept=0,colour="grey50") +
+  geom_path (data=score2, aes(x = NMDS1, y = NMDS2, alpha=0.2)) +
+  geom_text_repel(data=spdf1,  aes(x = MDS1, y = MDS2, label= species, color=Type), size=6, fontface='italic') + 	
+  geom_text_repel(data=score2, aes(x = NMDS1, y = NMDS2,label= years, colour=cluster), size=10) + 
+  scale_colour_manual(values = c("navy","darkred",moon3,color_order_nmds$species_color)) +
+  theme_bw() +
+  labs(list(title="", x="NMDS1",y="NMDS2"))  + xlab("NMDS1") +ylab("NMDS2")+
+  theme(  panel.background = element_rect(fill='white', colour='white'),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.text.x=element_text(size=14, angle=0), 
+          axis.text.y=element_text(size=14, angle=0), 
+          axis.title.x=element_text(size=18, angle=0), 
+          axis.title.y=element_text(size=18, angle=90),
+          strip.background = element_rect(fill='white'), 
+          strip.text.x=element_text(size=15),
+          legend.text=element_text(size=10),
+          legend.title=element_text(size=15),
+          axis.line=element_line(colour='black'),
+          legend.position="none")	
+
+ggsave(filename = here("analysis","figures","S26_San_Nicholas_Island_NMDS.png"),
+       width=30,
+       height = 30,
+       dpi = 400,
+      units = c("in"))
+```
+
+##### CAP ordination
+<br />
+
+```{r, results="hide",warning=FALSE}
+#Run CAP analysis to identify predictor species
+vare.cap <- capscale(eDNA_long_all_wide_sni ~ two_month_sst + Year , data=sampledf_year_sni, dist="bray")
+summary(vare.cap) -> cap_sum
+
+#Retain species scores
+sppscores(vare.cap) <- eDNA_long_all_wide_sni
+
+as.data.frame(vegan::scores(vare.cap, display="species")) %>% 
+  rownames_to_column(var = "sample") %>% 
+  as.tibble %>% 
+ mutate(dist = sqrt((CAP1 - 0)^2 + (CAP2 - 0)^2)) %>% 
+  top_n(5, dist) -> top_species
+top_species <- as.data.frame(top_species)
+rownames(top_species) <- top_species$sample
+
+# Now add the environmental variables as arrows
+arrowmat <- top_species
+
+
+# Add labels, make a data.frame
+arrowdf <- data.frame(labels = rownames(arrowmat), arrowmat)
+
+# Define the arrow aesthetic mapping
+arrow_map <- aes(xend = CAP1, 
+                 yend = CAP2, 
+                 x = 0, 
+                 y = 0, 
+                 shape = NULL, 
+                 color = NULL, 
+                 label = labels)
+
+label_map <- aes(x = .75 * CAP1, 
+                 y = 1.3 * CAP2, 
+                 shape = NULL, 
+                 color = NULL, 
+                 label = labels)
+
+arrowhead = arrow(length = unit(0.02, "npc"))
+
+# Plot CAP
+as.data.frame(vare.cap$CCA$wa) %>% 
+  rownames_to_column(var = "sample") %>% 
+  as.tibble() %>% 
+  mutate(., Station ="San Nicholas Island",
+         Year =as.integer(sample)) %>% 
+  left_join(sampledf_year_sni) %>% 
+  mutate(.,`SST ˚C` = two_month_sst) %>% 
+  ggplot(aes(x=CAP1, y=CAP2))  + 
+  geom_text_repel(aes(label= Year, color=`SST ˚C`), size=6, fontface='italic') + 	
+  scale_color_viridis_c() +
+  geom_segment(
+    mapping = arrow_map, 
+    size = .5, 
+    data = arrowdf, 
+    color = "grey", 
+    arrow = arrowhead
+  ) +
+  geom_text(
+    mapping = label_map, 
+    size = 4,  
+    data = arrowdf, 
+    show.legend = FALSE
+  ) + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(),  panel.border = element_rect(colour = "black", fill=NA, size=2)) +xlab(paste0("CAP1 ","(",label_percent()(cap_sum$cont$importance[2,1]),")")) +ylab(paste("CAP2","(",label_percent()(cap_sum$cont$importance[2,2]),")")) 
+
+ggsave(filename = here("analysis","figures","CAP_ord_species_sni.png"),
+       width=24,
+       height = 12,
+       dpi = 400,
+      units = c("in"))
+
+```
+##### CAP Environmental Variables
+
+```{r, results="hide",warning=FALSE}
+#Run CAP analysis to identify predictor species
+vare.cap <- capscale(eDNA_long_all_wide_sni ~ two_month_sst + Year , data=sampledf_year_sni, dist="bray")
+summary(vare.cap) -> cap_sum
+
+ 
+#Retain species scores
+sppscores(vare.cap) <- eDNA_long_all_wide_sni
+
+as.data.frame(vegan::scores(vare.cap, display="bp")) %>% 
+  rownames_to_column(var = "sample") %>% 
+  as.tibble %>% 
+ mutate(dist = sqrt((CAP1 - 0)^2 + (CAP2 - 0)^2)) %>% 
+  mutate(., new_name= case_when(sample=="Year" ~"Year",
+                                sample=="two_month_sst" ~"SST ˚C"))-> cap_vars
+
+cap_vars <- as.data.frame(cap_vars)
+rownames(cap_vars) <- cap_vars$new_name
+
+# Now add the environmental variables as arrows
+arrowmat <- cap_vars
+
+
+# Add labels, make a data.frame
+arrowdf <- data.frame(labels = rownames(arrowmat), arrowmat)
+
+# Define the arrow aesthetic mapping
+arrow_map <- aes(xend = CAP1, 
+                 yend = CAP2, 
+                 x = 0, 
+                 y = 0, 
+                 shape = NULL, 
+                 color = NULL, 
+                 label = labels)
+
+label_map <- aes(x = .75 * CAP1, 
+                 y = 1.3 * CAP2, 
+                 shape = NULL, 
+                 color = NULL, 
+                 label = labels)
+
+arrowhead = arrow(length = unit(0.02, "npc"))
+
+# Plot CAP
+as.data.frame(vare.cap$CCA$wa) %>% 
+  rownames_to_column(var = "sample") %>% 
+  as.tibble() %>% 
+ mutate(., Station ="San Nicholas Island",
+         Year =as.integer(sample)) %>% 
+  left_join(sampledf_year_sni) %>% 
+  mutate(.,`SST ˚C` = two_month_sst) %>% 
+  ggplot(aes(x=CAP1, y=CAP2)) +   geom_text_repel(aes(label= Year, color=`SST ˚C`), size=6, fontface='italic') + 	
+   scale_color_viridis_c() +
+  geom_segment(
+    mapping = arrow_map, 
+    size = .5, 
+    data = arrowdf, 
+    color = "grey", 
+    arrow = arrowhead
+  ) +
+  geom_text(
+    mapping = label_map, 
+    size = 4,  
+    data = arrowdf, 
+    show.legend = FALSE
+  ) + xlab(paste0("CAP1 ","(",label_percent()(cap_sum$cont$importance[2,1]),")")) +ylab(paste("CAP2","(",label_percent()(cap_sum$cont$importance[2,2]),")")) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(),  panel.border = element_rect(colour = "black", fill=NA, size=2))
+
+
+ggsave(filename = here("analysis","figures","CAP_ord_sni_env.png"),
+       width=16,
+       height = 8,
+       dpi = 400,
+      units = c("in"))
+
+```
+
+# Gllvm
+```{r}
+
+#Format Abundance Table
+
+
+b_ID_main_out_site %>% 
+   dplyr::select(Year, station, ID_main, median) %>% 
+filter(., median > 0) %>% 
+  group_by(ID_main) %>% count() %>% 
+  filter(., n > 15) -> species_to_choose
+
+
+b_ID_main_out_site %>% 
+  dplyr::select(Year, station, ID_main, median) %>% 
+  unite(., Sample, c("Year","station"), remove=F) %>% 
+  filter(., ID_main %in% species_to_choose$ID_main) %>% 
+  arrange(ID_main) %>% 
+  pivot_wider(names_from=ID_main, values_from=median) %>%  as.data.frame()-> eDNA_all_wide
+
+two_month_sst %>% as.tibble() %>% 
+  unite(., Sample, c("Year","station"), remove=F) %>% 
+  filter(., Sample %in% eDNA_all_wide$Sample)-> env_calcofi
+
+env_calcofi$two_month_sst <- scale(env_calcofi$two_month_sst)
+
+dim(eDNA_all_wide)
+dim(env_calcofi)
+
+
+eDNA_all_wide %>% dplyr::select(,-Year,-station) -> eDNA_all_wide_2
+eDNA_all_wide_2$Sample -> rownames(eDNA_all_wide_2)
+eDNA_all_wide_2[,-1] -> eDNA_all_wide_2
+
+
+env_calcofi <- as.data.frame(env_calcofi)
+rownames(env_calcofi) <- env_calcofi$Sample
+env_calcofi %>%  dplyr::select(-Sample,-Year,-station) ->env_calcofi
+
+#Format Trait Table
+trait_edna_1 %>% 
+  filter(., ID_main %in% species_to_choose$ID_main) %>% 
+  arrange(ID_main) %>% select(ID_main, Type, Habitat    ,    Range) ->trait_edna_gllvm
+trait_edna_gllvm$ID_main -> rownames(trait_edna_gllvm)
+trait_edna_gllvm %>% dplyr::select(-ID_main) -> trait_edna_gllvm
+
+
+
+```
+
+```{r}
+
+#All
+fitp_edna <- gllvm(eDNA_all_wide_2, family = poisson())
+fitp_edna
+plot(fitp_edna, var.colors = 1)
+
+fit_ord_edna <- gllvm(eDNA_all_wide_2, family = "negative.binomial")
+fit_ord_edna
+plot(fit_ord_edna, var.colors = 1)
+
+
+par(mar = c(4, 4, 2, 1))
+ordiplot(fit_ord_edna, biplot = TRUE, ind.spp = 20, 
+         main = "Biplot")
+
+ordiplot(fit_ord_edna, biplot = TRUE, ind.spp = 20, 
+         main = "Biplot", predict.region = TRUE)
+```
+
+```{r}
+criterias <- NULL
+for(i in 1:5){
+  fiti <- gllvm(eDNA_all_wide_2, env_calcofi, family = "negative.binomial", num.lv = i, sd.errors = FALSE,
+                formula = ~ two_month_sst, seed = 1234)
+  criterias[i + 1] <- summary(fiti)$AICc
+  names(criterias)[i + 1] = i
+}
+
+criterias
+```
+
+```{r}
+fit_env <- gllvm(eDNA_all_wide_2, env_calcofi, num.lv = 3, family = "negative.binomial",
+                formula = ~ two_month_sst)
+
+coefplot(fit_env, cex.ylab = 0.7)
+
+
+```
+#### S27
+```{r}
+
+cr <- getResidualCor(fit_env)
+
+corrplot(cr[order.single(cr), order.single(cr)], diag = FALSE, type = "lower", 
+         method = "square", tl.cex = 0.5, tl.srt = 45, tl.col = "red")
+
+testRes = cor.mtest(cr, conf.level = 0.95)
+
+
+rownames(cr) %>% as_tibble(.) %>% 
+  dplyr::select(ID_main=value) %>% 
+  left_join(trait_edna) -> cr_traits
+LabelCol = cr_traits$species_color
+
+rownames(cr) -> cr_rownames
+
+recode(cr_rownames,`Sebastes`="Sebastes sp.",
+                               `Stenobrachius nannochir`="Stenobrachius leucopsarus cold variant") -> cr_rownames
+colnames(cr) <-cr_rownames
+rownames(cr)<-cr_rownames
+jpeg(file = here("analysis","figures","S27_Figure_correlation_plot.png")
+     , width=12,
+       height = 12,
+       res = 400,
+      units = c("in"))
+corrplot(cr,order="original",diag = TRUE, type = "lower", 
+         method = "square", tl.cex = 1.3, tl.srt = 45, tl.col = LabelCol,pch.cex = 3, 
+         insig = 'label_sig', pch.col = 'grey20')
+dev.off()
+
+```
+
+#### S28
+
+```{r}
+fit4lv <- gllvm(eDNA_all_wide_2, family = "negative.binomial", num.lv = 3)
+
+cr0 <- getResidualCor(fit4lv)
+corrplot(cr0[order.single(cr0), order.single(cr0)], diag = FALSE, type = "lower", 
+         method = "square", tl.cex = 0.5, tl.srt = 45, tl.col = "red")
+
+
+rownames(cr0) -> cr0_rownames
+
+recode(cr0_rownames,`Sebastes`="Sebastes sp.",
+                               `Stenobrachius nannochir`="Stenobrachius leucopsarus cold variant") -> cr0_rownames
+colnames(cr0) <-cr0_rownames
+rownames(cr0)<-cr0_rownames
+
+
+jpeg(file = here("analysis","figures","S28_Figure_correlation_plot.png")
+     , width=12,
+       height = 12,
+       res = 400,
+      units = c("in"))
+corrplot(cr0,order="original",diag = TRUE, type = "lower", 
+         method = "square", tl.cex = 1.3, tl.srt = 45, tl.col = LabelCol,pch.cex = 3, 
+         insig = 'label_sig', pch.col = 'grey20')
+dev.off()
+
+```
+
+```{r}
+
+rcov <- getResidualCov(fit_env, adjust = 0)
+rcov0 <- getResidualCov(fit4lv, adjust = 0)
+rcov0$trace; rcov$trace
+1 - rcov$trace / rcov0$trace
+#SST explains ~19% in abundances
+```
+
+
+
+
+
+
+

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VRTDataset rasterXSize="2160" rasterYSize="1080">
+  <Description>bio07</Description>
+  <Metadata>
+    <MDI key="pastclim_time_bp">false</MDI>
+  </Metadata>
+  <SRS dataAxisToSRSAxisMapping="2,1">GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AXIS["Latitude",NORTH],AXIS["Longitude",EAST],AUTHORITY["EPSG","4326"]]</SRS>
+  <GeoTransform> -1.8000000000000000e+02,  1.6666666666666666e-01,  0.0000000000000000e+00,  9.0000000000000000e+01,  0.0000000000000000e+00, -1.6666666666666666e-01</GeoTransform>
+  <VRTRasterBand dataType="Float32" band="1">
+    <Description>bio07_1985</Description>
+    <Metadata>
+      <MDI key="time">1985</MDI>
+    </Metadata>
+    <NoDataValue>-3.399999952144364e+38</NoDataValue>
+    <ComplexSource>
+      <SourceFilename relativeToVRT="0">/vsizip//Users/zgold/Documents/GitHub/SCCOOS_CalCOFI_sample_collection/worldclim_2.1/wc2.1_10m_bio.zip/wc2.1_10m_bio_7.tif</SourceFilename>
+      <SourceBand>1</SourceBand>
+      <SourceProperties RasterXSize="2160" RasterYSize="1080" DataType="Float32" BlockXSize="2160" BlockYSize="1"/>
+      <SrcRect xOff="0" yOff="0" xSize="2160" ySize="1080"/>
+      <DstRect xOff="0" yOff="0" xSize="2160" ySize="1080"/>
+      <NODATA>-3.399999952144364e+38</NODATA>
+    </ComplexSource>
+  </VRTRasterBand>
+</VRTDataset>

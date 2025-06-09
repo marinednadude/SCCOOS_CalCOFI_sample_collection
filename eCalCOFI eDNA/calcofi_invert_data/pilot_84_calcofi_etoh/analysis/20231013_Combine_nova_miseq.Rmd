@@ -1,0 +1,326 @@
+---
+title: "20231013_Combine_nova_miseq"
+author: "Zack Gold"
+date: "2023-10-13"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(here)
+library(vegan)
+```
+
+```{r}
+ASV.nested_miseq <- readRDS(   file = here("new_miseq","decontam", "Output_R", "ASV.nested_final.RDS"))
+hash.key_miseq <- readRDS(, file = here("new_miseq","decontam", "Output_R", "hash.key.RDS"))
+
+input_meta_path_miseq <- here( "new_miseq","sequence_mapping_file_20231013.csv")
+
+metadata_miseq <-
+  read.table( input_meta_path_miseq,
+    header = 1,
+    sep = ",",
+    stringsAsFactors = F)
+
+metadata_miseq %>%
+  filter(Sample_Control == "Control") %>%
+  dplyr::select(New_name) %>% unique() -> controls_m
+controls_m <- controls_m$New_name
+
+```
+
+
+```{r}
+ASV.nested_nova <- readRDS(,
+        file = here("old_novaseq","decontam", "Output_R", "ASV.nested_final.RDS"))
+
+hash.key_nova <- readRDS(, file = here("old_novaseq","decontam", "Output_R", "hash.key.RDS"))
+
+
+input_meta_path_nova <- here("old_novaseq", "sequence_mapping_file_20230714.csv")
+
+metadata_nova <-
+  read.table( input_meta_path_nova,
+    header = 1,
+    sep = ",",
+    stringsAsFactors = F)
+
+metadata_nova %>%
+  filter(Sample_Control == "Control") %>%
+  dplyr::select(New_name) %>% unique() -> controls
+controls <- controls$New_name
+
+```
+
+
+```{r}
+hash.key_nova %>% 
+  mutate(., seq_number=str_c("nova_",seq_number)) %>% 
+  mutate(., sum.taxonomy=case_when(sum.taxonomy=="Eukaryota;Cnidaria;Hydrozoa;Siphonophorae;Sphaeronectidae;Sphaeronectes;Sphaeronectes gracilis"~"Eukaryota;Cnidaria;Hydrozoa;Siphonophorae;Sphaeronectidae;Sphaeronectes;Sphaeronectes koellikeri",
+                                   TRUE ~ sum.taxonomy))-> hash.key_nova
+
+
+hash.key_miseq %>% 
+    mutate(., seq_number=str_c("miseq_",seq_number)) %>% 
+  mutate(., sum.taxonomy=case_when(seq_number=="miseq_merged_CO1_1"~"Eukaryota;Cnidaria;Hydrozoa;Siphonophorae;Sphaeronectidae;Sphaeronectes;Sphaeronectes koellikeri",
+                                   seq_number=="miseq_merged_CO1_5"~"Eukaryota;Arthropoda;Hexanauplia;Calanoida;Eucalanidae;Eucalanus;Eucalanus californicus",
+                                   TRUE ~ sum.taxonomy))-> hash.key_miseq
+
+hash.key_combo <- rbind(hash.key_nova,hash.key_miseq)
+
+rbind(hash.key_nova,hash.key_miseq) %>% 
+  distinct(.,sum.taxonomy) -> hashes_unique
+  
+
+hashes_unique$number <- row.names(hashes_unique)
+hashes_unique$number <- paste0("taxon_",hashes_unique$number)
+row.names(hashes_unique)<-hashes_unique$number
+
+hash.key_combo %>% 
+  left_join(hashes_unique, by="sum.taxonomy") -> hash.key.updated
+
+
+```
+
+# Compare
+
+```{r}
+
+ASV.nested_nova$Step5.tibble[[1]] %>% 
+   mutate(., seq_number=str_c("nova_",seq_number)) %>% 
+  mutate(miseq = ASV.nested_nova$Miseq_run[[1]]) %>% 
+  unite(sample, col="Sample") %>% 
+  left_join(hash.key.updated) -> nova_long
+
+
+ASV.nested_miseq$Step5.tibble[[1]] %>% 
+   mutate(., seq_number=str_c("miseq_",seq_number)) %>% 
+  mutate(miseq = ASV.nested_miseq$Miseq_run[[1]]) %>% 
+  unite(sample, col="Sample") %>% 
+  left_join(hash.key.updated) -> miseq_long
+
+
+nova_long %>% 
+  ungroup() %>% 
+  group_by(seq_number,sum.taxonomy, number) %>% 
+  dplyr::summarise(tot_reads=sum(nReads)) %>% arrange(desc(tot_reads))  -> nova_long_species
+
+
+miseq_long %>% 
+  ungroup() %>% 
+  group_by(seq_number,sum.taxonomy, number) %>% 
+  dplyr::summarise(tot_reads=sum(nReads)) %>% arrange(desc(tot_reads)) -> miseq_long_species
+
+
+intersect(nova_long_species$sum.taxonomy, miseq_long_species$sum.taxonomy) %>% length()
+setdiff(nova_long_species$sum.taxonomy, miseq_long_species$sum.taxonomy) %>% length()
+setdiff(miseq_long_species$sum.taxonomy, nova_long_species$sum.taxonomy) %>% length()
+
+setdiff(nova_long_species$sum.taxonomy, miseq_long_species$sum.taxonomy) -> unique_nova
+setdiff(miseq_long_species$sum.taxonomy, nova_long_species$sum.taxonomy) -> unique_miseq
+
+nova_long_species %>% 
+  filter(., sum.taxonomy %in% unique_nova)
+
+miseq_long_species %>% 
+  filter(., sum.taxonomy %in% unique_miseq)
+
+```
+ 
+ 
+# Combined
+
+```{r}
+
+###Pre Occupancy Sum by Taxonomy, Biological Replicates Separate
+
+ASV.nested_nova$Step5.tibble[[1]] %>% 
+   mutate(., seq_number=str_c("nova_",seq_number)) %>% 
+  mutate(miseq = ASV.nested_nova$Miseq_run[[1]]) %>% 
+  unite(sample, col="Sample") %>% 
+  left_join(hash.key.updated) %>% 
+  dplyr::group_by(number,Sample) %>%
+  dplyr::summarise(nReads=sum(nReads)) %>% 
+  spread(., Sample, nReads) %>% #convert to wide data format
+  replace(is.na(.), 0) -> barcode_1_pre_df
+barcode_1_pre_df$number %>%  unique() -> barcode_1_pre_df_taxa
+colnames(barcode_1_pre_df)
+  metadata_nova %>% 
+    filter(., !(New_name %in% controls)) %>% 
+     filter(., !(New_name %in% controls_m)) %>% 
+    filter(.,!(New_name %in% colnames(barcode_1_pre_df))) %>% 
+    filter(., New_name != "CO1_Blank_1__1_1") %>% 
+    filter(., New_name != "CO1_Alligator_1_3") %>% 
+  filter(., New_name != "") %>% 
+    pull(New_name) %>%  unique()-> columns2add
+  
+  barcode_1_pre_df <- as.data.frame(barcode_1_pre_df)
+  
+  barcode_1_pre_df %>% 
+    tibble::add_column(!!!set_names(as.list(rep(NA, length(columns2add))),nm=columns2add)) %>% 
+    replace(is.na(.), 0) %>% 
+    dplyr::select(sort(tidyselect::peek_vars()))-> barcode_1_pre_df
+  
+  row.names(barcode_1_pre_df) <- barcode_1_pre_df$number
+  barcode_1_pre_df %>% ungroup() -> barcode_1_pre_df
+  
+ 
+ASV.nested_miseq$Step5.tibble[[1]] %>% 
+   mutate(., seq_number=str_c("miseq_",seq_number)) %>% 
+  mutate(miseq = ASV.nested_miseq$Miseq_run[[1]]) %>% 
+  unite(sample, col="Sample") %>% 
+  left_join(hash.key.updated) %>% 
+  dplyr::group_by(number,Sample) %>%
+  dplyr::summarise(nReads=sum(nReads)) %>% 
+  spread(., Sample, nReads) %>% #convert to wide data format
+  replace(is.na(.), 0) -> barcode_2_pre_df
+barcode_2_pre_df$number %>%  unique() -> barcode_2_pre_df_taxa
+
+ metadata_nova %>% 
+    filter(., !(New_name %in% controls)) %>% 
+     filter(., !(New_name %in% controls_m)) %>% 
+    filter(.,!(New_name %in% colnames(barcode_2_pre_df))) %>% 
+   filter(., New_name != "CO1_Alligator_1_3") %>% 
+      filter(., New_name != "CO1_Blank_1__1_1") %>% 
+   filter(., New_name !="") %>% 
+    pull(New_name) %>%  unique()-> columns2add
+  
+  barcode_2_pre_df <- as.data.frame(barcode_2_pre_df)
+  
+  barcode_2_pre_df %>% 
+    tibble::add_column(!!!set_names(as.list(rep(NA, length(columns2add))),nm=columns2add)) %>% 
+    replace(is.na(.), 0) %>% 
+    dplyr::select(sort(tidyselect::peek_vars())) -> barcode_2_pre_df
+  
+  row.names(barcode_2_pre_df) <- barcode_2_pre_df$number
+  barcode_2_pre_df %>% ungroup() -> barcode_2_pre_df
+  
+  total_kept_taxa <- (append(barcode_1_pre_df_taxa,barcode_2_pre_df_taxa)) %>% unique()
+  length(total_kept_taxa)
+  
+  if (rlang::is_empty(setdiff(total_kept_taxa,barcode_1_pre_df_taxa))) {
+    barcode_1_pre_df %>% ungroup() %>% 
+      arrange(number) -> barcode_1_pre_df
+  } else {
+    barcode_1_pre_df %>% ungroup() %>% 
+      add_row(number=setdiff(total_kept_taxa,barcode_1_pre_df_taxa)) %>% 
+      arrange(number) %>% 
+      replace(is.na(.), 0) -> barcode_1_pre_df
+  }
+  
+  if (rlang::is_empty(setdiff(total_kept_taxa,barcode_2_pre_df_taxa))) {
+    barcode_2_pre_df %>% ungroup() %>% 
+      arrange(number) -> barcode_2_pre_df
+  } else {
+    barcode_2_pre_df %>% ungroup() %>% 
+      add_row(number=setdiff(total_kept_taxa,barcode_2_pre_df_taxa)) %>% 
+      arrange(number) %>% 
+      replace(is.na(.), 0) -> barcode_2_pre_df
+  }
+  
+  barcode_1_pre_df <- as.data.frame(barcode_1_pre_df)
+  row.names(barcode_1_pre_df) <- barcode_1_pre_df$number
+  barcode_1_pre_df %>% ungroup() %>% dplyr::select(-number) -> barcode_1_pre_df
+  
+  barcode_2_pre_df <- as.data.frame(barcode_2_pre_df)
+  row.names(barcode_2_pre_df) <- barcode_2_pre_df$number
+  barcode_2_pre_df %>% ungroup() %>% dplyr::select(-number) -> barcode_2_pre_df
+  
+  dim(barcode_1_pre_df)
+  dim(barcode_2_pre_df)
+  setdiff(colnames(barcode_2_pre_df),colnames(barcode_1_pre_df))
+  
+```
+
+
+
+ 
+ 
+ 
+```{r}
+  ####First, we want to create proportions by dividing by the rowsums:
+  ####we could do this with sweep() or mutate_all() or other ways, but using vegan:
+  
+ barcode_1_df_prop <- decostand(barcode_1_pre_df, method = "total", MARGIN = 2)
+ barcode_2_df_prop <- decostand(barcode_2_pre_df, method = "total", MARGIN = 2)
+
+  (barcode_1_df_prop + barcode_2_df_prop) /2 -> combined_df_prop
+ #here we are averaging the proportions between the NovaSeq and MiSeq data
+
+  ####Second, we want to ask how the proprortion for each species has changed across columns (samples). 
+  ####We do this by scaling everything to the max observed in each row. 
+  
+  ####To do this WITHIN a dataset, we could just do (again, using vegan):
+  ####eDNA Index between 0-1 made by straight adding reads across each decontaminated datatable
+  combined_df_index <- decostand(combined_df_prop, method = "max", MARGIN = 1)
+  
+  colnames(combined_df_index)
+  #Output read counts
+  hash.key.updated.2 <- hash.key.updated[!duplicated(hash.key.updated$number), ]
+  
+  combined_df_prop$number <- rownames(combined_df_prop)
+  
+  combined_df_prop %>% 
+    left_join(hash.key.updated.2, by="number") %>% 
+    dplyr::select(-number,-seq_number) -> combined_df_prop
+  dim(combined_df_prop)
+  
+saveRDS(combined_df_prop,file=here("analysis","merged_results_sum.taxonomy_tech_reps_separate_prop.RDS"))
+write_csv(combined_df_prop ,here("analysis","merged_results_sum.taxonomy_tech_reps_separate_prop.csv"))
+  
+  ### Output eDNA Index
+  combined_df_index$number <- rownames(combined_df_index)
+  
+combined_df_index %>% 
+    left_join(hash.key.updated.2, by="number") %>% 
+    dplyr::select(-number,-seq_number) -> combined_df_index
+ 
+dim(combined_df_index)
+  colnames(combined_df_index)
+saveRDS(combined_df_index,file=here("analysis","merged_results_sum.taxonomy_tech_reps_separate_eDNA_index.RDS"))
+write_csv(combined_df_index ,here("analysis","merged_results_sum.taxonomy_tech_reps_separate_eDNA_index.csv"))
+
+    
+  
+
+```
+
+
+```{r}
+
+  hash.key.updated.2 <- hash.key.updated[!duplicated(hash.key.updated$number), ]
+  
+  barcode_1_pre_df$number <- rownames(barcode_1_pre_df)
+  
+  barcode_1_pre_df %>% 
+    left_join(hash.key.updated.2, by="number") %>% 
+    dplyr::select(-number,-seq_number) -> barcode_1_pre_df
+  dim(barcode_1_pre_df)
+  
+colnames(barcode_1_pre_df)
+
+saveRDS(barcode_1_pre_df,file=here("analysis","novaseq_results_sum.taxonomy_tech_reps_separate_reads.RDS"))
+write_csv(barcode_1_pre_df ,here("analysis","novaseq_results_sum.taxonomy_tech_reps_separate_reads.csv"))
+
+ hash.key.updated.2 <- hash.key.updated[!duplicated(hash.key.updated$number), ]
+  
+  barcode_2_pre_df$number <- rownames(barcode_2_pre_df)
+  
+  barcode_2_pre_df %>% 
+    left_join(hash.key.updated.2, by="number") %>% 
+    dplyr::select(-number,-seq_number) -> barcode_2_pre_df
+  dim(barcode_2_pre_df)
+  
+colnames(barcode_2_pre_df)
+
+
+saveRDS(barcode_2_pre_df,file=here("analysis","miseq_results_sum.taxonomy_tech_reps_separate_reads.RDS"))
+write_csv(barcode_2_pre_df ,here("analysis","miseq_results_sum.taxonomy_tech_reps_separate_reads.csv"))
+
+```
+
+
+
+
+

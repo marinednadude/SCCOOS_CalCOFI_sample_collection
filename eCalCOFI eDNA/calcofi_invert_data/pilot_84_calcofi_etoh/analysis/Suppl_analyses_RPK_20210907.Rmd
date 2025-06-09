@@ -1,0 +1,160 @@
+---
+title: "CalCOFI_supplemental_analyses"
+author: "Kelly"
+date: "7/22/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(rstan)
+library(lme4)
+library(here)
+
+a <- readRDS(file =here::here("data","eDNA_long_all.RDS")) %>% 
+  mutate(PA_biomass = if_else(Normalized.biomass > 0.01, 1, 0))
+
+mifish <- readRDS(here::here("data", "mifish_tech_nReads.RDS")) %>% 
+  filter(!ID_mifish %in% c("MISSING", ""),
+         !is.na(mifish_reads)) %>% 
+  filter(ext_rep == 1) %>% 
+  dplyr::select(Sample, ID_mifish, mifish_reads) %>% 
+  distinct() %>% 
+  mutate(Sample = gsub("X", "", Sample)) %>% 
+  mutate(Year = substr(Sample, 1,4),
+         Year = as.numeric(Year))
+
+seb <- readRDS(here::here("data", "sebastes_tech_nReads.RDS")) %>% 
+  filter(!ID_sebastes %in% c("MISSING", ""),
+         !is.na(sebastes_reads)) %>% 
+  filter(ext_rep == 1) %>% 
+  dplyr::select(Sample, ID_sebastes, sebastes_reads) %>% 
+  distinct() %>% 
+  mutate(Sample = gsub("X", "", Sample)) %>% 
+  mutate(Year = substr(Sample, 1,4),
+         Year = as.numeric(Year))
+
+```
+
+# Test for Temporal Autocorrelation
+
+For each site/species combination, if eDNA signals appear autocorrelated in time -- that is, if one year's eDNA signal is correlated with the previous year's signal -- then we require a time-series model that incorporates such autocorrelation into the error structure. If, by contrast, years appear independent of one another, we can treat model variation as time-independent and therefore treat each data point as being independent.
+
+We observe no such correlation, and so we treat all observations as independent of one another.
+
+```{r}
+f <- mifish %>% 
+  mutate(Site = gsub("199._[0-9]_", "", Sample),
+         Site = gsub("20.._[0-9]_", "", Site),
+         Site = gsub("_1_.", "", Site)) 
+  
+
+  d <- f %>% 
+    group_by(Year, ID_mifish, Site) %>% 
+    summarise(mifish_reads = mean(mifish_reads)) %>% 
+    mutate(Prev_year = Year - 1) %>% 
+    group_by(ID_mifish, Site) %>% 
+    mutate(prev_reads = mifish_reads[match(Prev_year, Year)]) %>% 
+    drop_na() %>% 
+    filter(mifish_reads > 0 | prev_reads > 0) %>% 
+    group_by(ID_mifish) %>% 
+    mutate(Cor = cor(x = mifish_reads, y = prev_reads)) 
+  
+  d %>% 
+    ggplot(aes(x = Cor)) +
+      geom_histogram()
+
+summary(d$Cor)
+sd(d$Cor, na.rm=T)
+```
+
+
+# Tests for eDNA Signal Degradation over Time
+
+If DNA signal were degrading over time, we would expect several parameters to charge as a function of sample age: (1) a decrease in precision with which we observe amplicon abundance, (2) a decrease in richness of species detected, and (3) a decrease in our confidence in posterior estimates of larval abundances. We test for these effects in turn.
+
+## Precision of Amplicon Abundance Estimate
+
+Among triplicate PCR reactions, we might expect degraded DNA to behave more stochastically than non-degraded DNA, such that technical replicates would yield increasingly divergent amplicon abundances with greater degradation.  Here, we measure the precision of our estimates with the coefficient of variation (CV) of species-specific amplicons across three technical replicates. An increase in CV with the age of the sample would signal degradation; we see no such trend. 
+
+```{r}
+
+#note -- need to do this w tech replicates; not w means
+foo <- f %>% 
+  group_by(Year, Site) %>% 
+  mutate(propReads = mifish_reads/sum(mifish_reads)) %>% 
+  group_by(Year, Site, ID_mifish) %>% 
+  mutate(meanProp = mean(propReads),
+         sdProp = sd(propReads),
+         CV = sdProp/meanProp) %>% 
+  dplyr::select(ID_mifish, Year, Site, meanProp, sdProp, CV) %>% 
+  distinct() %>% 
+  drop_na()
+  
+foo %>% 
+  ggplot(aes(y = log(CV), x = Year)) +
+    geom_point()
+
+#mixed-effect model, w species as random effect
+lmer(CV ~ 0 + (1 + Year | ID_mifish), data = foo) %>% summary()
+
+
+```
+
+## Species Richness 
+
+Rare amplicons often make up a large fraction of metabarcoding datasets, and because of their rarity, these often show up stochastically across replicates or sequenced samples. If older DNA samples were degraded, we would expect fewer of these rare species, and by extension, fewer species overall. 
+
+We see no such effect.
+
+```{r}
+
+f1 <- foo %>% 
+  group_by(Site, Year) %>% 
+  tally() 
+  
+f1 %>% 
+  ggplot(aes(x = Year, y = n)) +
+    geom_point()
+  
+# as simple linear model, with all sites together
+lm(n~Year, data = f1) %>% summary()
+
+#as mixed-effects model, with site as random effect
+lmer(n ~ 0 + (1 + Year | Site), data = f1) %>% summary()
+
+```
+
+## Precision of Posterior Estimates of Larval Abundance
+
+We might expect -- if DNA were degrading -- that such degradation would impair our ability to estimate the larval abundance of each species in older samples. 
+
+Again, we see no evidence of this effect. 
+
+```{r}
+
+b_grid_tibble <- readRDS(file=here("data","b_grid_tibble.RDS"))
+
+b_master_out <- b_grid_tibble %>%
+  mutate(., log_est=log(est+0.01)) %>% 
+  group_by(Year, ID_master, station) %>% 
+  dplyr::summarise(mean=mean(est),sd=sd(est)) %>% 
+  mutate(CV = sd/mean) %>% 
+  drop_na()
+
+b_master_out %>% 
+  ggplot(aes(x = Year, y = log(CV))) +
+    geom_point()
+
+#as simple linear model, with all species/sites combined
+lm(CV ~ as.numeric(Year), data = b_master_out) %>% summary
+
+#as mixed-effects model, with site as random effect
+lmer(CV ~ 0 + (1 + as.numeric(Year) | station), data = b_master_out) %>% summary()
+
+```
+
+
+
+

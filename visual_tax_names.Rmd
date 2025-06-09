@@ -62,6 +62,8 @@ BTEDB %>%
          year_season_site = str_c(year,":",season,Line,"_",Station)) %>% 
   filter(., Lat_deg_r > 31) %>% 
   filter(., Lat_deg_r < 45) -> long_microscopy
+
+
 ```
 
 ```{r}

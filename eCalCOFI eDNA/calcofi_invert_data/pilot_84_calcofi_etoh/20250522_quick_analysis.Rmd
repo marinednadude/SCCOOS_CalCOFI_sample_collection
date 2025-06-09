@@ -1,0 +1,845 @@
+---
+title: "CalCOFI Zooplankton Analysis"
+author: "Zack Gold"
+date: "2023-07-14"
+output: html_document
+---
+
+
+#Load In Data aqnd Pre Processing 
+### Library Loading
+```{r}
+library(ggpmisc)
+library(phyloseq)
+library(metagMisc)
+library(wesanderson)
+library(tidyverse)
+library(vegan)
+library(iNEXT)
+library(multcomp)
+library(multcompView)
+library(treemapify)
+library(brew)
+library(RColorBrewer)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(VennDiagram)
+library(here)
+library(skimr)
+library(broom)
+library(knitr)
+
+```
+
+### Load eDNA data
+```{r}
+#Load Data
+ASV.nested_miseq <- readRDS(   file = here("new_miseq","decontam", "Output_R", "ASV.nested_final.RDS"))
+
+hash.key_miseq <- readRDS(, file = here("new_miseq","decontam", "Output_R", "hash.key.RDS"))
+
+#edna Data
+all_samples <- readRDS(file=here("analysis","merged_results_sum.taxonomy_tech_reps_separate_eDNA_index.RDS")) #this is eDNA index
+dim(all_samples)
+all_samples_reads <- readRDS(file=here("analysis","miseq_results_sum.taxonomy_tech_reps_separate_reads.RDS"))
+
+#Metadata 
+
+input_meta_path_nova <- here("old_novaseq", "sequence_mapping_file_20230714.csv")
+
+metadata_nova <-
+  read.table( input_meta_path_nova,
+    header = 1,
+    sep = ",",
+    stringsAsFactors = F)
+
+metadata_nova %>% 
+  mutate(., Seq_number= New_name) %>% 
+  filter(., Seq_number!="") %>% 
+  mutate(., Station = case_when(str_detect(Jar,"80_60")~"Pt. Conception",
+                                str_detect(Jar,"86.7_50")~"San Nicholas Island",
+                                str_detect(Jar,"93.3_30")~"San Diego Inshore",
+                                str_detect(Jar,"93.3_60")~"San Diego Offshore",
+                                TRUE ~"other"))-> metadata_nova
+
+
+input_meta_path <- here("calcofi_metadata_analysis_20210907.csv")
+
+metadata <-
+  read.table( input_meta_path,
+    header = 1,
+    sep = ",",
+    stringsAsFactors = F)
+
+metadata$two_month_sst
+
+metadata %>% 
+mutate(.,
+station = fct_recode(
+Sta_ID,
+"Pt. Conception" =  "080.0 060.0" ,
+"San Nicholas Island" = "086.7 050.0" ,
+"San Diego Inshore" = "093.3 030.0",
+"San Diego Offshore" = "093.3 060.0"
+)) -> metadata
+
+metadata %>% 
+  mutate(., Location = paste0(Year,"_",Month,"_",Rpt_Line,"_", Rpt_Sta)) -> metadata
+
+metadata_nova %>% 
+  left_join(metadata, by=c("Location","Year")) -> metadata_nova
+
+metadata_nova %>% 
+  mutate(., MHW = case_when(Year > 2013 ~"post MHW",
+                            TRUE ~ "pre MHW"))-> metadata_nova
+
+metadata$Location %>%  unique()
+metadata_nova$Location %>%  unique()
+setdiff(metadata$Location,metadata_nova$Location)
+setdiff(metadata_nova$Location,metadata$Location)
+
+metadata_nova %>% 
+  filter(., is.na(two_month_sst))
+
+```
+
+### Ranacapa Phyloseq Code
+```{r anacapa to phyloseq functions from ranacapa library imported manually since they do not work on R3.6.0,  results="hide", warning=FALSE, include=FALSE}
+#' Takes a site-abundance table from Anacapa, and summarizes to each unique taxon in the sum.taxonomy column
+#' @param taxon_table OTU table from Anacapa
+#' @author Gaurav Kandlikar
+#' @examples
+#' good_taxon_table <- data.frame(sum.taxonomy = c("a;b;c;d;f;u", "p;q;r;s;t;u"),
+#' site_1 = c(0,1), site_2 = c(10, 20))
+#' group_anacapa_by_taxonomy(good_taxon_table)
+#' @export
+
+group_anacapa_by_taxonomy <- function(taxon_table) {
+  # If tables were made in New Anacapa (with Domain), get rid of domain...
+  if(stringr::str_count(taxon_table$sum.taxonomy, ";")[1] == 2) {
+    taxon_table$sum.taxonomy = gsub(pattern = "^.*?;", replacement = "", x = taxon_table$sum.taxonomy)
+  }
+  taxon_table$sum.taxonomy
+  taxon_table %>%
+    dplyr::filter(sum.taxonomy != "") %>%
+    dplyr::group_by(sum.taxonomy) %>%
+    dplyr::summarize_if(is.numeric, sum) %>%
+    dplyr::mutate(sum.taxonomy = as.character(sum.taxonomy)) %>%
+    data.frame
+}
+
+
+#' Takes an site-abundance table from Anacapa, along with a qiime-style mapping file, and returns a phyloseq object
+#' @param taxon_table Taxon table in the anacapa format
+#' @param metadata_file Metadata file with rows as sites, columns as variables
+#' @return phyloseq class object
+#' @author Gaurav Kandlikar
+#' @examples
+#' good_taxon_table <- data.frame(sum.taxonomy = c("a;b;c;d;f;u", "p;q;r;s;t;u"),
+#' site_1 = c(0,1), site_2 = c(10, 20))
+#' good_maps <- data.frame(site = c("site_1", "site_2"), season = c("wet", "dry"),
+#'  host = c("oak", "sage"))
+#' convert_anacapa_to_phyloseq(good_taxon_table, good_maps)
+#' @export
+
+taxon_table <- all_samples
+metadata_file <- metadata_nova
+convert_anacapa_to_phyloseq <- function(taxon_table, metadata_file) {
+  
+  # Validate the files
+  validate_input_files(taxon_table, metadata_file)
+
+  # Group the anacapa ouptut by taxonomy, if it has not yet happened, and turn it into a matrix
+  taxon_table2 <- group_anacapa_by_taxonomy(taxon_table) %>%
+    remove_rownames() %>%
+    tibble::column_to_rownames("sum.taxonomy") %>%
+    as.matrix
+  # Reorder the columns (sites) for ease of displaying later
+  taxon_table2 <- taxon_table2[ , order(colnames(taxon_table2))]
+
+  # Convert the matrix into a phyloseq otu_table object, with taxa as the rows
+  ana_taxon_table_physeq <- phyloseq::otu_table(taxon_table2, taxa_are_rows = TRUE)
+
+  # Extract the rownames of the matrix above- this has the full taxonomic path.
+  # Split the taxonomic path on semicolons, and turn the resulting matrix into
+  # a phyloseq tax_table object
+  taxon_names <- reshape2::colsplit(rownames(taxon_table2), ";",
+                          names = c("Domain","Phylum","Class","Order","Family","Genus","Species")) %>%
+    as.matrix
+  rownames(taxon_names) <- rownames(taxon_table2)
+
+  tax_physeq <- phyloseq::tax_table(taxon_names)
+  colnames(tax_physeq) <- c("Domain","Phylum","Class","Order","Family","Genus","Species")
+
+  # Make a phyloseq object out of the otu_table and the tax_table objects
+  physeq_object <- phyloseq::phyloseq(ana_taxon_table_physeq, tax_physeq)
+
+  # Make sure the mapping file (ie the site metadata) is ordered according to site name
+  rownames(metadata_file) <- metadata_file[, 1]
+  metadata_file <- metadata_file[order(metadata_file[, 1]), ]
+
+  # Convert the mapping file into a phyloseq sample_data object, and merge it with the
+  # phyloseq object created above to make a phyloseq object with otu table, tax table, and sample data.
+  sampledata <- phyloseq::sample_data(metadata_file)
+  sample_names(sampledata)
+  sample_names(physeq_object)
+  phyloseq::merge_phyloseq(physeq_object, sampledata)
+}
+
+#' Takes a phyloseq object with an otu_table object and returns a vegan style community matrix.
+#' @param physeq_object phyloseq object with an otu_table object within
+#' @return vegan-style community matrix
+#' @examples
+#' good_taxon_table <- data.frame(sum.taxonomy = c("a;b;c;d;f;u", "p;q;r;s;t;u"),
+#' site_1 = c(0,1), site_2 = c(10, 20))
+#' good_maps <- data.frame(site = c("site_1", "site_2"), season = c("wet", "dry"),
+#' host = c("oak", "sage"))
+#' physeq_object <- convert_anacapa_to_phyloseq(good_taxon_table, good_maps)
+#' vegan_otu(physeq_object)
+#' @export
+vegan_otu <- function(physeq_object) {
+  OTU <- phyloseq::otu_table(physeq_object)
+  if (phyloseq::taxa_are_rows(OTU)) {
+    OTU <- t(OTU)
+  }
+  return(methods::as(OTU, "matrix"))
+}
+
+#' Remove "xxx_seq_number" column from ana_taxon_table file if it exists
+#' takes one taxon table as its input, and if it include
+#' a column named "xxx_seq_number", it gets rid of that column - it's not of use to us
+#' any longer
+#'
+#' @param taxon_table taxonomy table from Anacapa
+#' @return ana_taxon_table file, with "xxx_seq_number" column removed (if it existed)
+#' @examples
+#' good_taxon_table <- data.frame(seq_number = c(1,2),
+#' sum.taxonomy = c("a;b;c;d;f;u", "p;q;r;s;t;u"),
+#' site_1 = c(0,1), site_2 = c(10, 20))
+#' scrub_seqNum_column(good_taxon_table)
+#' @export
+scrub_seqNum_column <- function(taxon_table) {
+  to_return <- taxon_table %>% dplyr::select(-dplyr::matches("seq_number"))
+  return(to_return)
+}
+
+#' Replace empty calls in Anacapa taxonomy tables with Unknown
+#' (that is what they effectively are to most users)
+#' @param taxon_table taxonomy table from Anacapa
+#' @return ana_taxon_table with scrubbed 'sum.taxonomy' column
+#' @examples
+#' good_taxon_table <- data.frame(sum.taxonomy = c("a;b;c;d;f;u", "p;q;r;s;t;u"),
+#' site_1 = c(0,1), site_2 = c(10, 20))
+#' scrub_taxon_paths(good_taxon_table)
+#' @export
+scrub_taxon_paths <- function(taxon_table) {
+  to_return <- taxon_table
+  new_sum_tax <- reshape2::colsplit(taxon_table$sum.taxonomy, ";",
+                          names = c("Domain","Phylum", "Class", "Order", "Family", "Genus", "Species"))
+
+  new_sum_tax <- new_sum_tax %>%
+    dplyr::mutate(Domain = ifelse(is.na(Domain) | Domain == "", "unknown", Domain))
+    dplyr::mutate(Phylum = ifelse(is.na(Phylum) | Phylum == "", "unknown", Phylum)) %>%
+    dplyr::mutate(Class = ifelse(is.na(Class) | Class == "", "unknown", Class)) %>%
+    dplyr::mutate(Order = ifelse(is.na(Order) | Order == "", "unknown", Order)) %>%
+    dplyr::mutate(Family = ifelse(is.na(Family) | Family == "", "unknown", Family)) %>%
+    dplyr::mutate(Genus = ifelse(is.na(Genus) | Genus == "", "unknown", Genus)) %>%
+    dplyr::mutate(Species = ifelse(is.na(Species)| Species == "", "unknown", Species))
+
+  new_sum_tax2 <- paste(new_sum_tax$Domain,
+    new_sum_tax$Phylum,
+                        new_sum_tax$Class,
+                        new_sum_tax$Order,
+                        new_sum_tax$Family,
+                        new_sum_tax$Genus,
+                        new_sum_tax$Species, sep = ";")
+  to_return$sum.taxonomy <- new_sum_tax2
+  return(to_return)
+}
+
+#' Verify that the input taxon_table file and the input mapping file meets specificationss
+#' The function takes one taxon table as its input, and verfies that it meets
+#' the expected standards.
+#' The standards incude:
+#' 1. Column names exist.
+#' 2. One of the columns is named "sum.taxonomy"
+#' 3. The "xxx_seq_number" column, if it ever existed, is removed
+#' 4. All columns apart from sum.taxonomy should be numeric
+#' 5. All columns apart from sum.taxonomy should have corresponding row in metadata file
+#' @param taxon_table taxonomy table from Anacapa
+#' @param metadata_file Qiime-style mapping
+#' @examples
+#' good_taxon_table <- data.frame(sum.taxonomy = c("a;b;c;d;f;u", "p;q;r;s;t;u"),
+#' site_1 = c(0,1), site_2 = c(10, 20))
+#' good_maps <- data.frame(site = c("site_1", "site_2"),
+#' season = c("wet", "dry"), host = c("oak", "sage"))
+#' validate_input_files(good_taxon_table, good_maps)
+#' @export
+validate_input_files <- function(taxon_table, metadata_file) {
+  # 1. Column names exist.
+  if (is.null(colnames(taxon_table))) {
+    stop("The input taxon table should have column names. The taxonomy column should be named 'sum.taxonomy'; the rest of the columns should be named according to their sample names.")
+  }
+
+  # 2. One of the columns is named "sum.taxonomy"
+  if (!("sum.taxonomy" %in% colnames(taxon_table))) {
+    stop("Please make sure that the taxonomy column in the input taxon table is named 'sum.taxonomy'!")
+  }
+
+  # 3. The "xxx_seq_number" column, if it ever existed, is removed
+  if (any(stringr::str_detect(colnames(taxon_table), "seq_number"))) {
+    stop("Please makes sure that you have removed the 'xxx_seq_number' column from the taxon table (note: this can be done with the function `scrub_seqNum_column`)")
+  }
+
+  # 4. All columns apart from sum.taxonomy should be numeric
+  if (!(all(sapply(taxon_table %>% ungroup() %>%  dplyr::select(-sum.taxonomy), is.numeric)))) {
+    stop("Please make sure that all columns apart from sum.taxonomy only contain numeric data!")
+  }
+
+  # 5. All columns apart from sum.taxonomy should have corresponding row in metadata file
+ # if (!(all(colnames(taxon_table %>% dplyr::select(-sum.taxonomy)) %in% metadata_file[, 1]))) {
+  #  stop("Please make sure that each sample in your taxon table has a corresponding row in the mapping file!")
+  #}
+
+
+}
+
+```
+
+```{r}
+
+ASV.nested_nova$Step5.tibble[[1]] %>% 
+  left_join(metadata_nova) %>% 
+  filter(., Year==1998 & Station =="San Nicholas Island") %>% 
+  left_join(hash.key_nova) %>% View()
+ 
+ASV.nested_miseq$Step5.tibble[[1]] %>% 
+  left_join(metadata_nova) %>% 
+  filter(., Year==1998 & Station =="San Nicholas Island") %>% 
+  left_join(hash.key_nova) %>% View()
+
+ASV.nested_nova$Step5.tibble[[1]] %>% 
+  left_join(metadata_nova) %>% 
+  filter(., Year==1998 & Station =="San Nicholas Island") %>% 
+  left_join(hash.key_nova) %>% View()
+
+```
+
+```{r}
+physeq_obj.all_eindex <- convert_anacapa_to_phyloseq(all_samples, metadata_nova)
+physeq_obj.all_reads <- convert_anacapa_to_phyloseq(all_samples_reads, metadata_nova)
+
+```
+
+```{r}
+
+ASV.nested_nova$Step5.tibble[[1]] %>% 
+     mutate(., seq_number=str_c("nova_",seq_number)) %>% 
+  left_join(metadata_nova) %>% 
+  filter(., Year==2011 & Station =="San Diego Offshore") %>% 
+  left_join(hash.key_nova) %>% dplyr::select(sample) %>% unique()
+
+to_remove <- c("CO1_1998_4_86.7_50_1_1", "CO1_1998_4_86.7_50_1_2", "CO1_1998_4_93.3_30_1_1", "CO1_1998_4_93.3_30_1_2","CO1_1998_4_93.3_30_1_3","CO1_1998_4_93.3_60_1_1"	,			
+"CO1_1998_4_93.3_60_1_2","CO1_1998_4_93.3_60_1_3","CO1_2011_4_93.3_60_1_1")
+
+physeq_obj.all_eindex <- prune_samples(!(sample_names(physeq_obj.all_eindex) %in% to_remove), physeq_obj.all_eindex)
+sample_names(physeq_obj.all_eindex)
+
+physeq_obj.all_eindex = filter_taxa(physeq_obj.all_eindex, function(x) sum(x) > 0, TRUE)
+physeq_obj.all_eindex = prune_samples(sample_sums(physeq_obj.all_eindex)>0, physeq_obj.all_eindex)
+
+physeq_obj.all_eindex  = subset_taxa(physeq_obj.all_eindex, Class!="Insecta")
+
+tax_table(physeq_obj.all_eindex)
+
+get_taxa_unique(physeq_obj.all_eindex, "Class")
+
+physeq_obj.all_reads <- prune_samples(!(sample_names(physeq_obj.all_reads) %in% to_remove), physeq_obj.all_reads)
+
+physeq_obj.all_reads = filter_taxa(physeq_obj.all_reads, function(x) sum(x) > 0, TRUE)
+
+physeq_obj.all_reads = filter_taxa(physeq_obj.all_reads, function(x) sum(x) > 0, TRUE)
+
+
+```
+
+### PERMANOVA with All Species
+```{r}
+#Betadiversity
+#Generate Vegan formatted data table
+method.sampledf <- data.frame(sample_data(physeq_obj.all_eindex))
+method.rel_abun<- vegan_otu(physeq_obj.all_eindex)
+
+#Jaccard dissimilarity matrix
+method.d_carn <- vegdist(method.rel_abun, method="bray")
+
+#PERMANOVA: Method+Site
+
+method.adonis_results <- adonis2(method.rel_abun~two_month_sst+mean_100_CHLa
+                                 +Year+Station, data=method.sampledf)
+
+method.adonis_results
+
+```
+
+#Homogeneity of Dispersions test... Station 
+
+```{r}
+
+betadisper(method.d_carn, getElement(method.sampledf, "Station"))
+anova(betadisper(method.d_carn, getElement(method.sampledf, "Station")))
+broom::tidy(TukeyHSD(betadisper(method.d_carn, getElement(method.sampledf, "Station")))) 
+```
+#Homogeneity of Dispersions test... Methods
+```{r}
+betadisper(method.d_carn, getElement(method.sampledf, "Year"))
+anova(betadisper(method.d_carn, getElement(method.sampledf, "Year")))
+broom::tidy(TukeyHSD(betadisper(method.d_carn, getElement(method.sampledf, "Year"))))  %>% 
+  filter(., adj.p.value < 0.05)
+```
+
+
+### Ordinations with All Species
+
+#### Figure S3. NMDS
+
+```{r}
+library(viridis)
+#NMDS Ordination
+ord <- ordinate(physeq_obj.all_eindex, method = "NMDS", distance = ("bray"), binary = TRUE)
+
+##Plot_Ordination
+plot_ordination(physeq_obj.all_eindex, ord, "samples", color = "Year", shape="Station", label= "Sample.Name") +
+  ggtitle("NMDS Bray Dissimilarity") + 
+  geom_point(size = 4) + 
+  theme_bw()+ 
+  theme(plot.title = element_text(hjust = 0.5,size = 20, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5,size = 18, face = "bold"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.text=element_text(size=16), 
+        axis.title=element_text(size=16,face="bold"),
+        legend.title = element_text( size=16, face="bold"),
+        legend.text = element_text(size=14)
+        ) + 
+  labs(shape = "Station", color = "Year") +
+  scale_colour_viridis(option="magma")-> figure_1
+
+figure_1
+
+ggsave(plot= figure_1, 
+       filename = here("analysis","figures","figure_1.tiff"),
+       width=12,
+       height = 8,
+       dpi = 300,
+      units = c("in"))
+```
+
+```{r}
+library(viridis)
+#NMDS Ordination
+ord <- ordinate(physeq_obj.all_eindex, method = "NMDS", distance = ("bray"))
+
+##Plot_Ordination
+plot_ordination(physeq_obj.all_eindex, ord, "samples", color = "MHW", shape="Station") +
+  ggtitle("NMDS Bray Dissimilarity") + 
+  geom_point(size = 4) + 
+  theme_bw()+ 
+  theme(plot.title = element_text(hjust = 0.5,size = 20, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5,size = 18, face = "bold"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.text=element_text(size=16), 
+        axis.title=element_text(size=16,face="bold"),
+        legend.title = element_text( size=16, face="bold"),
+        legend.text = element_text(size=14)
+        ) + 
+  labs(shape = "Station", color = "MHW") -> figure_2
+
+figure_2
+
+ggsave(plot= figure_2, 
+       filename = here("analysis","figures","figure_2.tiff"),
+       width=12,
+       height = 8,
+       dpi = 300,
+      units = c("in"))
+```
+
+##### CAP ordination
+<br />
+
+```{r, results="hide",warning=FALSE}
+library(ggrepel)
+library(scales)
+#Run CAP analysis to identify predictor species
+vare.cap <- capscale(method.rel_abun ~Year+mean_100_CHLa+two_month_sst+Station, data=method.sampledf, dist="bray")
+summary(vare.cap) -> cap_sum
+
+#Retain species scores
+sppscores(vare.cap) <- method.rel_abun
+
+as.data.frame(vegan::scores(vare.cap, display="species")) %>% 
+  rownames_to_column(var = "sample") %>% 
+  as.tibble %>% 
+ mutate(dist = sqrt((CAP1 - 0)^2 + (CAP2 - 0)^2)) %>% 
+  top_n(5, dist) -> top_species
+top_species <- as.data.frame(top_species) %>% 
+     separate(sample, into = c("Domain","Phylum", "Class", "Order", "Family", "Genus", "Species"), remove =F, sep=";")
+
+
+rownames(top_species) <- top_species$Species
+
+# Now add the environmental variables as arrows
+arrowmat <- top_species
+
+
+# Add labels, make a data.frame
+arrowdf <- data.frame(labels = rownames(arrowmat), arrowmat)
+
+# Define the arrow aesthetic mapping
+arrow_map <- aes(xend = CAP1, 
+                 yend = CAP2, 
+                 x = 0, 
+                 y = 0, 
+                 shape = NULL, 
+                 color = NULL, 
+                 label = labels)
+
+label_map <- aes(x = .75 * CAP1, 
+                 y = 1.3 * CAP2, 
+                 shape = NULL, 
+                 color = NULL, 
+                 label = labels)
+
+arrowhead = arrow(length = unit(0.02, "npc"))
+
+# Plot CAP
+as.data.frame(vare.cap$CCA$wa) %>% 
+  rownames_to_column(var = "sample") %>% 
+  as.tibble()  %>% 
+  left_join(method.sampledf, by=c("sample"="Seq_number")) %>% 
+  mutate(.,          `SST ˚C` = two_month_sst) %>% 
+  ggplot(aes(x=CAP1, y=CAP2))  +
+  geom_point(aes(color=`SST ˚C`), size=6) + 	
+  scale_color_viridis_c() +
+  geom_segment(
+    mapping = arrow_map, 
+    size = .5, 
+    data = arrowdf, 
+    color = "grey", 
+    arrow = arrowhead
+  ) +
+  geom_text(
+    mapping = label_map, 
+    size = 6,  
+    data = arrowdf, position=position_jitter(width=0.05,height=0.05),
+    show.legend = FALSE
+  ) + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(),  panel.border = element_rect(colour = "black", fill=NA, size=2)) +xlab(paste0("CAP1 ","(",label_percent()(cap_sum$cont$importance[2,1]),")")) +ylab(paste("CAP2","(",label_percent()(cap_sum$cont$importance[2,2]),")")) 
+
+
+ggsave(filename = here("analysis","figures","CAP_ord_species.png"),
+       width=12,
+       height = 8,
+       dpi = 400,
+      units = c("in"))
+
+```
+
+### Stars
+```{r}
+library(ggpubr)
+phyloseq_to_df(physeq_obj.all_reads) %>% 
+  pivot_longer(.,names_to="Sample",values_to="nReads", cols=`CO1_1996_4_80_60_1_1`:`CO1_2019_4_93.3_60_1_3`) %>%
+#rejoin the metadata
+   left_join(method.sampledf, by=c("Sample"="Seq_number"))  -> reads_long
+
+reads_long %>% 
+  filter(., Phylum=="Echinodermata") %>% 
+  filter(., nReads >0) %>% 
+  filter(., Class =="Asteroidea") %>% 
+  #filter(., Genus %in% c("Pisaster","Pycnopodia","Patiria")) %>% 
+  group_by(Year, Species) %>% 
+  dplyr::summarise(`Total Reads`=sum(nReads)) %>% 
+  ggplot(., aes(x=Year,y=Species)) + geom_point(aes(size = `Total Reads`))+ annotate("rect", xmin = 2014, xmax = 2019, ymin = 0, ymax = 18, alpha = .2,fill = "darkred") +theme_pubclean()
+
+ggsave(filename = here("analysis","figures","stars.png"),
+       width=12,
+       height = 8,
+       dpi = 400,
+      units = c("in"))
+
+```
+# Krill
+```{r}
+
+sample_names(physeq_obj.all_eindex)
+phyloseq_to_df(physeq_obj.all_eindex) %>% 
+  pivot_longer(.,names_to="Sample",values_to="eDNA index", cols=`CO1_1996_4_80_60_1_1`:`CO1_2019_4_93.3_60_1_2`) %>%
+#rejoin the metadata
+   left_join(method.sampledf, by=c("Sample"="Seq_number"))  -> eDNA_index_long
+
+eDNA_index_long %>% 
+  filter(., Order=="Euphausiacea") %>% 
+  filter(., `eDNA index` >0) %>% 
+  filter(., Genus %in% c("Euphausia")) %>% 
+  filter(., Species %in% c("Euphausia pacifica","Euphausia gibboides","Euphausia eximia","Euphausia recurva","Euphausia mutica")) %>% 
+  ggplot(., aes(x=Year,y=`eDNA index`)) + geom_point(aes(colour=Species))+ annotate("rect", xmin = 2014, xmax = 2019, ymin = 0, ymax = 1, alpha = .2,fill = "darkred") +facet_wrap(station~., ncol=1) +theme_pubclean()
+
+
+ggsave(filename = here("analysis","figures","Euphausia.png"),
+       width=12,
+       height = 8,
+       dpi = 400,
+      units = c("in"))
+```
+
+# Calanus
+
+```{r}
+
+
+eDNA_index_long %>% 
+  filter(., `eDNA index` >0) %>% 
+  filter(., Genus %in% c("Calanus")) %>% 
+  ggplot(., aes(x=Year,y=`eDNA index`)) + geom_point(aes(colour=Species))+ annotate("rect", xmin = 2014, xmax = 2019, ymin = 0, ymax = 1, alpha = .2,fill = "darkred") +facet_wrap(station~., ncol=1)  +theme_pubclean()
+
+
+
+ggsave(filename = here("analysis","figures","Calanus.png"),
+       width=12,
+       height = 8,
+       dpi = 400,
+      units = c("in"))
+
+```
+
+# Pteropods
+
+```{r}
+library(ggpubr)
+eDNA_index_long %>% 
+  filter(., Order=="Pteropoda") %>% 
+  filter(., `eDNA index` >0) %>% 
+ separate(OTU, into = c("Domain","Phylum", "Class", "Order", "Family", "Genus", "Species"), remove =F, sep=";") %>% 
+  ungroup() %>%
+mutate(., ID_Leray = if_else(Species == "", Genus, Species)) %>%
+mutate(., ID_Leray = if_else(ID_Leray == "", Family, ID_Leray)) %>%
+mutate(., ID_Leray = if_else(ID_Leray == "", Order, ID_Leray)) %>%
+mutate(., ID_Leray = if_else(ID_Leray == "", Class, ID_Leray)) %>%
+mutate(., ID_Leray = if_else(ID_Leray == "", Phylum, ID_Leray)) %>%
+mutate(., ID_Leray = if_else(ID_Leray == "", Domain, ID_Leray)) %>%
+mutate(., ID_Leray = replace_na(ID_Leray, "")) %>% 
+  filter(., ID_Leray %in% c("Limacina helicina", "Limacina retroversa","Limacina inflata", "Heliconoides inflatus","Clione limacina", "Clio pyramidata")) %>% 
+  ggplot(., aes(x=Year,y=`eDNA index`)) + geom_point(aes(colour=ID_Leray)) +annotate("rect", xmin = 2014, xmax = 2019, ymin = 0, ymax = 1, alpha = .2,fill = "darkred") +facet_wrap(station~., ncol=1) +theme_pubclean()
+
+
+ggsave(filename = here("analysis","figures","pteropods.png"),
+       width=12,
+       height = 8,
+       dpi = 400,
+      units = c("in"))
+```
+
+# Gllvm
+```{r}
+
+#Format Abundance Table
+
+eDNA_index_long %>% 
+  filter(., `eDNA index` > 0) %>% 
+  group_by(OTU) %>% count() %>% 
+     separate(OTU, into = c("Domain","Phylum", "Class", "Order", "Family", "Genus", "Species"), remove =F, sep=";") %>% 
+  ungroup() %>%
+mutate(., ID_mifish = if_else(Species == "", Genus, Species)) %>%
+mutate(., ID_mifish = if_else(ID_mifish == "", Family, ID_mifish)) %>%
+mutate(., ID_mifish = if_else(ID_mifish == "", Order, ID_mifish)) %>%
+mutate(., ID_mifish = if_else(ID_mifish == "", Class, ID_mifish)) %>%
+mutate(., ID_mifish = if_else(ID_mifish == "", Phylum, ID_mifish)) %>%
+mutate(., ID_mifish = if_else(ID_mifish == "", Domain, ID_mifish)) %>%
+mutate(., ID_mifish = replace_na(ID_mifish, "")) %>% 
+filter(., Species !="") %>% 
+  filter(., n > 100) -> species_to_choose
+
+
+eDNA_index_long %>% 
+  dplyr::select(Sample, OTU, `eDNA index`) %>% 
+  filter(., OTU %in% species_to_choose$OTU) %>% 
+  arrange(OTU) %>% 
+  pivot_wider(names_from=OTU, values_from=`eDNA index`) %>%  as.data.frame()-> eDNA_all_wide
+
+metadata_nova %>% as.tibble() %>% 
+  filter(., Seq_number %in% eDNA_all_wide$Sample) -> env_calcofi
+
+env_calcofi$two_month_sst <- scale(env_calcofi$two_month_sst)
+
+dim(eDNA_all_wide)
+dim(env_calcofi)
+
+
+eDNA_all_wide %>% dplyr::select(,-Sample) -> eDNA_all_wide_2
+eDNA_all_wide_2$Sample -> rownames(eDNA_all_wide_2)
+eDNA_all_wide_2[,-1] -> eDNA_all_wide_2
+
+env_calcofi <- as.data.frame(env_calcofi)
+rownames(env_calcofi) <- env_calcofi$Sample
+env_calcofi %>%  dplyr::select(two_month_sst) ->env_calcofi
+
+
+```
+
+```{r}
+library(gllvm)
+#All
+
+colnames(eDNA_all_wide_2) %>% as_tibble(.) %>% 
+     separate(value, into = c("Domain","Phylum", "Class", "Order", "Family", "Genus", "Species"), remove =F, sep=";") %>% 
+  ungroup() %>%
+mutate(., ID_mifish = if_else(Species == "", Genus, Species)) %>%
+mutate(., ID_mifish = if_else(ID_mifish == "", Family, ID_mifish)) %>%
+mutate(., ID_mifish = if_else(ID_mifish == "", Order, ID_mifish)) %>%
+mutate(., ID_mifish = if_else(ID_mifish == "", Class, ID_mifish)) %>%
+mutate(., ID_mifish = if_else(ID_mifish == "", Phylum, ID_mifish)) %>%
+mutate(., ID_mifish = if_else(ID_mifish == "", Domain, ID_mifish)) %>%
+mutate(., ID_mifish = replace_na(ID_mifish, ""))  -> cr_pic
+
+colnames(eDNA_all_wide_2) <- cr_pic$ID_mifish
+
+fitp_edna <- gllvm(eDNA_all_wide_2, family = poisson())
+fitp_edna
+plot(fitp_edna, var.colors = 1)
+
+fit_ord_edna <- gllvm(eDNA_all_wide_2, family = "negative.binomial")
+fit_ord_edna
+plot(fit_ord_edna, var.colors = 1)
+
+
+par(mar = c(4, 4, 2, 1))
+ordiplot(fit_ord_edna, biplot = TRUE, ind.spp = 20, 
+         main = "Biplot")
+
+ordiplot(fit_ord_edna, biplot = TRUE, ind.spp = 20, 
+         main = "Biplot", predict.region = TRUE)
+```
+
+```{r}
+criterias <- NULL
+for(i in 1:5){
+  fiti <- gllvm(eDNA_all_wide_2, env_calcofi, family = "negative.binomial", num.lv = i, sd.errors = FALSE,
+                formula = ~ two_month_sst, seed = 1234)
+  criterias[i + 1] <- summary(fiti)$AICc
+  names(criterias)[i + 1] = i
+}
+
+criterias
+```
+
+```{r}
+fit_env <- gllvm(eDNA_all_wide_2, env_calcofi, num.lv = 3, family = "negative.binomial",
+                formula = ~ two_month_sst)
+
+coefplot(fit_env, xcex.ylab = 0.7)
+
+
+```
+#### S27
+```{r}
+library(corrplot)
+library(gclus)
+
+cr <- getResidualCor(fit_env)
+cr
+
+as.data.frame(cr) %>% 
+  pivot_longer(.,names_to="Species",values_to="cor_value", cols=`Pseudovibrio sp. FO-BEG1`:`Brachionidae`) %>%
+  filter(., cor_value != 1) %>% 
+dplyr::summarise(max(cor_value), mean(cor_value), min(cor_value))
+
+class(cr)
+corrplot(cr[order.single(cr), order.single(cr)], diag = FALSE, type = "lower", 
+         method = "circle", tl.cex = 0.2, tl.srt = 45, tl.col = "black",sig.level = 0.05,insig='blank')
+
+
+corrplot(cr[order.single(cr), order.single(cr)], diag = FALSE, type = "lower", 
+         method = "number", tl.cex = 0.2, tl.srt = 45, tl.col = "red",sig.level = 0.05)
+
+testRes = cor.mtest(cr, conf.level = 0.95)
+testRes$p %>%  as.tibble()
+
+as.data.frame(testRes$p) %>% 
+  pivot_longer(.,names_to="Species",values_to="p_value", cols=`Pseudovibrio sp. FO-BEG1`:`Brachionidae`) %>%
+    filter(., p_value !=0) %>% 
+  filter(,, p_value < 0.9)
+
+
+jpeg(file = here("analysis","figures","S27_Figure_correlation_plot.png")
+     , width=48,
+       height = 48,
+       res = 400,
+      units = c("in"))
+corrplot(cr,order="original",diag = TRUE, type = "lower", 
+         method = "square", tl.cex = 1.3, tl.srt = 45,pch.cex = 3, tl.col = "black",
+         insig = 'label_sig', pch.col = 'grey20')
+dev.off()
+
+```
+
+#### S28
+
+```{r}
+fit4lv <- gllvm(eDNA_all_wide_2, family = "negative.binomial", num.lv = 3)
+
+cr0 <- getResidualCor(fit4lv)
+corrplot(cr0[order.single(cr0), order.single(cr0)], diag = FALSE, type = "lower", 
+         method = "square", tl.cex = 0.5, tl.srt = 45, tl.col = "black")
+
+
+
+jpeg(file = here("analysis","figures","S28_Figure_correlation_plot.png")
+     , width=12,
+       height = 12,
+       res = 400,
+      units = c("in"))
+corrplot(cr0,order="original",diag = TRUE, type = "lower", 
+         method = "square", tl.cex = 1.3, tl.srt = 45, tl.col = LabelCol,pch.cex = 3, 
+         insig = 'label_sig', pch.col = 'grey20')
+dev.off()
+
+```
+
+```{r}
+
+rcov <- getResidualCov(fit_env, adjust = 0)
+rcov0 <- getResidualCov(fit4lv, adjust = 0)
+rcov0$trace; rcov$trace
+1 - rcov$trace / rcov0$trace
+#SST explains ~19% in abundances
+```
+
+
+```{r}
+eDNA_index_long
+
+glmer_stan_mod_log_combo<- stan_glmer(log_Normalized.biomass ~ 0 + (1 + temp_std | ID_main/station),   #mod3
+                             family = "gaussian",
+                             data = test_a,
+                             #prior = normal(0, 4),
+                            #prior_intercept = normal(0, 10),
+                             adapt_delta = 0.99,
+                             chains = 10,
+                             iter = 4000,
+                             cores = 2)
+
+saveRDS(glmer_stan_mod_log_combo,here("data","glmer_stan_mod_log_combo.RDS"))
+
+glmer_stan_mod_log_combo <- readRDS(here("data","glmer_stan_mod_log_combo.RDS"))
+
+```
+
+
+

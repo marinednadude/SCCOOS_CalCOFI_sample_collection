@@ -1,0 +1,235 @@
+---
+title: "Calcofi_edna_combine_morphology_10152020"
+author: "Zack Gold"
+date: "10/19/2020"
+edited: "03/10/2020"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(phyloseq)
+library(metagMisc)
+library(here)
+```
+
+```{r Import Data}
+
+#Post SOM
+
+post_occ_counts_rep_unique <- readRDS(file= here("decon","Output_R","post_occupancy_results_merged_runs_separate_read_counts.RDS"))
+
+#Metadata
+input_meta_path <- here("data","CalCOFI_Database_194903-201907_csv_30Apr2020","calcofi_metadata.csv")
+
+metadata <- read.table(input_meta_path, header = 1, sep = ",", stringsAsFactors = F)
+
+tech_matcher <- read.table(here("data","calcofi_metadata_tech_matcher.csv"), header = 1, sep = ",", stringsAsFactors = F)
+
+#NEED TO UPDATE
+species_mapping <- read.table("../../ole_contributions/20210622_species_mapping_file.csv", header = 1, sep = ",", stringsAsFactors = F)
+
+species_mapping %>%  as.tibble() -> species_mapping
+```
+
+```{r}
+
+metadata %>% 
+filter(!Cst_Cnt %in% c(30208,30214)) %>% 
+  mutate(sample=paste0("X",sample),
+         Year = str_sub(Cruise, start = 1, end =4),
+         Month = str_sub(Cruise, start = -2, end =-1)) %>% 
+  filter(., sample !="XNA_NA_NA_NA")->metadata
+
+tech_matcher %>% as.data.frame() %>% 
+  mutate(Location=paste0("X",Location)) %>% 
+  left_join(metadata, by=c("Location"="sample")) %>%
+  dplyr::select(Sample, everything()) %>% distinct() %>% 
+  mutate(Sample=paste0("X",Sample))-> tech_metadata
+```
+
+# Format eDNA Table
+```{r}
+#eDNA Index Calculation
+### 1) Calculate each taxon's proortion per replicate within a run
+post_occ_counts_rep_unique %>% 
+  pivot_longer(., names_to="replicate", cols=`fishcard_12S_all_MiFish_1996_4_80_60_1_1`:`Min_sebastes_Sebastes_2019_4_93.3_60_1_3`,values_to="counts") %>% 
+  mutate(., site= str_sub(replicate,1,-5))  %>% #name change to pull out "site"
+  mutate(., site= str_replace(site, "fishcard_12S_all_MiFish","X")) %>% #name change to pull out "site"
+    mutate(., site= str_replace(site, "Min_sebastes_Sebastes_","X")) %>% #name change to pull out "site"
+  group_by(sum.taxonomy,replicate,site) %>% 
+dplyr::summarise(meanreads = mean(counts), sumreads = sum(counts)) %>%  #mean and sums should be identical now
+  mutate(., Sample= str_sub(replicate))  %>% #name change to pull out "Sample"
+  mutate(., Sample= str_replace(Sample, "fishcard_12S_all_MiFish_","X")) %>% #name change to pull out "site"
+    mutate(., Sample= str_replace(Sample, "Min_sebastes_Sebastes_","X")) %>% #name change to pull out "site" 
+  dplyr::mutate(nReads=sumreads)  %>% 
+  mutate(., Barcode = if_else(str_detect(replicate, "Min_seb"),"Sebastes","MiFish"))->post_occ_counts_replicate_long
+  
+post_occ_counts_replicate_long %>% 
+  filter(., Barcode == "MiFish") %>% 
+  separate(., sum.taxonomy, into=c("Domain","Phylum", "Class","Order","Family","Genus","Species"), sep=";", remove = FALSE) %>% 
+  ungroup() %>%
+  mutate(., ID_mifish=if_else(Species =="", Genus, Species)) %>% 
+  mutate(., ID_mifish=if_else(ID_mifish =="", Family, ID_mifish)) %>% 
+  mutate(., ID_mifish=if_else(ID_mifish =="", Order, ID_mifish)) %>% 
+  mutate(., ID_mifish=if_else(ID_mifish =="", Class, ID_mifish)) %>% 
+  mutate(., ID_mifish=if_else(ID_mifish =="", Phylum, ID_mifish)) %>% 
+  mutate(., ID_mifish=if_else(ID_mifish =="", Domain, ID_mifish)) %>% 
+  mutate(., ID_mifish=replace_na(ID_mifish,"")) %>% 
+  left_join(tech_metadata, by=c("Sample"="Sample")) %>% 
+  dplyr::select(ID_mifish, Sample, ext_rep, tech_rep,nReads,Year,Rpt_Line,Rpt_Sta) %>% 
+  unite(station_id, c("Year","Rpt_Line", "Rpt_Sta"),remove =FALSE)  %>%  
+  left_join(species_mapping) %>%
+  dplyr::select(-ID_sebastes, -ID_microscopy, mifish_reads=nReads) ->post_occ_counts_replicate_long_mifish
+
+post_occ_counts_replicate_long %>% 
+  filter(., Barcode == "Sebastes") %>% 
+  separate(., sum.taxonomy, into=c("Domain","Phylum", "Class","Order","Family","Genus","Species"), sep=";", remove = FALSE) %>% 
+  ungroup() %>% 
+  mutate(., ID_sebastes=if_else(Species =="", Genus, Species)) %>% 
+  mutate(., ID_sebastes=if_else(ID_sebastes =="", Family, ID_sebastes)) %>% 
+  mutate(., ID_sebastes=if_else(ID_sebastes =="", Order, ID_sebastes)) %>% 
+  mutate(., ID_sebastes=if_else(ID_sebastes =="", Class, ID_sebastes)) %>% 
+  mutate(., ID_sebastes=if_else(ID_sebastes =="", Phylum, ID_sebastes)) %>% 
+  mutate(., ID_sebastes=if_else(ID_sebastes =="", Domain, ID_sebastes)) %>% 
+  mutate(., ID_sebastes=replace_na(ID_sebastes,"")) %>% 
+  left_join(tech_metadata, by=c("Sample"="Sample")) %>% 
+  dplyr::select(ID_sebastes, Sample, ext_rep, tech_rep,nReads,Year,Rpt_Line,Rpt_Sta) %>% 
+  unite(station_id, c("Year","Rpt_Line", "Rpt_Sta"),remove =FALSE) %>%  
+  mutate(., ID_sebastes = recode(ID_sebastes, `Sebastes` = "Sebastes AANOTHER")) %>% 
+  left_join(species_mapping) %>% 
+  dplyr::select(-ID_mifish, -ID_microscopy, sebastes_reads=nReads) ->post_occ_counts_replicate_long_sebastes
+
+
+```
+
+
+
+
+
+#Larvae Data
+```{r, results="hide",warning=FALSE}
+
+input_visual_abund <- here("data","larval_counts_20210305.csv")
+
+viz_d_abund <- read.table(input_visual_abund, header = 1, sep = ",", stringsAsFactors = F)
+
+#Raw data
+viz_d_abund %>% 
+  unite(station_id, c("year","line", "station"),remove =FALSE) -> viz_d_abund
+
+#Conver to Long Format
+viz_d_abund %>%
+  pivot_longer(.,cols=Arctozenus.risso:Zaniolepis.latipinnis,names_to="ID_microscopy",values_to="larval_counts") %>% 
+  mutate(., ID_microscopy=str_replace_all(ID_microscopy,"\\."," ")) %>% 
+  mutate(., ID_microscopy = recode(ID_microscopy, `Oxyjulis californica` = "Halichoeres californica")) %>% 
+  left_join(species_mapping) %>% 
+  dplyr::select(-ID_sebastes, -ID_mifish, Year=year,Rpt_Line=line, Rpt_Sta=station)-> viz_d_abund
+
+viz_d_abund %>% 
+  dplyr::select(-standard.haul.factor,-proportion.sorted,-volume.filtered)  -> viz_d_abund_2
+
+viz_d_abund %>% 
+  dplyr::select( -larval_counts, -ID_microscopy , -Unique_ID ) %>%  distinct() -> jar_info
+
+```
+# Check Species Mapping
+```{r}
+
+post_occ_counts_replicate_long %>% 
+  filter(., Barcode == "MiFish") %>% 
+    filter(., nReads > 0) %>% 
+  separate(., sum.taxonomy, into=c("Domain","Phylum", "Class","Order","Family","Genus","Species"), sep=";", remove = FALSE) %>% 
+  ungroup() %>%
+  mutate(., ID_mifish=if_else(Species =="", Genus, Species)) %>% 
+  mutate(., ID_mifish=if_else(ID_mifish =="", Family, ID_mifish)) %>% 
+  mutate(., ID_mifish=if_else(ID_mifish =="", Order, ID_mifish)) %>% 
+  mutate(., ID_mifish=if_else(ID_mifish =="", Class, ID_mifish)) %>% 
+  mutate(., ID_mifish=if_else(ID_mifish =="", Phylum, ID_mifish)) %>% 
+  mutate(., ID_mifish=if_else(ID_mifish =="", Domain, ID_mifish)) %>% 
+  mutate(., ID_mifish=replace_na(ID_mifish,"")) %>%  dplyr::select(ID_mifish) %>%  unique() -> MiFish_species
+
+post_occ_counts_replicate_long %>% 
+  filter(., Barcode == "Sebastes") %>% 
+  filter(., nReads > 0) %>% 
+  separate(., sum.taxonomy, into=c("Domain","Phylum", "Class","Order","Family","Genus","Species"), sep=";", remove = FALSE) %>% 
+  ungroup() %>% 
+  mutate(., ID_sebastes=if_else(Species =="", Genus, Species)) %>% 
+  mutate(., ID_sebastes=if_else(ID_sebastes =="", Family, ID_sebastes)) %>% 
+  mutate(., ID_sebastes=if_else(ID_sebastes =="", Order, ID_sebastes)) %>% 
+  mutate(., ID_sebastes=if_else(ID_sebastes =="", Class, ID_sebastes)) %>% 
+  mutate(., ID_sebastes=if_else(ID_sebastes =="", Phylum, ID_sebastes)) %>% 
+  mutate(., ID_sebastes=if_else(ID_sebastes =="", Domain, ID_sebastes)) %>% 
+  mutate(., ID_sebastes=replace_na(ID_sebastes,"")) %>%  dplyr::select(ID_sebastes) %>%  unique() -> sebastes_species
+
+```
+
+# PCR Replicate
+## Combined eDNA + Larvae
+```{r}
+
+crossing(jar_info,species_mapping) -> site_species_empty
+site_species_empty$Year <- as.numeric(site_species_empty$Year)
+post_occ_counts_replicate_long_mifish$Year <- as.numeric(post_occ_counts_replicate_long_mifish$Year)
+
+post_occ_counts_replicate_long_sebastes$Year <- as.numeric(post_occ_counts_replicate_long_sebastes$Year)
+
+tech_metadata %>%  dplyr::select(Sample, ext_rep, tech_rep,Year, Rpt_Line,Rpt_Sta) %>% 
+unite(station_id, c("Year","Rpt_Line", "Rpt_Sta"))  -> tech_sta
+
+tech_sta %>%  left_join(site_species_empty) %>% 
+  left_join(post_occ_counts_replicate_long_mifish, by =c("Sample","ext_rep", "tech_rep","ID_mifish","Unique_ID","station_id","Year","Rpt_Line","Rpt_Sta")) -> MiFish_data
+
+
+tech_sta %>%  left_join(site_species_empty) %>% 
+  left_join(post_occ_counts_replicate_long_sebastes, by =c("ID_sebastes","Unique_ID","station_id","Year","Rpt_Line","Rpt_Sta","Sample", "ext_rep", "tech_rep")) -> Sebastes_data
+
+site_species_empty %>% 
+  left_join(viz_d_abund_2, by =c("ID_microscopy","Unique_ID","station_id", "Year","Rpt_Line","Rpt_Sta","line.station"))   -> larvae_data
+
+saveRDS(MiFish_data, file= here("data","mifish_tech_nReads.RDS"))
+saveRDS(Sebastes_data, file=here("data","sebastes_tech_nReads.RDS"))
+saveRDS(larvae_data, file=here("data","microscopy_tech_nReads.RDS"))
+```
+
+
+```{r}
+MiFish_data %>% 
+  filter(., Unique_ID=="Engraulis mordax") %>%
+  group_by(station_id) %>% 
+  dplyr::summarise(sum(mifish_reads)) %>%  na.omit() -> edna_chovy
+
+larvae_data %>% 
+filter(., Unique_ID=="Engraulis mordax") %>%
+  group_by(station_id) %>% 
+  dplyr::summarise(sum(larval_counts)) %>%  na.omit() -> larval_chovy
+
+
+edna_chovy %>% 
+  left_join(larval_chovy) %>% 
+  ggplot(aes(x=log(`sum(larval_counts)`), y=log(`sum(mifish_reads)`)) )+ geom_point()
+
+edna_chovy %>% 
+  left_join(larval_chovy) %>% 
+  ggplot(aes(x=`sum(larval_counts)`, y=`sum(mifish_reads)`) )+ geom_point()
+```
+
+
+```{r}
+MiFish_data %>% 
+  filter(., Unique_ID=="Sardinops sagax") %>%
+  na.omit() -> edna_sardine
+
+larvae_data %>% 
+filter(., Unique_ID=="Sardinops sagax") %>%  na.omit() -> larval_sardine
+
+
+edna_sardine %>% 
+  left_join(larval_sardine) %>% 
+  ggplot(aes(x=log(`larval_counts`), y=log(`mifish_reads`), color=station_id) )+ geom_point() + theme(legend.position = "none")
+
+edna_sardine %>% 
+  left_join(larval_sardine) %>% 
+  ggplot(aes(x=`larval_counts`, y=`mifish_reads`, color=station_id) )+ geom_point() + theme(legend.position = "none")
+```
+

@@ -535,6 +535,14 @@ readr::write_excel_csv( a8_samples_in_PIC_and_ERDAPP, file="a8_samples_in_PIC_an
 
 ```
 
+```{r}
+
+calcofi_tows_a8_pic %>% 
+  filter(., year == 1999) %>% 
+  arrange(Staline)
+  filter(., site %in% c("93.3_30","90_60"))
+```
+
 
 ## Differences Per Year
 ```{r}
