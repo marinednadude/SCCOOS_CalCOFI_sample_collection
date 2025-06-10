@@ -1,0 +1,530 @@
+---
+title: "Calcofi_edna_combine_morphology_10152020"
+author: "Zack Gold"
+date: "10/19/2020"
+edited: "03/10/2020"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(phyloseq)
+library(metagMisc)
+library(here)
+```
+
+```{r Import Data}
+
+
+#Post SOM
+post_occ_counts_rep_unique <-
+readRDS(
+file = here(
+"decon",
+"Output_R",
+"post_occupancy_results_merged_runs_separate_read_counts.RDS"
+)
+)
+
+#Metadata
+input_meta_path <-
+here("data",
+"CalCOFI_Database_194903-201907_csv_30Apr2020",
+"calcofi_metadata.csv")
+
+metadata <-
+read.table(
+input_meta_path,
+header = 1,
+sep = ",",
+stringsAsFactors = F
+)
+
+
+tech_matcher <-
+read.table(
+here("data", "calcofi_metadata_tech_matcher.csv"),
+header = 1,
+sep = ",",
+stringsAsFactors = F
+)
+
+species_mapping <-
+  read.csv(here("data", "20210622_species_mapping_file.csv")) %>%
+  dplyr::select(-ID_sebastes) %>%
+  arrange(Unique_ID)
+species_mapping[species_mapping == ""] <- "MISSING"
+species_mapping <-
+  species_mapping %>% filter(species_mapping$Unique_ID != "Clupeiformes")
+species_mapping$Unique_ID[grepl("Sebastes", species_mapping$Unique_ID)] <-
+  "Sebastes"   #synonymizing Sebastes in counts
+species_mapping <- distinct(species_mapping)
+names(species_mapping) <- c("ID_main", "ID_mifish", "ID_count")
+species_mapping <-
+  species_mapping %>% arrange(ID_main, ID_count, ID_mifish)
+
+species_mapping
+```
+
+```{r}
+metadata %>% 
+filter(., !is.na(Volume_mL)) %>%   dplyr::summarise(max(Volume_mL),mean(Volume_mL),min(Volume_mL))
+
+metadata %>% 
+  filter(., Volume_mL < 125)
+
+```
+
+```{r}
+
+
+metadata %>%
+filter(!Cst_Cnt %in% c(30208, 30214)) %>%
+mutate(
+sample = paste0("X", sample),
+Year = str_sub(Cruise, start = 1, end = 4),
+Month = str_sub(Cruise, start = -2, end = -1)
+) %>%
+filter(., sample != "XNA_NA_NA_NA") -> metadata
+
+tech_matcher %>% as.data.frame() %>%
+mutate(Location = paste0("X", Location)) %>%
+left_join(metadata, by = c("Location" = "sample")) %>%
+dplyr::select(Sample, everything()) %>% distinct() %>%
+mutate(Sample = paste0("X", Sample)) -> tech_metadata
+```
+
+# Format eDNA Table
+```{r}
+#eDNA Index Calculation
+### 1) Calculate each taxon's proortion per replicate within a run
+post_occ_counts_rep_unique %>%
+pivot_longer(
+.,
+names_to = "replicate",
+cols = `fishcard_12S_all_MiFish_1996_4_80_60_1_1`:`fishcard_12S_all_MiFish_2019_4_93.3_60_1_3`,
+values_to = "counts"
+) %>%
+mutate(., site = str_sub(replicate, 1, -5))  %>% #name change to pull out "site"
+mutate(., site = str_replace(site, "fishcard_12S_all_MiFish", "X")) %>% #name change to pull out "site"
+mutate(., site = str_replace(site, "Min_sebastes_Sebastes_", "X")) %>% #name change to pull out "site"
+group_by(sum.taxonomy, replicate, site) %>%
+dplyr::summarise(meanreads = mean(counts), sumreads = sum(counts)) %>%  #mean and sums should be identical now
+mutate(., Sample = str_sub(replicate))  %>% #name change to pull out "Sample"
+mutate(., Sample = str_replace(Sample, "fishcard_12S_all_MiFish_", "X")) %>% #name change to pull out "site"
+mutate(., Sample = str_replace(Sample, "Min_sebastes_Sebastes_", "X")) %>% #name change to pull out "site"
+dplyr::mutate(nReads = sumreads)  %>%
+mutate(., Barcode = if_else(str_detect(replicate, "Min_seb"), "Sebastes", "MiFish")) ->
+post_occ_counts_replicate_long
+
+post_occ_counts_replicate_long %>%
+filter(., Barcode == "MiFish") %>%
+separate(
+.,
+sum.taxonomy,
+into = c(
+"Domain",
+"Phylum",
+"Class",
+"Order",
+"Family",
+"Genus",
+"Species"
+),
+sep = ";",
+remove = FALSE
+) %>%
+ungroup() %>%
+mutate(., ID_mifish = if_else(Species == "", Genus, Species)) %>%
+mutate(., ID_mifish = if_else(ID_mifish == "", Family, ID_mifish)) %>%
+mutate(., ID_mifish = if_else(ID_mifish == "", Order, ID_mifish)) %>%
+mutate(., ID_mifish = if_else(ID_mifish == "", Class, ID_mifish)) %>%
+mutate(., ID_mifish = if_else(ID_mifish == "", Phylum, ID_mifish)) %>%
+mutate(., ID_mifish = if_else(ID_mifish == "", Domain, ID_mifish)) %>%
+mutate(., ID_mifish = replace_na(ID_mifish, "")) %>%
+left_join(tech_metadata, by = c("Sample" = "Sample")) %>%
+dplyr::select(ID_mifish,
+Sample,
+ext_rep,
+tech_rep,
+nReads,
+Year,
+Rpt_Line,
+Rpt_Sta) %>%
+unite(station_id, c("Year", "Rpt_Line", "Rpt_Sta"), remove = FALSE)  %>%
+left_join(species_mapping) %>%
+mutate( mifish_reads = nReads) %>% 
+  dplyr::select(-nReads)-> post_occ_counts_replicate_long_mifish
+
+```
+
+
+
+
+
+#Larvae Data
+```{r, results="hide",warning=FALSE}
+
+input_visual_abund <- here("data", "larval_counts_20210305.csv")
+
+viz_d_abund <-
+read.table(
+input_visual_abund,
+header = 1,
+sep = ",",
+stringsAsFactors = F
+)
+
+#Raw data
+viz_d_abund %>%
+unite(station_id, c("year", "line", "station"), remove = FALSE) -> viz_d_abund
+
+#Conver to Long Format
+viz_d_abund %>%
+pivot_longer(
+.,
+cols = Arctozenus.risso:Zaniolepis.latipinnis,
+names_to = "ID_count",
+values_to = "larval_counts"
+) %>%
+mutate(., ID_count = str_replace_all(ID_count, "\\.", " ")) %>%
+mutate(.,
+ID_count = recode(ID_count, `Oxyjulis californica` = "Halichoeres californica")) %>%
+left_join(species_mapping) %>%
+dplyr::select(ID_count,larval_counts,ID_main,ID_mifish,
+Year = year,
+Rpt_Line = line,
+Rpt_Sta = station,
+standard.haul.factor,
+volume.filtered,
+proportion.sorted
+)  %>% 
+  unite(station_id, c("Year", "Rpt_Line", "Rpt_Sta"),remove=F) -> viz_d_abund_2
+viz_d_abund_2$ID_count %>%  unique()
+
+viz_d_abund_2 %>%
+dplyr::select(-larval_counts,-ID_count ,-ID_main,-ID_mifish) %>%  distinct() -> jar_info
+
+```
+# Check Species Mapping
+```{r}
+
+
+post_occ_counts_replicate_long %>%
+filter(., Barcode == "MiFish") %>%
+filter(., nReads > 0) %>%
+separate(
+.,
+sum.taxonomy,
+into = c(
+"Domain",
+"Phylum",
+"Class",
+"Order",
+"Family",
+"Genus",
+"Species"
+),
+sep = ";",
+remove = FALSE
+) %>%
+ungroup() %>%
+mutate(., ID_mifish = if_else(Species == "", Genus, Species)) %>%
+mutate(., ID_mifish = if_else(ID_mifish == "", Family, ID_mifish)) %>%
+mutate(., ID_mifish = if_else(ID_mifish == "", Order, ID_mifish)) %>%
+mutate(., ID_mifish = if_else(ID_mifish == "", Class, ID_mifish)) %>%
+mutate(., ID_mifish = if_else(ID_mifish == "", Phylum, ID_mifish)) %>%
+mutate(., ID_mifish = if_else(ID_mifish == "", Domain, ID_mifish)) %>%
+mutate(., ID_mifish = replace_na(ID_mifish, "")) %>%  dplyr::select(ID_mifish) %>%  unique() -> MiFish_species
+
+
+```
+
+# PCR Replicate
+## Combined eDNA + Larvae
+```{r}
+
+crossing(jar_info, species_mapping) -> site_species_empty
+site_species_empty$Year <- as.numeric(site_species_empty$Year)
+post_occ_counts_replicate_long_mifish$Year <-
+as.numeric(post_occ_counts_replicate_long_mifish$Year)
+
+tech_metadata %>%  dplyr::select(Sample, ext_rep, tech_rep, Year, Rpt_Line, Rpt_Sta) %>%
+unite(station_id, c("Year", "Rpt_Line", "Rpt_Sta"))  -> tech_sta
+
+tech_sta %>%  left_join(site_species_empty) %>%
+left_join(
+post_occ_counts_replicate_long_mifish,
+by = c(
+"Sample",
+"ext_rep",
+"tech_rep",
+"ID_mifish",
+"ID_main",
+"ID_count",
+"station_id",
+"Year",
+"Rpt_Line",
+"Rpt_Sta"
+)
+) -> MiFish_data
+
+MiFish_data$ID_mifish %>%  unique()
+
+site_species_empty %>%
+left_join(
+viz_d_abund_2,
+by = c(
+"ID_count",
+"ID_main",
+"ID_mifish",
+"station_id",
+"Year",
+"Rpt_Line",
+"Rpt_Sta",
+"standard.haul.factor",
+"volume.filtered",     
+"proportion.sorted" 
+)
+)   -> larvae_data
+
+larvae_data$ID_count  %>% unique()
+saveRDS(MiFish_data, file = here("data", "mifish_tech_nReads.RDS"))
+saveRDS(larvae_data, file = here("data", "microscopy_tech_nReads.RDS"))
+```
+
+```{r}
+MiFish_data %>%
+  filter(., ID_main == "Engraulis mordax") %>%
+  group_by(station_id) %>%
+  dplyr::summarise(sum(mifish_reads)) %>%  na.omit() -> edna_chovy
+  
+  larvae_data %>%
+  filter(., ID_main == "Engraulis mordax") %>%
+  group_by(station_id) %>%
+  dplyr::summarise(sum(larval_counts)) %>%  na.omit() -> larval_chovy
+  
+  
+  edna_chovy %>%
+  left_join(larval_chovy) %>%
+  ggplot(aes(
+  x = log(`sum(larval_counts)`),
+  y = log(`sum(mifish_reads)`)
+  )) + geom_point()
+  
+  edna_chovy %>%
+  left_join(larval_chovy) %>%
+  ggplot(aes(x = `sum(larval_counts)`, y = `sum(mifish_reads)`)) + geom_point()
+```
+
+
+```{r}
+MiFish_data %>% 
+  filter(., ID_main=="Sardinops sagax") %>%
+  na.omit() -> edna_sardine
+
+larvae_data %>% 
+filter(., ID_main=="Sardinops sagax") %>%  na.omit() -> larval_sardine
+
+
+edna_sardine %>% 
+  left_join(larval_sardine) %>% 
+  ggplot(aes(x=log(`larval_counts`), y=log(`mifish_reads`), color=station_id) )+ geom_point() + theme(legend.position = "none")
+
+edna_sardine %>% 
+  left_join(larval_sardine) %>% 
+  ggplot(aes(x=`larval_counts`, y=`mifish_reads`, color=station_id) )+ geom_point() + theme(legend.position = "none")
+```
+
+## Comparison of taxa identified
+```{r}
+larvae_data <- readRDS(, file = here("data", "microscopy_tech_nReads.RDS"))
+MiFish_data <- readRDS( file = here("data", "mifish_tech_nReads.RDS"))
+
+larvae_data %>% 
+  filter(., larval_counts >0) %>% 
+  dplyr::select(ID_main, ID_count) %>%  distinct() %>% arrange(ID_main) -> larval_fish_IDs_counted
+
+MiFish_data %>% 
+  filter(., mifish_reads >0) %>% 
+  dplyr::select(ID_main,ID_mifish) %>%  distinct() -> eDNA_fish_IDs_counted
+```
+
+```{r}
+species_mapping %>% 
+  mutate(., case_when(ID_mifish %in% eDNA_fish_IDs_counted & ID_mifish %in% larval_fish_IDs_counted ~ "Species detected by both methods"))
+```
+```{r}
+load(here("data","Stan_Fit_combined_20221114_1424.RData"))
+
+
+Output$species_mapping$ID_main %>%  unique() -> final_59
+```
+
+```{r}
+# Larval data alone
+larvae_data %>% 
+  filter(., larval_counts >0) %>% 
+  dplyr::select( ID_count) %>%  distinct() %>%  arrange(ID_count)
+#92 total taxa found
+
+larvae_data %>% 
+  filter(., ID_count=="Scopelosaurus")
+```
+```{r}
+larval_fish_IDs_counted %>% 
+  filter(., ID_main %in% final_59) -> larval_used_in_model
+#48 of the 59 are from larval counts
+# 6 additional species from eDNA (Benthalbella dentata,Ceratoscopelus townsendi,Diaphus theta,Microstomus pacificus,Parophrys vetulus, Paralichthys californicus, Peprilus simillimus,)
+# 1 additional family from eDNA  (Opisthoproctidae)
+# 1 family resolved to species level for all larvae (Bathylagidae)
+# 2 Stenobrachius leucopsarus was split into unique variant and genus level in eDNA
+
+setdiff(final_59,larval_fish_IDs_counted$ID_main)
+#"Bathylagidae"   resolved to species level in larval data
+#"Benthalbella dentata"  Northern pearleye could be Scopelosaurus which was identified via barcoding
+#"Ceratoscopelus townsendi" Dogtooth lanternfish, southern mesopelagic, not found in larval counts
+#Diaphus theta not detected in any of the samples used, was in a sample that wasn't used for modeling
+#"Microstomus pacificus"   it was counted once in a sample that failed for eDNA so did not make the final cut
+#"Opisthoproctidae"     family not detected in larval
+#"Parophrys vetulus"    English sole not identified in larvae
+# Paralichthys californicus Ca halibut, no genus IDs
+#"Peprilus simillimus"   Pacific pompano not detected in larvae
+#"Stenobrachius nannochir" this is the unique ASV variant found from MiFish
+# Stenobrachius AANOTHER eDNA had some unidentified in the genus, but morphological all one species.
+larval_fish_IDs_counted %>% 
+  arrange(ID_count)
+
+```
+
+```{r}
+MiFish_data %>% 
+   filter(., !is.na(mifish_reads)) %>% 
+    filter(., mifish_reads >0) %>% 
+  dplyr::select( ID_mifish) %>%  distinct()
+#130 unique taxa
+```
+
+
+```{R}
+eDNA_fish_IDs_counted %>% 
+  filter(., ID_main %in% final_59) -> reads_used_in_model
+reads_used_in_model
+
+setdiff(final_59,eDNA_fish_IDs_counted$ID_main)
+#all species detected by eDNA
+
+```
+
+
+```{r}
+larvae_data %>% 
+  filter(., !is.na(larval_counts)) %>% 
+  dplyr::select(station_id, ID_count, larval_counts) %>%  distinct() %>% 
+  dplyr::summarise(`Total Counts` = sum(larval_counts))
+# 10337 larvae counted
+
+larvae_data %>% 
+  filter(., ID_main %in% final_59) %>% 
+  filter(., !is.na(larval_counts)) %>% 
+    dplyr::select(station_id, ID_count, larval_counts) %>%  distinct() %>% 
+  dplyr::summarise(`Total Counts` = sum(larval_counts))
+#10237 larvae retained, 0.990326 reads
+
+larvae_data %>% 
+  filter(.,! ID_main %in% final_59) %>% 
+  filter(., !is.na(larval_counts)) %>% 
+    dplyr::select(station_id, ID_count, larval_counts) %>%  distinct() %>% 
+  dplyr::summarise(`Total Counts` = sum(larval_counts))
+
+larvae_data %>% 
+  filter(.,! ID_main %in% final_59) %>% 
+  filter(., !is.na(larval_counts)) %>% 
+    dplyr::select(station_id, ID_count, larval_counts) %>%  distinct() %>% 
+  group_by(ID_count) %>% 
+  dplyr::summarise(`Total Counts` = sum(larval_counts)) %>% arrange(desc(`Total Counts`))
+
+#max of 7 larvae total not included
+```
+
+```{r}
+MiFish_data %>% 
+   filter(., !is.na(mifish_reads)) %>% 
+    dplyr::select(station_id, ID_mifish, mifish_reads) %>%  distinct() %>% 
+  dplyr::summarise(`Total Counts` = sum(mifish_reads))
+# 54476728 reads
+
+MiFish_data %>% 
+    filter(., ID_main %in% final_59) %>% 
+   filter(., !is.na(mifish_reads)) %>% 
+    dplyr::select(station_id, ID_mifish, mifish_reads) %>%  distinct() %>% 
+  dplyr::summarise(`Total Counts` = sum(mifish_reads))
+# 53915037 reads retained, 0.9896893
+
+MiFish_data %>% 
+    filter(., !ID_main %in% final_59) %>% 
+   filter(., !is.na(mifish_reads)) %>% 
+    dplyr::select(station_id, ID_mifish, mifish_reads) %>%  distinct() %>% 
+  dplyr::summarise(`Total Counts` = sum(mifish_reads))
+# 561691 reads, ~1% chucked
+
+MiFish_data %>% 
+    filter(., !ID_main %in% final_59) %>% 
+  filter(., !is.na(mifish_reads)) %>% 
+    dplyr::select(station_id, ID_mifish, mifish_reads) %>%  distinct() %>% 
+  group_by(ID_mifish) %>% 
+  dplyr::summarise(`Total Counts` = sum(mifish_reads)) %>% arrange(desc(`Total Counts`))
+#max of 211,767 reads not included, which is .3% total sequences
+
+```
+
+
+```{r}
+Output$D_count %>% 
+  left_join(Output$species_mapping) %>% 
+  filter(., ID_count=="Diaphus theta")
+  filter(., Abund >0) %>% 
+  dplyr::select(ID_main, ID_count) %>%  distinct() -> larval_fish_IDs_counted_output
+
+Output$D_mifish %>% 
+   left_join(Output$species_mapping) %>% 
+
+  filter(., nReads >0) %>% 
+  dplyr::select(ID_main,ID_mifish) %>%  distinct() -> eDNA_fish_IDs_counted_out_put
+
+Output$species_mapping$ID_main %>%  unique() -> final_59
+```
+
+```{r}
+setdiff(final_59,eDNA_fish_IDs_counted_out_put$ID_main)
+# all eDNA species included
+
+```
+
+```{r}
+setdiff(final_59,larval_fish_IDs_counted_output$ID_main)
+#"Bathylagidae was assigned by DNA"   assigned to species level a lot  in morphology : "Bathylagoides wesethi"    "Bathylagus pacificus" "Leuroglossus stilbius" "Lipolagus ochotensis"  detected (note all also detected by DNA so unclear what DNA issue is)
+
+#"Ceratoscopelus townsendi" actually not detected by morph
+
+#"Diaphus theta" it was counted once in a sample that failed for eDNA so did not make the final cut
+
+#"Microstomus pacificus"   it was counted once in a sample that failed for eDNA so did not make the final cut
+
+#"Opisthoproctidae"  actually not detected by morph
+
+#"Parophrys vetulus"       actually not detected by morph
+
+#"Peprilus simillimus"actually not detected by morph    
+
+#"Stenobrachius AANOTHER"  all assigned to "Stenobrachius leucopsarus" DNA got S. sp., leucopsarus & nannochir
+
+# "Stenobrachius nannochir" actually not detected by morph
+
+larvae_data$ID_count %>%  unique() %>% sort()
+MiFish_data$ID_mifish %>%  unique() %>% sort()
+
+```
+
+
+

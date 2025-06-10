@@ -1,0 +1,435 @@
+---
+title: "Merge CalCOFI Datatables"
+author: "Zack Gold"
+date: "09/27/2021"
+output: html_document
+---
+#Load Libraries
+```{r load libraries}
+knitr::opts_chunk$set(warning = FALSE)
+
+library(tidyverse)
+library(vegan)
+library(proxy)
+library(reshape2)
+library(stringr)
+library(knitr)
+library(here)
+here()
+```
+
+#Load Data
+```{r load metadata datasets - we will be doing that for all runs}
+
+
+#Metadata Upload
+input_meta_path <- here("data", "sequence_mapping_file_20210907.csv")
+
+metadata <-
+read.table(
+input_meta_path,
+header = 1,
+sep = ",",
+stringsAsFactors = F
+)
+
+metadata %>%
+dplyr::mutate(sample_new = New_name) -> metadata
+
+# Sample Metadata Upload
+input_sample_metadata <-
+here("data",
+"CalCOFI_Database_194903-201907_csv_30Apr2020",
+"calcofi_metadata.csv")
+
+sample_metadata <-
+read.table(
+input_sample_metadata,
+header = 1,
+sep = ",",
+stringsAsFactors = F
+)
+
+
+#Hash.Key Upload
+Hash.key <- readRDS(, file = here("decon", "Output_R", "hash.key.RDS"))
+
+
+#Fix the following Taxonomic Assignments Manually
+Hash.key %>%
+dplyr::mutate(
+.,
+sum.taxonomy_fix = dplyr::case_when(
+!str_detect(seq_number, "seb") &
+sum.taxonomy == "Eukaryota;Chordata;Actinopteri;Perciformes;Sebastidae;Sebastes;Sebastes gilli" ~
+"Eukaryota;Chordata;Actinopteri;Perciformes;Sebastidae;Sebastes;",!str_detect(seq_number, "seb") &
+sum.taxonomy == "Eukaryota;Chordata;Actinopteri;Perciformes;Sebastidae;Sebastes;Sebastes babcocki" ~
+"Eukaryota;Chordata;Actinopteri;Perciformes;Sebastidae;Sebastes;",!str_detect(seq_number, "seb") &
+sum.taxonomy == "Eukaryota;Chordata;Actinopteri;Perciformes;Sebastidae;Sebastes;Sebastes macdonaldi" ~
+"Eukaryota;Chordata;Actinopteri;Perciformes;Sebastidae;Sebastes;",!str_detect(seq_number, "seb") &
+sum.taxonomy == "Eukaryota;Chordata;Actinopteri;Perciformes;Sebastidae;Sebastes;Sebastes nigrocinctus" ~
+"Eukaryota;Chordata;Actinopteri;Perciformes;Sebastidae;Sebastes;",
+str_detect(sum.taxonomy, "Vinciguerria") ~
+"Eukaryota;Chordata;Actinopteri;Stomiiformes;Phosichthyidae;Vinciguerria;Vinciguerria sp.",
+seq_number == "merged_fishcard_12S_all_151" ~ "Eukaryota;Chordata;Actinopteri;Pleuronectiformes;Pleuronectidae;Lyopsetta;Lyopsetta exilis",
+str_detect(sum.taxonomy, "Lampanyctus tenuiformis") ~ "Eukaryota;Chordata;Actinopteri;Myctophiformes;Myctophidae;Nannobrachium;Nannobrachium ritteri",
+seq_number == "merged_fishcard_12S_all_164" ~ "Eukaryota;Chordata;Actinopteri;Pleuronectiformes;Pleuronectidae;Parophrys;Parophrys vetulus",
+seq_number == "merged_fishcard_12S_all_166" ~ "Eukaryota;Chordata;Actinopteri;Pleuronectiformes;Pleuronectidae;Microstomus;Microstomus pacificus_clade",
+TRUE ~ "other"
+)
+) %>%
+dplyr::mutate(.,
+sum.taxonomy2 = if_else(sum.taxonomy_fix != "other", sum.taxonomy_fix, sum.taxonomy)) %>%   dplyr::select(seq_number, sum.taxonomy = sum.taxonomy2) -> Hash.key
+
+#Reupload Data
+ASV.nested <-
+readRDS(file = here("decon", "Output_R", "ASV.nested_final.RDS"))
+ASV.summary <-
+readRDS(file = here("decon", "Output_R", "ASV.summary_final.RDS"))
+
+```
+
+```{r split into positives and samples}
+
+#Create list of control samples
+metadata %>%
+filter(Sample_Control == "Control") %>%
+dplyr::select(sample_new) %>% unique() -> controls
+controls <- controls$sample_new
+
+#Create List of Positive Controls
+metadata %>%
+filter(Control_Type == "Pos") %>%
+dplyr::select(sample_new) %>% unique() -> pos_controls
+pos_controls <- pos_controls$sample_new
+
+#Create List of Negative Controls
+metadata %>%
+filter(Control_Type == "Neg") %>%
+dplyr::select(sample_new) %>% unique() -> neg_controls
+neg_controls <- neg_controls$sample_new
+```
+
+
+#Code for merging ASV tables
+```{r}
+
+
+#Hashes Unique Species
+Hash.key %>%
+distinct(., sum.taxonomy) -> hashes_unique
+
+hashes_unique$number <- row.names(hashes_unique)
+hashes_unique$number <- paste0("taxon_", hashes_unique$number)
+row.names(hashes_unique) <- hashes_unique$number
+
+Hash.key %>%
+left_join(hashes_unique, by = "sum.taxonomy") -> Hash.key.updated
+
+#Create Data List for merging taxon files
+Hash.key.updated %>%
+mutate(Seq_number = seq_number) -> Hash.key.updated
+
+```
+
+### Exploration
+
+```{r}
+ASV.nested$Step5.tibble[[1]] %>%
+  mutate(miseq = ASV.nested$Miseq_run[[1]]) %>%
+  filter(.,!str_detect(sample, "Exp_")) %>%
+  unite(miseq, sample, col = "Sample") %>%
+  left_join(Hash.key.updated, by = "seq_number") %>%
+  dplyr::group_by(number, Sample) %>%
+  dplyr::summarise(nReads = sum(nReads)) %>%
+  spread(., Sample, nReads) %>% #convert to wide data format
+  replace(is.na(.), 0) -> nextseq_b
+  
+  nextseq_b %>%
+  pivot_longer(
+  .,
+  names_to = "replicate",
+  cols = `fishcard_12S_all_MiFish_1996_4_80_60_1_1`:`fishcard_12S_all_MiFish_2019_4_93.3_60_1_3`,
+  values_to = "counts"
+  ) %>%
+  left_join(Hash.key.updated, by = "number") %>%
+  mutate(., site = str_sub(replicate, 1, -5))  %>% #name change to pull out "site"
+  mutate(., site = str_replace(site, "fishcard_12S_all_MiFish_", "X")) %>% #name change to pull out "site"
+  group_by(sum.taxonomy, replicate, site) %>%
+  dplyr::summarise(meanreads = mean(counts), sumreads = sum(counts)) %>%  #mean and sums should be identical now
+  mutate(., Sample = str_sub(replicate))  %>% #name change to pull out "Sample"
+  mutate(., Sample = str_replace(Sample, "fishcard_12S_all_MiFish_", "X")) %>% #name change to pull out "site"
+  dplyr::mutate(nReads = sumreads)  %>%
+  mutate(., Barcode = if_else(str_detect(replicate, "Min_seb"), "Sebastes", "MiFish")) -> post_occ_counts_replicate_long_tester
+  
+  tech_matcher <-
+  read.table(
+  here("data", "calcofi_metadata_tech_matcher.csv"),
+  header = 1,
+  sep = ",",
+  stringsAsFactors = F
+  )
+  
+  tech_matcher %>% as.data.frame() %>%
+  left_join(metadata) %>%
+  left_join(sample_metadata, by = c("Location" = "sample"))  %>%
+  dplyr::select(Sample, everything()) %>% distinct() %>%
+  mutate(Sample = paste0("X", Sample)) -> tech_metadata
+  
+  post_occ_counts_replicate_long_tester %>%
+  group_by(replicate) %>%
+  dplyr::summarise(replicate_read_depth = sum(nReads)) -> replicate_read_depth
+```
+
+```{r}
+post_occ_counts_replicate_long_tester %>%  left_join(tech_metadata, by =
+                                                       c("Sample" = "Sample")) %>%
+                                                       dplyr::select(sum.taxonomy,
+                                                       Sample,
+                                                       ext_rep,
+                                                       tech_rep,
+                                                       nReads,
+                                                       Year,
+                                                       Rpt_Line,
+                                                       Rpt_Sta) %>%
+                                                       unite(station_id, c("Year", "Rpt_Line", "Rpt_Sta"), remove = FALSE) -> post_occ_counts_replicate_long_tester2
+                                                       
+                                                       post_occ_counts_replicate_long_tester2 %>%
+                                                       filter(., str_detect(sum.taxonomy, "Engraulis mordax")) %>%
+                                                       left_join(replicate_read_depth) %>%
+                                                       mutate(proportion = nReads / replicate_read_depth) %>%
+                                                       group_by(station_id, ext_rep) %>%
+                                                       dplyr::summarise(
+                                                       mean_prop = mean(proportion),
+                                                       sd_prop = sd(proportion),
+                                                       mean_reads = mean(nReads),
+                                                       sd_reads = sd(nReads),
+                                                       mean_read_depth = mean(replicate_read_depth)
+                                                       ) %>%
+                                                       filter(., mean_reads > 0) %>%
+                                                       ggplot(., aes(x = station_id, y = mean_prop, fill = mean_read_depth)) + geom_point() + theme(axis.text.x = element_text(angle = 90)) + geom_errorbar(
+                                                       aes(ymin = mean_prop - sd_prop, ymax = mean_prop + sd_prop),
+                                                       width = .2,
+                                                       position = position_dodge(.9)
+                                                       ) 
+```
+
+```{r}
+post_occ_counts_replicate_long_tester2 %>%
+  filter(., str_detect(sum.taxonomy, "Sardinops")) %>%
+  left_join(replicate_read_depth) %>%
+  mutate(proportion = nReads / replicate_read_depth) %>%
+  group_by(station_id, ext_rep) %>%
+  dplyr::summarise(
+  mean_prop = mean(proportion),
+  sd_prop = sd(proportion),
+  mean_reads = mean(nReads),
+  sd_reads = sd(nReads),
+  mean_read_depth = mean(replicate_read_depth)
+  ) %>%
+  filter(., mean_reads > 0) %>%
+  ggplot(., aes(x = station_id, y = mean_prop, fill = mean_read_depth)) + geom_point() + theme(axis.text.x = element_text(angle = 90)) + geom_errorbar(
+  aes(ymin = mean_prop - sd_prop, ymax = mean_prop + sd_prop),
+  width = .2,
+  position = position_dodge(.9)
+  )
+  
+  
+```
+
+###Post Occupancy Merge, All PCR Tech Reps Separate Samples
+```{r}
+
+
+Hash.key.updated$number %>% unique() -> total_taxa
+
+
+ASV.nested$Step5.tibble[[1]] %>%
+mutate(miseq = ASV.nested$Miseq_run[[1]]) %>%
+filter(.,!str_detect(sample, "Exp_")) %>%
+unite(miseq, sample, col = "Sample") %>%
+left_join(Hash.key.updated, by = "seq_number") %>%
+dplyr::group_by(number, Sample) %>%
+dplyr::summarise(nReads = sum(nReads)) %>%
+spread(., Sample, nReads) %>% #convert to wide data format
+replace(is.na(.), 0) -> nextseq_b
+nextseq_b$number %>%  unique() -> nextseq_b_taxa
+
+
+total_kept_taxa <- nextseq_b_taxa %>% unique()
+
+nextseq_b %>% ungroup() %>%
+add_row(number = setdiff(total_kept_taxa, nextseq_b_taxa)) %>%
+arrange(number) %>%
+replace(is.na(.), 0) -> nextseq_b
+
+nextseq_b <- as.data.frame(nextseq_b)
+row.names(nextseq_b) <- nextseq_b$number
+nextseq_b %>% ungroup() %>% dplyr::select(-number) -> nextseq_b
+
+
+dim(nextseq_b)
+
+
+#first, we want to create proportions by dividing by the rowsums:
+#we could do this with sweep() or mutate_all() or other ways, but using vegan:
+
+nextseq_b_prop <- decostand(nextseq_b, method = "total", MARGIN = 2)
+
+#second, we want to ask how the proprortion for each species has changed across columns (samples).
+#We do this by scaling everything to the max observed in each row.
+
+#to do this WITHIN a dataset, we could just do (again, using vegan):
+nextseq_b_index <-
+decostand(nextseq_b_prop, method = "max", MARGIN = 1)
+
+#this gives us an index between 0 and 1 for each species in each dataset.
+
+#But if we want to combine datasets, this second step has to happen in the combined dataset, so it all gets scaled to 0-1.
+#easy enough:
+
+combined_index <-
+decostand(cbind(nextseq_b_prop),
+method = "max",
+MARGIN = 1)
+#now both datasets are combined, on a common, comparable scale.
+```
+
+```{r}
+
+
+results_calcofi_reads = cbind(nextseq_b)
+
+Hash.key.updated.2 <-
+Hash.key.updated[!duplicated(Hash.key.updated$number),]
+
+results_calcofi_reads$number <- rownames(results_calcofi_reads)
+
+results_calcofi_reads %>%
+left_join(Hash.key.updated.2, by = "number") %>%
+dplyr::select(-number, -seq_number, -Seq_number) -> results_calcofi_reads
+
+saveRDS(
+results_calcofi_reads,
+file = here(
+"decon",
+"Output_R",
+"post_occupancy_results_merged_runs_separate_read_counts.RDS"
+)
+)
+
+write_csv(
+results_calcofi_reads ,
+here(
+"decon",
+"Output_csv",
+"post_occupancy_results_merged_runs_separate_read_counts.csv"
+)
+)
+```
+
+
+```{r}
+
+
+Hash.key.updated.2 <-
+Hash.key.updated[!duplicated(Hash.key.updated$number),]
+
+combined_index$number <- rownames(combined_index)
+
+combined_index %>%
+left_join(Hash.key.updated.2, by = "number") %>%
+dplyr::select(-number, -seq_number, -Seq_number) -> combined_index
+
+saveRDS(
+combined_index,
+file = here(
+"decon",
+"Output_R",
+"post_occupancy_results_merged_runs_separate_eDNA_index.RDS"
+)
+)
+write_csv(
+combined_index ,
+here(
+"decon",
+"Output_csv",
+"ASV_post_occ_sum_taxonomy_edna_index_runs_separate.csv"
+)
+)
+
+
+combined_index %>%  as.data.frame() %>%
+pivot_longer(
+.,
+names_to = "sample",
+cols = `fishcard_12S_all_MiFish_1996_4_80_60_1_1`:`fishcard_12S_all_MiFish_2019_4_93.3_60_1_3`,
+values_to = "eIDX"
+) %>%
+group_by(sum.taxonomy) %>%
+dplyr::summarise(max(eIDX)) %>%
+filter(., `max(eIDX)` < 1)
+```
+
+#ASV Variant exploration
+```{r}
+#Reupload Data
+
+
+ASV.nested$Step5.tibble[[1]] %>%
+mutate(miseq = ASV.nested$Miseq_run[[1]]) %>%
+filter(.,!str_detect(sample, "Exp_")) %>%
+unite(miseq, sample, col = "Sample") %>%
+left_join(Hash.key.updated, by = "seq_number") %>%
+dplyr::group_by(sum.taxonomy, Sample) %>%
+dplyr::summarise(nReads = sum(nReads))  %>% 
+ungroup() %>% 
+  mutate(., tot_reads=sum(nReads),
+         prop_reads = nReads/tot_reads) %>% 
+  filter(., str_detect(sum.taxonomy,"Stenobrachius")) -> steno_data
+
+steno_data %>% 
+  group_by(sum.taxonomy) %>% 
+  dplyr::summarise(max(nReads), sum(nReads),mean(nReads),sd(nReads), max(prop_reads), mean(prop_reads), n_distinct(Sample))
+
+steno_data %>% 
+  mutate(., Species = case_when(str_detect(sum.taxonomy,"leucopsarus")~"Stenobrachius leucopsarus",
+           str_detect(sum.taxonomy,"nannochir")~"Stenobrachius leucopsarus Cold Variant",
+            TRUE ~"Genus_level" ) ) %>%
+  dplyr::select(-sum.taxonomy,-tot_reads,-nReads) %>% 
+  pivot_wider(names_from = Species,
+    names_glue = "{Species}_{.value}",
+    values_from = prop_reads, values_fill = 0) -> steno_plot
+
+steno_plot %>% 
+  ggplot(., aes(x=`Stenobrachius leucopsarus_prop_reads`,y=`Stenobrachius leucopsarus Cold Variant_prop_reads`)) +
+  geom_point() +
+  geom_point(alpha = 0.5) +
+  xlab("Stenobrachius leucopsarus Proportional Read Abundance") +
+   ylab("Stenobrachius leucopsarus Cold Variant Proportional Read Abundance")+
+  geom_abline(intercept = 0,slope=1, linetype=2, color="tomato", size=2) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(size = 14),
+    panel.background = element_rect(fill = 'white', colour = 'white'),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.y = element_text(size = 14, angle = 0),
+    axis.title.x = element_text(size = 18, face = "bold"),
+    axis.title.y = element_text(size = 18, face = "bold"),
+    strip.background = element_rect(fill = 'white'),
+    strip.text.x = element_text(size = 15),
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 15),
+    axis.line = element_line(colour = 'black')
+  )  
+
+ggsave(
+  file = here::here("analysis", "figures", "Figure_S1_variant_propotions.png"),
+  width = 12,
+  height = 12
+)
+
+```
+
+

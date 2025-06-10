@@ -1,0 +1,439 @@
+---
+title: "10212020_satellite_data_rerddapXtracto"
+author: "Zack Gold"
+date: "9/28/2021"
+output: html_document
+---
+
+#Load Packages
+```{r}
+library(ncdf4) 
+library(parsedate)
+library(plotdap)
+library(rerddap)
+library(sp)
+library(rerddapXtracto)
+library(devtools)
+library(rerddapXtracto)
+library(tidyverse)
+library(gganimate)
+library(ggplot2)
+library(plotdap)
+library(here)
+```
+
+# Example 1 - CALCOFI
+
+### SST
+```{r}
+require("rerddap")
+## base URL does not need to given because it is the default one
+dataInfo <- info('erdMBchla1day')
+
+urlBase <- "https://coastwatch.pfeg.noaa.gov/erddap/"
+parameter <- "sea_surface_temperature"
+
+dataInfo <- info('erdPH53sstdmday', url = urlBase)
+```
+### Load in Site Sampling Data
+Brief background, there are 4 stations sampled in the Spring 1996, 1998-2019. 
+Hoping to obtain monthly data across the entire sampling time span, specifically to see if SST/Chla is a predictor variable for ichthyoplankton communities derived from eDNA data. Particularly interested in comparing 1 month, 2 month, and annual SST values.
+```{r}
+calcofi_sampling <-
+  read.csv(here("data", "CALCOFI_date_loc_data.csv"))
+  
+  #Get monthly time data
+  calcofi_sampling %>%
+  filter(.,
+  date %in% c("1996-04-16", "1996-04-28", "1996-04-23", "1996-04-17")) %>%
+  dplyr::select(-date) -> date_template
+  
+  seq(as.Date("1995-04-01"), by = "month", length.out = 290) -> all_dates
+  all_dates %>%  as_tibble() %>%
+  dplyr::select(date = value) %>%
+  merge(date_template) -> full_calcofi_sampling
+  
+  full_calcofi_sampling$date <-
+  as.Date(full_calcofi_sampling$date, "%Y-%m-%d")
+  full_calcofi_sampling %>%
+  mutate(., lon = lon + 360) -> full_calcofi_sampling
+  
+  #Chla Satellite data only available 1997 and onwards
+  
+  #Get monthly time data
+  seq(as.Date("1997-09-04"), by = "month", length.out = 270) -> all_dates_2
+  all_dates_2 %>%  as_tibble() %>%
+  dplyr::select(date = value) %>%
+  merge(date_template) -> small_calcofi_sampling
+  
+  
+  small_calcofi_sampling$date <-
+  as.Date(small_calcofi_sampling$date, "%Y-%m-%d")
+  small_calcofi_sampling %>%
+  mutate(., lon = lon + 360) -> small_calcofi_sampling
+  
+```
+
+### Get Monthly SST Data for Region
+```{r}
+require("rerddap")
+require("rerddapXtracto")
+
+# First we will copy the calcofi_sampling data into a variable
+xpos <- full_calcofi_sampling$lon
+ypos <- full_calcofi_sampling$lat
+tpos <- full_calcofi_sampling$date
+zpos <- rep(0., length(xpos))
+swsstInfo <- rerddap::info('erdPH53sstdmday', url = urlBase)
+
+#This code works, but takes a while to run
+# swsst1 <- rxtracto(swsstInfo, parameter = parameter, xcoord = xpos, ycoord = ypos, tcoord = tpos, xlen = .2, ylen = .2, progress_bar = TRUE)
+# saveRDS(swsst1, file=here("data","sst_data.RDS"))
+
+#Load
+swsst1 <- readRDS(file = here("data", "sst_data.RDS"))
+```
+
+
+
+# Plotting
+```{r}
+require("rerddap")
+require("rerddapXtracto")
+parameter <- "sea_surface_temperature"
+
+xpos <- c(-122 + 360, -116 + 360)
+ypos <- c(29, 35)
+time_save <-
+seq(as.Date("1995-04-01"), by = "year", length.out = 25)
+tpos <- c(min(time_save), max(time_save))
+sstInfo <- rerddap::info('erdPH53sstdmday', url = urlBase)
+
+#Load data to save time
+# VIIRS <-
+# rxtracto_3D(
+# sstInfo,
+# parameter = parameter,
+# xcoord = xpos,
+# ycoord = ypos,
+# tcoord = tpos
+# )
+# 
+# saveRDS(VIIRS, file = here("data/sst_region_data.RDS"))
+
+#Load
+VIIRS <- readRDS(file = here("data/sst_region_data.RDS"))
+
+```
+
+### Function for Plotting 
+These are stolen from LegendMap which is not available for 4.0....
+```{r}
+
+create_scale_bar <-  function(lon,
+                              lat,
+                              distance_lon,
+                              distance_lat,
+                              distance_legend,
+                              dist_units = "km") {
+  # First rectangle
+  bottom_right <- maptools::gcDestination(lon = lon,
+                                          lat = lat,
+                                          bearing = 90,
+                                          dist = distance_lon,
+                                          dist.units = dist_units,
+                                          model = "WGS84")
+  topLeft <- maptools::gcDestination(lon = lon,
+                                     lat = lat,
+                                     bearing = 0,
+                                     dist = distance_lat,
+                                     dist.units = dist_units,
+                                     model = "WGS84")
+  rectangle <- cbind(lon = c(lon, lon, bottom_right[1, "long"],
+                             bottom_right[1, "long"], lon),
+                     lat = c(lat, topLeft[1, "lat"],
+                             topLeft[1, "lat"], lat, lat))
+  rectangle <- data.frame(rectangle, stringsAsFactors = FALSE)
+  # Second rectangle t right of the first rectangle
+  bottom_right2 <- maptools::gcDestination(lon = lon,
+                                           lat = lat,
+                                           bearing = 90,
+                                           dist = distance_lon * 2,
+                                           dist.units = dist_units,
+                                           model = "WGS84")
+  rectangle2 <- cbind(lon = c(bottom_right[1, "long"],
+                              bottom_right[1, "long"],
+                              bottom_right2[1, "long"],
+                              bottom_right2[1, "long"],
+                              bottom_right[1,"long"]),
+                      lat = c(lat, topLeft[1, "lat"],
+                              topLeft[1, "lat"], lat, lat))
+  rectangle2 <- data.frame(rectangle2, stringsAsFactors = FALSE)
+  # Now let's deal with the text
+  on_top <- maptools::gcDestination(lon = lon,
+                                    lat = lat,
+                                    bearing = 0,
+                                    dist = distance_legend,
+                                    dist.units = dist_units,
+                                    model = "WGS84")
+  on_top2 <- on_top3 <- on_top
+  on_top2[1, "long"] <- bottom_right[1, "long"]
+  on_top3[1, "long"] <- bottom_right2[1, "long"]
+  legend <- rbind(on_top, on_top2, on_top3)
+  legend <- data.frame(cbind(legend,
+                             text = c(0, distance_lon, distance_lon * 2)),
+                       stringsAsFactors = FALSE,
+                       row.names = NULL)
+  return(list(rectangle = rectangle, rectangle2 = rectangle2, legend = legend))
+}
+
+scale_bar <- function(lon, lat, distance_lon, distance_lat, distance_legend, dist_unit = "km", rec_fill = "white", rec_colour = "black", rec2_fill = "black", rec2_colour = "black", legend_colour = "black", legend_size = 4, orientation = TRUE, arrow_length = 500, arrow_distance = 300, arrow_north_size = 5){
+    the_scale_bar <- create_scale_bar(lon = lon, lat = lat, distance_lon = distance_lon, distance_lat = distance_lat, distance_legend = distance_legend, dist_unit = dist_unit)
+    # First rectangle
+    rectangle1 <- geom_polygon(data = the_scale_bar$rectangle, aes(x = lon, y = lat), fill = rec_fill, colour = rec_colour)
+    
+    # Second rectangle
+    rectangle2 <- geom_polygon(data = the_scale_bar$rectangle2, aes(x = lon, y = lat), fill = rec2_fill, colour = rec2_colour)
+    
+    # Legend
+    scale_bar_legend <- annotate("text", label = paste(the_scale_bar$legend[,"text"], dist_unit, sep=""), x = the_scale_bar$legend[,"long"], y = the_scale_bar$legend[,"lat"], size = legend_size, colour = legend_colour)
+    
+    res <- list(rectangle1, rectangle2, scale_bar_legend)
+    
+    if(orientation){# Add an arrow pointing North
+        coords_arrow <- create_orientation_arrow(scale_bar = the_scale_bar, length = arrow_length, distance = arrow_distance, dist_unit = dist_unit)
+        arrow <- list(geom_segment(data = coords_arrow$res, aes(x = x, y = y, xend = xend, yend = yend), color="black"), annotate("text", label = "N", x = coords_arrow$coords_n[1,"x"], y = coords_arrow$coords_n[1,"y"], size = arrow_north_size, colour = "black"))
+        res <- c(res, arrow)
+    }
+    return(res)
+}
+
+
+create_orientation_arrow <- function(scale_bar,
+                                     length,
+                                     distance = 1,
+                                     dist_units = "km") {
+  lon <- scale_bar$rectangle2[1, 1]
+  lat <- scale_bar$rectangle2[1, 2]
+  # Bottom point of the arrow
+  beg_point <- maptools::gcDestination(lon = lon,
+                                       lat = lat,
+                                       bearing = 0,
+                                       dist = distance,
+                                       dist.units = dist_units,
+                                       model = "WGS84")
+  lon <- beg_point[1, "long"]
+  lat <- beg_point[1, "lat"]
+  # Let us create the endpoint
+  on_top <- maptools::gcDestination(lon = lon,
+                                   lat = lat,
+                                   bearing = 0,
+                                   dist = length,
+                                   dist.units = dist_units,
+                                   model = "WGS84")
+  left_arrow <- maptools::gcDestination(lon = on_top[1, "long"],
+                                        lat = on_top[1, "lat"],
+                                        bearing = 225,
+                                        dist = length / 5,
+                                        dist.units = dist_units,
+                                        model = "WGS84")
+  right_arrow <- maptools::gcDestination(lon = on_top[1, "long"],
+                                         lat = on_top[1, "lat"],
+                                         bearing = 135,
+                                         dist = length / 5,
+                                         dist.units = dist_units,
+                                         model = "WGS84")
+  res <- rbind(
+    cbind(x = lon, y = lat, xend = on_top[1, "long"], yend = on_top[1, "lat"]),
+    cbind(x = left_arrow[1, "long"], y = left_arrow[1, "lat"],
+          xend = on_top[1, "long"], yend = on_top[1, "lat"]),
+    cbind(x = right_arrow[1, "long"], y = right_arrow[1, "lat"],
+          xend = on_top[1, "long"], yend = on_top[1, "lat"]))
+  res <- as.data.frame(res, stringsAsFactors = FALSE)
+  # Coordinates from which "N" will be plotted
+  coords_n <- cbind(x = lon, y = (lat + on_top[1, "lat"]) / 2)
+  return(list(res = res, coords_n = coords_n))
+}
+
+
+```
+
+### Plot entire Southern California Region w/ Monthly Averages
+```{r}
+require("gganimate")
+require("ggplot2")
+require("plotdap")
+
+sanctchl1 <- VIIRS
+sanctchl1$avgmap <- apply(sanctchl1$sea_surface_temperature,c(1,2),function(x) mean(x,na.rm=TRUE))
+require(data.table)
+require(cmocean)
+require(maptools)
+require("mapdata")
+
+melt_map <- function(lon,lat,var) {
+  dimnames(var) <-list(Longitude=lon, Latitude=lat)
+  ret <- melt(var,value.name="avgmap")
+}
+
+xpos <- c(-122, -117)
+ypos <- c(31.5, 34.5)
+
+coast <- map_data("worldHires", ylim = ypos, xlim = xpos)
+
+
+metadata <-
+read.csv(file = "../data/calcofi_metadata_analysis_20210907.csv")
+
+metadata %>% 
+  filter(., Year==1996) %>% 
+  dplyr::select(Sta_ID,Lat_Dec,Lon_Dec) %>% 
+ distinct() %>% 
+  mutate(., Station =c("1. Pt. Conception", "2. San Nicholas \n Island", "3. San Diego \n Inshore","4. San Diego \n Offshore"),
+         Station_number= c("1","2","3","4"))-> site_locations
+
+wes_palette("Zissou1") -> id1
+wes_palette("Darjeeling1") -> id2
+wes_palette("Rushmore1") -> id3
+
+sst_avg_map <- melt_map(sanctchl1$longitude-360, sanctchl1$latitude, sanctchl1$avgmap)
+
+   p = ggplot() + 
+               geom_raster(data = sst_avg_map, 
+     aes(x = Longitude, y = Latitude, fill = avgmap), interpolate = TRUE, na.rm=T) +
+         geom_polygon(data = coast, aes(x=long, y = lat, group = group), fill = "grey80") +
+         theme_bw(base_size = 12) + ylab("Latitude") + xlab("Longitude") +
+         coord_fixed(1.3, xlim = xpos, ylim = ypos) +
+         scale_fill_gradientn(colours = cmocean('thermal')(256), na.value = NA) +
+     geom_point(data=site_locations, aes(x=Lon_Dec, y=Lat_Dec, group=Station, color=Station), size=5) + scale_colour_manual(values= c(id2[2],id1[2], id3[3],id1[4]))+
+     scale_bar(lon = -121.5, lat = 31.8, 
+              distance_lon = 50, distance_lat = 10, distance_legend = -20, 
+              dist_unit = "km", arrow_length = 40, arrow_distance = 30, arrow_north_size = 10,legend_colour="black",rec2_colour = "black",rec_colour = "black",legend_size = 3)
+   p
+
+```
+### Pre vs. Post SST Plot
+```{r}
+
+xpos <- c(-122 + 360, -116 + 360)
+ypos <- c(29, 35)
+time_save <-
+seq(as.Date("1995-04-01"), by = "year", length.out = 20)
+tpos <- c(min(time_save), max(time_save))
+sstInfo <- rerddap::info('erdPH53sstdmday', url = urlBase)
+# 
+# #Load data to save time
+# pre_2014 <-
+# rxtracto_3D(
+# sstInfo,
+# parameter = parameter,
+# xcoord = xpos,
+# ycoord = ypos,
+# tcoord = tpos
+# )
+
+#saveRDS(pre_2014, file = here("data/pre_2014_sst_region_data.RDS"))
+
+#Load
+pre_2014 <- readRDS(file = here("data/pre_2014_sst_region_data.RDS"))
+
+
+
+```
+
+
+```{r}
+
+xpos <- c(-122 + 360, -116 + 360)
+ypos <- c(29, 35)
+time_save <-
+seq(as.Date("2014-04-01"), by = "year", length.out = 6)
+tpos <- c(min(time_save), max(time_save))
+sstInfo <- rerddap::info('erdPH53sstdmday', url = urlBase)
+# 
+# #Load data to save time
+# post_2014 <-
+# rxtracto_3D(
+# sstInfo,
+# parameter = parameter,
+# xcoord = xpos,
+# ycoord = ypos,
+# tcoord = tpos
+# )
+# 
+# saveRDS(post_2014, file = here("data/post_2014_sst_region_data.RDS"))
+
+#Load
+post_2014 <- readRDS(file = here("data/post_2014_sst_region_data.RDS"))
+
+
+
+
+```
+
+
+```{r}
+
+xpos <- c(-121.5, -117)
+ypos <- c(31.5, 34.5)
+pre_2014$avgmap <- apply(pre_2014$sea_surface_temperature,c(1,2),function(x) mean(x,na.rm=TRUE))
+b <- c(10,14,18,22,26,30)
+
+pre_sst_avg_map <- melt_map(pre_2014$longitude-360, pre_2014$latitude, pre_2014$avgmap)
+
+   pre_map = ggplot() + 
+               geom_raster(data = pre_sst_avg_map, 
+     aes(x = Longitude, y = Latitude, fill = avgmap), interpolate = TRUE, na.rm=T) +
+         geom_polygon(data = coast, aes(x=long, y = lat, group = group), fill = "grey80") +
+         theme_bw(base_size = 12) + ylab("Latitude") + xlab("Longitude") +
+         coord_fixed(1.3, xlim = xpos, ylim = ypos) +
+         scale_fill_gradientn(colours = cmocean('thermal')(256), na.value = NA,breaks=b, labels=format(b), name = "SST ˚C") +
+     geom_text(data=site_locations, aes(x=Lon_Dec, y=Lat_Dec, label=Station_number), size=8, colour = "white", fontface = "bold") +
+     scale_bar(lon = -121.5, lat = 31.8, 
+              distance_lon = 50, distance_lat = 10, distance_legend = -20, 
+              dist_unit = "km", arrow_length = 40, arrow_distance = 30, arrow_north_size = 10,legend_colour="black",rec2_colour = "black",rec_colour = "black",legend_size = 3) +ggtitle(label = "Pre Marine Heat Wave 1996-2014")
+   pre_map
+
+
+```
+
+
+```{r}
+
+xpos <- c(-121.5, -117)
+ypos <- c(31.5, 34.5)
+post_2014$avgmap <- apply(post_2014$sea_surface_temperature,c(1,2),function(x) mean(x,na.rm=TRUE))
+
+post_sst_avg_map <- melt_map(post_2014$longitude-360, post_2014$latitude, post_2014$avgmap)
+
+   post_map = ggplot() + 
+               geom_raster(data = post_sst_avg_map, 
+     aes(x = Longitude, y = Latitude, fill = avgmap), interpolate = TRUE, na.rm=T) +
+         geom_polygon(data = coast, aes(x=long, y = lat, group = group), fill = "grey80") +
+         theme_bw(base_size = 12) + ylab("Latitude") + xlab("Longitude") +
+         coord_fixed(1.3, xlim = xpos, ylim = ypos) +
+         scale_fill_gradientn(colours = cmocean('thermal')(256), na.value = NA, breaks=b, labels=format(b),, name = "SST ˚C") +
+     geom_text(data=site_locations, aes(x=Lon_Dec, y=Lat_Dec, label=Station_number), size=8, colour = "white", fontface = "bold") +
+     scale_bar(lon = -121.5, lat = 31.8, 
+              distance_lon = 50, distance_lat = 10, distance_legend = -20, 
+              dist_unit = "km", arrow_length = 40, arrow_distance = 30, arrow_north_size = 10,legend_colour="black",rec2_colour = "black",rec_colour = "black",legend_size = 3) +ggtitle(label = "Post Marine Heatwave 2014-2019") +theme(legend.position = "none")
+   post_map
+
+
+```
+
+```{r}
+library(patchwork)
+pre_map + post_map + plot_layout(guides = 'collect')+ plot_annotation(tag_levels = 'A')
+
+ggsave(
+  file = here::here("analysis", "figures", "Figure_1_site_map.png"),
+  width = 12,
+  height = 8
+)
+
+```
+
+
+
+=

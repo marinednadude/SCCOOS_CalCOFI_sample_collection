@@ -1,0 +1,141 @@
+---
+title: "CalCOFI Metadata"
+author: "Zack Gold"
+date: "11/19/2019"
+output: html_document
+---
+
+```{r}
+library(here)
+library(tidyverse)
+
+```
+
+```{r}
+
+
+#Paths to Files
+bottle <-
+here(
+"data",
+"CalCOFI_Database_194903-201907_csv_30Apr2020",
+"194903-201907_Bottle.csv"
+)
+
+cast <-
+here("data",
+"CalCOFI_Database_194903-201907_csv_30Apr2020",
+"194903-201907_Cast.csv")
+
+sample_list <-
+here(
+"data",
+"CalCOFI_Database_194903-201907_csv_30Apr2020",
+"noaa_sample_list_11192019.txt"
+)
+
+
+bottle_data <-
+read.table(bottle,
+header = 1,
+sep = ",",
+stringsAsFactors = F)
+
+cast_data <-
+read.table(cast,
+header = 1,
+sep = ",",
+stringsAsFactors = F)
+sample_list_data <-
+read.table(
+sample_list,
+header = 1,
+sep = "\t",
+stringsAsFactors = F
+)
+
+#cast count links bottle data to cast data
+```
+
+
+```{r}
+sample_list_data %>%
+  select(Year)  %>%
+  unique() %>% na.omit() -> years_sampled
+  
+  cast_data <- as.data.frame(cast_data)
+  
+  sample_list_data %>%
+  unite(., "sample", c("Year", "Month", "Lat", "Lon")) %>% select(-X) -> sample_list_data
+  
+  cast_data %>%
+  filter(., Year %in% years_sampled$Year) %>%
+  unite("sample", c("Year", "Month", "St_Line", "St_Station")) -> cast_data_1996
+  
+  sample_list_data %>%
+  left_join(cast_data_1996, by = "sample") -> sample_cast_data_1996
+
+```
+
+```{r mean 100m}
+
+
+bottle_data %>%
+filter(., Cst_Cnt %in% cast_data_1996$Cst_Cnt) %>%
+group_by(Cst_Cnt) %>%
+filter(., Depthm < 100 & Depthm > 9) %>%
+mutate(
+.,
+mean_100_T = mean(T_degC, na.rm = TRUE),
+mean_100_Salinity = mean(Salnty, na.rm = TRUE),
+mean_100_O2 = mean(O2ml_L, na.rm = TRUE),
+mean_100_O2_sat = mean(O2Sat, na.rm = TRUE),
+mean_100_silicate = mean(SiO3uM, na.rm = TRUE),
+mean_100_PO4 = mean(PO4uM, na.rm = TRUE),
+mean_100_NO3 = mean(NO3uM, na.rm = TRUE),
+mean_100_NO2 = mean(NO2uM, na.rm = TRUE),
+mean_100_NH3 = mean(NH3uM, na.rm = TRUE),
+mean_100_CHLa = mean(ChlorA, na.rm = TRUE),
+mean_100_Phaeo = mean(Phaeop, na.rm = TRUE),
+mean_100_DIC1 = mean(DIC1, na.rm = TRUE),
+mean_100_TA1 = mean(TA1, na.rm = TRUE),
+mean_100_LightP = mean(LightP, na.rm = TRUE),
+mean_100_pH1 = mean(pH1, na.rm = TRUE)
+) %>%
+distinct(
+Cst_Cnt,
+mean_100_T,
+mean_100_Salinity,
+mean_100_O2,
+mean_100_O2_sat,
+mean_100_silicate,
+mean_100_PO4,
+mean_100_NO3,
+mean_100_NO2,
+mean_100_NH3,
+mean_100_CHLa,
+mean_100_Phaeo,
+mean_100_DIC1,
+mean_100_TA1,
+mean_100_LightP,
+mean_100_pH1
+) -> mean_100_values_working
+
+```
+
+```{r, Combine Bottles with other data}
+sample_cast_data_1996 %>%
+  left_join(mean_100_values_working) -> sample_metadata
+  
+  write.csv(
+  sample_metadata,
+  file = here(
+  "data",
+  "CalCOFI_Database_194903-201907_csv_30Apr2020",
+  "calcofi_metadata.csv"
+  ),
+  quote = FALSE,
+  row.names = FALSE
+  )
+```
+

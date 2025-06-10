@@ -1,0 +1,336 @@
+---
+title: "Calcofi_edna_combine_morphology_10152020"
+author: "Zack Gold"
+date: "10/19/2020"
+edited: "03/10/2020"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(phyloseq)
+library(metagMisc)
+library(here)
+```
+
+# Load Data
+```{r Import Data}
+
+
+#Post SOM
+pre_occ_counts_rep_unique <-
+readRDS(
+file = here("eCalCOFI eDNA/calcofi_invert_data/pilot_84_calcofi_etoh/analysis/CO1_merged_results_sum.taxonomy_tech_reps_separate_nReads.RDS"
+)
+)
+```
+
+```{r, results="hide",warning=FALSE}
+fish_larval_sample_metadata <- read.csv(here("eCalCOFI eDNA/calcofi_invert_data/pilot_84_calcofi_etoh/CalCOFI_eDNA_copy/data/larval_counts_20210305.csv")) %>% dplyr::select(year, line.station ,line,station,standard.haul.factor              ,volume.filtered,proportion.sorted ) %>% 
+  mutate(., site = str_replace(line.station," ","_"),
+         station_id = str_c(year,"_", site))
+
+input_visual_abund <- here("knb-lter-cce.313.1/Micoscropy_data.rds")
+
+viz_d_abund <- readRDS(here(input_visual_abund))
+
+#Raw data
+viz_d_abund %>%
+unite(station_id, c("year", "Line", "Station"), remove = FALSE) -> viz_d_abund
+
+viz_d_abund %>% 
+  left_join(fish_larval_sample_metadata) -> viz_d_abund
+```
+
+```{r}
+#Metadata
+input_meta_path <-
+here("eCalCOFI eDNA/calcofi_invert_data/pilot_84_calcofi_etoh/CalCOFI_eDNA_copy/data/CalCOFI_Database_194903-201907_csv_30Apr2020/calcofi_metadata.csv")
+
+metadata <-
+read.table(
+input_meta_path,
+header = 1,
+sep = ",",
+stringsAsFactors = F
+)
+
+
+tech_matcher <-
+read.table(
+here("eCalCOFI eDNA/calcofi_invert_data/pilot_84_calcofi_etoh/CalCOFI_eDNA_copy/data/calcofi_metadata_tech_matcher.csv"),
+header = 1,
+sep = ",",
+stringsAsFactors = F
+)
+```
+
+
+### Organize Metadata
+```{r}
+metadata %>% 
+filter(., !is.na(Volume_mL)) %>%   dplyr::summarise(max(Volume_mL),mean(Volume_mL),min(Volume_mL))
+
+metadata %>% 
+  filter(., Volume_mL < 125)
+
+```
+
+```{r}
+
+
+metadata %>%
+filter(!Cst_Cnt %in% c(30208, 30214)) %>%
+mutate(
+sample = paste0("X", sample),
+Year = str_sub(Cruise, start = 1, end = 4),
+Month = str_sub(Cruise, start = -2, end = -1)
+) %>%
+filter(., sample != "XNA_NA_NA_NA") -> metadata
+
+tech_matcher %>% as.data.frame() %>%
+mutate(Location = paste0("X", Location)) %>%
+left_join(metadata, by = c("Location" = "sample")) %>%
+dplyr::select(Sample, everything()) %>% distinct() %>%
+mutate(Sample = paste0("X", Sample)) -> tech_metadata
+```
+
+# Format eDNA Table
+```{r}
+#eDNA Index Calculation
+### 1) Calculate each taxon's proortion per replicate within a run
+pre_occ_counts_rep_unique %>% 
+pivot_longer(
+.,
+names_to = "replicate",
+cols = `CO1_1996_4_80_60_1_1`:`CO1_2019_4_93.3_60_1_3`,
+values_to = "counts"
+) %>%
+mutate(., site = str_sub(replicate, 1, -5))  %>% #name change to pull out "site"
+mutate(., site = str_replace(site, "CO1_", "X")) %>% #name change to pull out "site"
+group_by(sum.taxonomy, replicate, site) %>%
+dplyr::summarise(meanreads = mean(counts), sumreads = sum(counts)) %>%  #mean and sums should be identical now
+mutate(., Sample = str_sub(replicate))  %>% #name change to pull out "Sample"
+mutate(., Sample = str_replace(Sample, "CO1_", "X")) %>% #name change to pull out "site"
+dplyr::mutate(nReads = sumreads)  %>%
+mutate(., Barcode = if_else(str_detect(replicate, "CO1"), "CO1", "WEIRD")) %>%  filter(., sum.taxonomy !="") ->
+post_occ_counts_replicate_long
+
+post_occ_counts_replicate_long %>%
+filter(., Barcode == "CO1") %>%
+separate(
+.,
+sum.taxonomy,
+into = c(
+"Domain",
+"Phylum",
+"Class",
+"Order",
+"Family",
+"Genus",
+"Species"
+),
+sep = ";",
+remove = FALSE
+) %>%
+ungroup() %>%
+mutate(., ID_CO1 = if_else(Species == "", Genus, Species)) %>%
+mutate(., ID_CO1 = if_else(ID_CO1 == "", Family, ID_CO1)) %>%
+mutate(., ID_CO1 = if_else(ID_CO1 == "", Order, ID_CO1)) %>%
+mutate(., ID_CO1 = if_else(ID_CO1 == "", Class, ID_CO1)) %>%
+mutate(., ID_CO1 = if_else(ID_CO1 == "", Phylum, ID_CO1)) %>%
+mutate(., ID_CO1 = if_else(ID_CO1 == "", Domain, ID_CO1)) %>%
+mutate(., ID_CO1 = replace_na(ID_CO1, "")) %>%
+left_join(tech_metadata, by = c("Sample" = "Sample")) %>%
+dplyr::select(Species, ID_CO1,
+Sample,
+ext_rep,
+tech_rep,
+nReads,
+Year,
+Rpt_Line,
+Rpt_Sta) %>%
+unite(station_id, c("Year", "Rpt_Line", "Rpt_Sta"), remove = FALSE)-> post_occ_counts_replicate_long_CO1
+
+```
+
+
+### Species Mapping
+```{r}
+viz_d_abund %>% #reminder that this sums all life stages of larvae
+  ungroup() %>% 
+  dplyr::select(ID_Microscopy) %>% 
+  distinct() %>% 
+  mutate(., ID_CO1 = ID_Microscopy)-> visual_count_species
+
+post_occ_counts_replicate_long_CO1 %>% 
+  dplyr::select( ID_CO1,Species) %>% 
+  distinct() %>% 
+  full_join(visual_count_species) %>% 
+  mutate(., ID_CO1= if_else(!is.na(ID_Microscopy) & is.na(Species),"MISSING",ID_CO1)) %>% 
+mutate(.,  ID_CO1= if_else(ID_CO1=="","MISSING",ID_CO1)) %>% 
+  dplyr::mutate(ID_CO1 = replace_na(ID_CO1, "MISSING"),
+              ID_Microscopy = replace_na(ID_Microscopy, "MISSING")) %>% 
+  mutate(., Unique_ID = if_else(ID_CO1 !="MISSING", ID_CO1, ID_Microscopy)) %>% 
+  dplyr::select(ID_main=Unique_ID, ID_CO1, ID_count = ID_Microscopy) -> CO1_species_mapping
+
+saveRDS(CO1_species_mapping, here("data","CO1_species_mapping.RDS"))
+```
+
+
+```{r}
+
+post_occ_counts_replicate_long_CO1 %>%
+left_join(CO1_species_mapping) %>%
+mutate( CO1_reads = nReads) %>% 
+  dplyr::select(-nReads) %>% 
+  filter(., !is.na(ID_main))-> post_occ_counts_replicate_long_CO1_v2
+
+
+post_occ_counts_replicate_long_CO1_v2 %>%
+  ungroup() %>% 
+dplyr::select(station_id,Year,Rpt_Line,Rpt_Sta) %>%  distinct() -> jar_info_eDNA
+```
+
+#Larvae Data
+
+
+```{r}
+#Conver to Long Format
+viz_d_abund %>%
+  ungroup() %>% 
+   dplyr::rename(ID_count=ID_Microscopy) %>% 
+left_join(CO1_species_mapping) %>%
+  dplyr::select(-RowNumber) %>% 
+  dplyr::rename(larval_counts=Count_permsq2,
+Year = year,
+Rpt_Line = Line,
+Rpt_Sta = Station)  -> viz_d_abund_2
+```
+
+# Jar Info
+```{r}
+viz_d_abund_2 %>%
+  ungroup() %>% 
+dplyr::select(-larval_counts,-ID_count ,-ID_main,-ID_CO1) %>%  distinct() -> jar_info_counts
+viz_d_abund_2$station_id %>%  unique()
+intersect(jar_info_eDNA$station_id, jar_info_counts$station_id) %>% length()
+
+setdiff(jar_info_eDNA$station_id, jar_info_counts$station_id) %>% length() # fewer samples counted for Krill than for fish larvae (all)
+
+setdiff(jar_info_counts$station_id, jar_info_eDNA$station_id) %>% length() # 1997 had no eDNA data so checks out
+
+jar_info_counts %>% 
+  filter(., station_id %in% jar_info_eDNA$station_id) -> jar_info
+```
+
+
+# Check Species Mapping
+```{r}
+
+
+post_occ_counts_replicate_long %>%
+filter(., Barcode == "CO1") %>%
+filter(., nReads > 0) %>%
+separate(
+.,
+sum.taxonomy,
+into = c(
+"Domain",
+"Phylum",
+"Class",
+"Order",
+"Family",
+"Genus",
+"Species"
+),
+sep = ";",
+remove = FALSE
+) %>%
+ungroup() %>%
+mutate(., ID_CO1 = if_else(Species == "", Genus, Species)) %>%
+mutate(., ID_CO1 = if_else(ID_CO1 == "", Family, ID_CO1)) %>%
+mutate(., ID_CO1 = if_else(ID_CO1 == "", Order, ID_CO1)) %>%
+mutate(., ID_CO1 = if_else(ID_CO1 == "", Class, ID_CO1)) %>%
+mutate(., ID_CO1 = if_else(ID_CO1 == "", Phylum, ID_CO1)) %>%
+mutate(., ID_CO1 = if_else(ID_CO1 == "", Domain, ID_CO1)) %>%
+mutate(., ID_CO1 = replace_na(ID_CO1, "")) %>%  dplyr::select(ID_CO1) %>%  distinct() -> CO1_species
+
+
+```
+
+# PCR Replicate
+## Combined eDNA + Larvae
+```{r}
+
+crossing(jar_info, CO1_species_mapping) -> site_species_empty
+site_species_empty$Year <- as.numeric(site_species_empty$Year)
+post_occ_counts_replicate_long_CO1_v2$Year <-
+as.numeric(post_occ_counts_replicate_long_CO1_v2$Year)
+post_occ_counts_replicate_long_CO1_v2$Rpt_Sta <-
+as.character(post_occ_counts_replicate_long_CO1_v2$Rpt_Sta)
+
+tech_metadata %>%  dplyr::select(Sample, ext_rep, tech_rep, Year, Rpt_Line, Rpt_Sta) %>%
+unite(station_id, c("Year", "Rpt_Line", "Rpt_Sta"))  -> tech_sta
+
+tech_sta %>%  left_join(site_species_empty) %>%
+left_join(
+post_occ_counts_replicate_long_CO1_v2,
+by = c(
+"Sample",
+"ext_rep",
+"tech_rep",
+"ID_CO1",
+"ID_main",
+"ID_count",
+"station_id",
+"Year",
+"Rpt_Line",
+"Rpt_Sta"
+)
+) -> CO1_data
+
+CO1_data$ID_CO1 %>%  unique()
+
+site_species_empty %>%
+left_join(
+viz_d_abund_2
+)   -> larvae_data
+
+larvae_data$ID_count  %>% unique()
+
+saveRDS(CO1_data, file = here("data", "CO1_tech_nReads.RDS"))
+
+saveRDS(larvae_data, file = here("data", "microscopy_tech_nReads.RDS"))
+```
+
+```{r}
+CO1_data %>%
+  filter(., ID_main == "Euphausia pacifica") %>%
+  group_by(station_id) %>%
+  dplyr::summarise(sum(CO1_reads)) %>%  na.omit() -> edna_epac
+  
+  larvae_data %>%
+  filter(., ID_main == "Euphausia pacifica") %>%
+  group_by(station_id) %>%
+  dplyr::summarise(sum(larval_counts)) %>%  na.omit() -> larval_epac
+  
+  
+  edna_epac %>%
+  left_join(larval_epac) %>%
+  ggplot(aes(
+  x = log(`sum(larval_counts)`),
+  y = log(`sum(CO1_reads)`)
+  )) + geom_point()
+```
+
+```{r}
+  edna_epac %>%
+  left_join(larval_epac) %>%
+  ggplot(aes(x = `sum(larval_counts)`, y = `sum(CO1_reads)`)) + geom_point()
+```
+
+
+
+
+

@@ -1,0 +1,13 @@
+---
+output: pdf_document
+---
+Table S1: Prior and parameter descriptions for the Stan Model.
+
+| Parameter & Prior | Description |
+|    :---   | :--- |
+| $\alpha_i \sim Beta(1,1)$       | Amplification efficiency for species $i$   |
+| $\log(\gamma_{Mijt}) \sim Normal(0,4)$ | True biomass of each species at each site-year  |
+| $\log(\eta_{jtk}) \sim Normal(-4,4)$   | Estimated offset for each PCR reaction at each site-year  |
+| $\tau_0 \sim Normal(0,2)$        | Negative Binomial shape parameter intercept      |
+| $\tau_1 \sim Normal(0,2)$        | Negative Binomial shape parameter slope      |
+
