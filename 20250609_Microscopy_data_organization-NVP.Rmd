@@ -1,0 +1,230 @@
+---
+title: "Species Index Mapper"
+author: "Zack Gold"
+date: "2024-05-06"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(here)
+library(readxl)
+library("rnaturalearth")
+library("rnaturalearthdata")
+library(sf)
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+```
+
+```{r}
+# Import Mark Ohman's number key for krill species and specimen type
+BTEDB_tax <- read_xlsx(here("knb-lter-cce.313.1","BTEDB_tax.xlsx"))
+
+# Extract unique species names and phase-types
+BTEDB_tax %>% 
+  mutate(., Ohman_tax=str_remove(Ohman_tax,"_Abundance")) %>% 
+  separate(Ohman_tax, into=c("Genus","species","phase","type"), sep="_") %>% 
+  mutate(., type = replace_na(type, "")) %>% 
+  mutate(ID_Microscopy=str_c(Genus,species, sep=" "), 
+         Phase=str_c(phase,type,sep="-")) %>% 
+  dplyr::select(ID_Microscopy, Phase) %>%  distinct() -> visual_tax_names
+```
+
+```{r}
+# Import CCE-LTER tow records with microscopy krill counts
+BTEDB <- read.csv(here("knb-lter-cce.313.1", "BTEDB_Abundances.csv"))
+
+# Reformat data to long format with columns for species ID ("ID_Microscopy") and phase type
+BTEDB %>% 
+  mutate(., Date = as.Date(Date),
+        TowBegin= as.POSIXct(TowBegin, format = "%Y-%m-%d %H:%M:%S"),
+        TowEnd= as.POSIXct(TowEnd,  format = "%Y-%m-%d %H:%M:%S")) %>% 
+  pivot_longer(cols=`Euphausia_brevis_adult_Abundance`:`Thysanopoda_pectinata_juvenile_Abundance`,names_to = "Ohman_tax", values_to = "Count_permsq2") %>% 
+  filter(., Date > "1996-01-01") %>% 
+  separate(Ohman_tax, into=c("Genus","species","phase","type"), sep="_", remove = F) %>% 
+  mutate(., type = replace_na(type, "")) %>% 
+  mutate(ID_Microscopy=str_c(Genus,species, sep=" "), 
+         Phase=str_c(phase,type,sep="-")) %>% 
+     mutate(., year= year(Date),
+        month= month(Date), 
+        season = case_when(month < 3 ~"Winter",
+                           month < 6 ~"Spring",
+                           month < 9 ~"Summer",
+                           month < 12 ~"Fall",
+                           TRUE ~"Winter")) %>% 
+  mutate(., Latitude= as.numeric(Latitude),
+         Longitude = as.numeric(Longitude),
+         Lon_deg_r=round(Longitude,1),
+          Lat_deg_r=round(Latitude,1)) %>% 
+  mutate(., site= str_c(Line,"_",Station),
+         year_site = str_c(year,":",Line,"_",Station),
+         year_season_site = str_c(year,":",season,Line,"_",Station)) %>% 
+  filter(., Lat_deg_r > 31) %>% 
+  filter(., Lat_deg_r < 45) -> long_microscopy
+```
+
+```{r}
+# Map number of years with observations at each site for each season
+long_microscopy %>% 
+  dplyr::select(year, season, site) %>% 
+  distinct() %>% 
+  group_by(site, season) %>% 
+  count() -> group_by_site_all
+
+min_lat <- min(long_microscopy$Lat_deg_r)
+max_lat <- max(long_microscopy$Lat_deg_r)
+
+min_lon <- min(long_microscopy$Lon_deg_r)
+max_lon <- max(long_microscopy$Lon_deg_r)
+
+long_microscopy %>% 
+  dplyr::select(site, season, Lat_deg_r, Lon_deg_r) %>% 
+  distinct() -> lat_lot_back_all
+
+lat_lot_back_all %>% 
+  group_by(site, season) %>% 
+  slice(1) -> lat_lot_back_all
+
+group_by_site_all %>% 
+  left_join(lat_lot_back_all) -> group_by_site_all
+  
+  ggplot(data = world) +
+   geom_sf() +
+    geom_point(data=group_by_site_all, 
+               aes(x = Lon_deg_r, y = Lat_deg_r, size=n,colour=n),alpha=0.6 ) +
+    coord_sf(xlim = c(min_lon-1, max_lon+1), ylim = c(min_lat-0.5, max_lat+0.5), expand = FALSE) +
+    theme_bw() + 
+    xlab("Longitude") + ylab("Latitude") + 
+    facet_grid(.~season) + scale_colour_viridis_c(option = "magma", direction=-1) 
+```
+
+```{r}
+# Filter microscopy data by stations of interest and categorize by Site
+
+# This code sums the counts of all life stages for each species!!!
+
+long_microscopy %>% 
+  filter(., site %in% c("80_60", "86.7_50", "93.3_30", "93.3_60")) %>% 
+  mutate(., Site = case_when(str_detect(site,"80_60") ~ "Pt. Conception",
+                                str_detect(site, "86.7_50") ~ "San Nicholas Island",
+                                str_detect(site, "93.3_30") ~ "San Diego Inshore",
+                                str_detect(site, "93.3_60") ~ "San Diego Offshore",
+                                TRUE ~ "other")) %>% 
+  filter(., season =="Winter") %>% 
+  group_by(RowNumber, Date, Line, Station, Latitude, Longitude, TowBegin, TowEnd, 
+           ID_Microscopy, year, month, season, Lon_deg_r, Lat_deg_r, site, year_site, 
+           year_season_site, Site) %>% 
+    summarise(Count_permsq2 = sum(Count_permsq2)) -> Microscopy_data # combines all count_permsq2 values
+
+saveRDS(Microscopy_data, file=here("knb-lter-cce.313.1", "Microscopy_data.rds"))
+```
+
+
+```{r}
+
+Micoscropy_data %>% 
+  ggplot(aes(x=Date, y=log10(Count_permsq2), color=ID_Microscopy)) +geom_point() +facet_wrap(Site~.)
+
+```
+
+```{r}
+
+Micoscropy_data %>% 
+  filter(., Count_permsq2 >0) %>% 
+  ungroup() %>% 
+  count(ID_Microscopy) %>% 
+  arrange(desc(`n`)) %>% 
+  filter(., n> 10) -> abundant_species
+  
+  
+Micoscropy_data %>% 
+  filter(., ID_Microscopy %in% abundant_species$ID_Microscopy) %>% 
+  ggplot(aes(x=Date, y=log10(Count_permsq2), color=ID_Microscopy)) +geom_point() +facet_wrap(Site~.)
+
+```
+
+## Here is where Nastassia's code starts
+
+```{r}
+# Import jar metadata
+jars <- read.csv("calcofi_jars_metadata_20230720_v2.csv")
+
+# Reformat station_id
+jars.v2 <- jars %>% separate_wider_regex(ST_ID,
+                                         patterns = c(yearmonth = "^[^_]+", "_" , station = ".*"))
+
+jars.v2 <- jars.v2 %>% unite(station_id, c("Year", "station"), remove = FALSE)
+
+# Input microscopy data
+input_visual_abund <- here("knb-lter-cce.313.1/Micoscropy_data.rds")
+
+viz_d_abund <- readRDS(here(input_visual_abund))
+
+# Combine year, line, station in microscopy data
+viz_d_abund %>%
+  unite(station_id, c("year", "Line", "Station"), remove = FALSE) -> viz_d_abund
+
+# Import larval count data and combine year
+fish_larval_sample_metadata <- read.csv(here("eCalCOFI eDNA/calcofi_invert_data/pilot_84_calcofi_etoh/CalCOFI_eDNA_copy/data/larval_counts_20210305.csv")) %>% dplyr::select(year, line.station, line, station, standard.haul.factor, volume.filtered, proportion.sorted) %>% 
+  mutate(., site = str_replace(line.station," ","_"),
+         station_id = str_c(year,"_", site))
+
+viz_d_abund %>% 
+  left_join(fish_larval_sample_metadata)#  %>%
+  
+viz_d_abund %>%  
+  dplyr::filter(ID_Microscopy == "Euphausia pacifica") -> viz_d_abund
+
+# Merge jars with larval counts and microscopy data
+jars_counts <- jars.v2 %>% inner_join(viz_d_abund, by = "station_id")
+
+jars_counts_minimal <- jars_counts %>%
+  select(sample, Jar, station_id, Notes, Year, Lat_Dec, Lon_Dec, Month, season, Site, ID_Microscopy, Count_permsq2 )
+
+```
+
+```{r}
+# ddPCR data
+ddpcr <- read.csv("/Users/nastassiapatin/OneDrive - SCCWRP/Experiments/ddPCR/krill assays/Jar_data/ddPCR Results/2025-06-16_NASTASSIAKRILL_COMBINED-NVP.csv", check.names = F)
+
+names(ddpcr) <- iconv(names(ddpcr), to = "ASCII", sub = "u")
+
+ddpcr.sub <- ddpcr %>% select(Sample.ID, Conc.copies.uL., Copies.20uLWell, Positives)
+
+ddpcr.sub <- ddpcr.sub %>% 
+  rename(Jar = Sample.ID) %>% 
+  mutate(Jar = str_replace_all(Jar, '_x2', '_J2'))
+
+```
+
+```{r}
+# Merge microscopy and ddPCR data
+
+ddpcr.micro <- jars_counts_minimal %>%
+  left_join(ddpcr.sub, by = )
+```
+
+Plot
+
+```{r}
+p <- ggplot(ddpcr.micro, aes(x = Conc.copies.uL., 
+                             y = Count_permsq2, 
+                             color = Site)) + 
+    geom_point(size=3) +
+    scale_color_brewer(palette = "Paired") +
+    scale_y_log10() +
+    theme_classic()
+
+p <- ggplot(ddpcr.micro, aes(x = Count_permsq2, 
+                             y = Conc.copies.uL.)) + 
+    geom_point(size=3, aes(color = Site)) +
+    scale_color_brewer(palette = "Paired") +
+    scale_x_log10() +
+    scale_y_log10() +
+    geom_smooth(method="lm", color="black") +
+    theme_classic()
+
+ggsave("Epac_jars_ddpcr_microscopycounts_loglog_lm.png",
+       width = 8, height = 6, units = "in", dpi=120)
+```
