@@ -108,7 +108,7 @@ pal4 <- park_palette("Hawaii", 5)
 ```{r,echo=FALSE}
 
 calcofi_tows_all %>% 
-dplyr::summarise(n_distinct(cruise), n_distinct(`site`), n_distinct(`year_season_site`)) %>%  kable()
+dplyr::summarise(n_distinct(cruise), n_distinct(`site`), n_distinct(`year_season_site`)) # %>%  kable()
 
 ```
 
@@ -172,7 +172,7 @@ Spring and Winter sampling is more consistent and extends further north. Spring,
 ```{r,echo=FALSE}
 
 calcofi_tows_spring_fall %>% 
-dplyr::summarise(n_distinct(`year_site`), n_distinct(cruise), n_distinct(`site`), n_distinct(`year_season_site`)) %>%  kable()
+dplyr::summarise(n_distinct(`year_site`), n_distinct(cruise), n_distinct(`site`), n_distinct(`year_season_site`)) # %>%  kable()
 
 ```
 
@@ -238,14 +238,14 @@ calcofi_tows_all %>%
 readr::write_excel_csv(calcofi_tows_a8_erdapp, file="all_a8_samples_in_ERDAPP.csv")
 
 calcofi_tows_a8_erdapp %>% 
-dplyr::summarise(n_distinct(`year_season_site`),n_distinct(`year_site`), n_distinct(cruise), n_distinct(`site`))  %>%  kable()
+dplyr::summarise(n_distinct(`year_season_site`),n_distinct(`year_site`), n_distinct(cruise), n_distinct(`site`)) #  %>%  kable()
 ```
 
 ### ERDAPP Option a8 Cruise Summary
 ```{r}
 calcofi_tows_a8_erdapp %>% 
   group_by(cruise) %>% 
-  dplyr::summarise(Stations = n_distinct(site)) %>% kable()
+  dplyr::summarise(Stations = n_distinct(site)) # %>% kable()
 ```
 ### Average Samples per Cruise
 ```{r}
@@ -254,7 +254,7 @@ calcofi_tows_a8_erdapp %>%
   group_by(cruise) %>% 
   count() %>% 
   ungroup() %>% 
-dplyr::summarise(mean(n), max(n), min(n))  %>%  kable()
+dplyr::summarise(mean(n), max(n), min(n)) #  %>%  kable()
 
 ```
 

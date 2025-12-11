@@ -1,6 +1,6 @@
 ---
 title: "Species Index Mapper"
-author: "Zack Gold"
+author: "Zack Gold and Nastassia Patin"
 date: "2024-05-06"
 output: html_document
 ---
@@ -9,11 +9,11 @@ output: html_document
 library(tidyverse)
 library(here)
 library(readxl)
-library("rnaturalearth")
-library("rnaturalearthdata")
-library(sf)
+#library("rnaturalearth")
+#library("rnaturalearthdata")
+#library(sf)
 
-world <- ne_countries(scale = "medium", returnclass = "sf")
+#world <- ne_countries(scale = "medium", returnclass = "sf")
 
 ```
 
@@ -48,10 +48,10 @@ BTEDB %>%
          Phase=str_c(phase,type,sep="-")) %>% 
      mutate(., year= year(Date),
         month= month(Date), 
-        season = case_when(month < 3 ~"Winter",
-                           month < 6 ~"Spring",
-                           month < 9 ~"Summer",
-                           month < 12 ~"Fall",
+        season = case_when(month < 3 ~ "Winter",
+                           month < 6 ~ "Spring",
+                           month < 9 ~ "Summer",
+                           month < 12 ~ "Fall",
                            TRUE ~"Winter")) %>% 
   mutate(., Latitude= as.numeric(Latitude),
          Longitude = as.numeric(Longitude),
@@ -107,11 +107,11 @@ group_by_site_all %>%
 long_microscopy %>% 
   filter(., site %in% c("80_60", "86.7_50", "93.3_30", "93.3_60")) %>% 
   mutate(., Site = case_when(str_detect(site,"80_60") ~ "Pt. Conception",
-                                str_detect(site, "86.7_50") ~ "San Nicholas Island",
+                                str_detect(site, "86.7_50") ~ "San Nicolas Island",
                                 str_detect(site, "93.3_30") ~ "San Diego Inshore",
                                 str_detect(site, "93.3_60") ~ "San Diego Offshore",
                                 TRUE ~ "other")) %>% 
-  filter(., season =="Winter") %>% 
+  filter(., season =="Spring") %>% 
   group_by(RowNumber, Date, Line, Station, Latitude, Longitude, TowBegin, TowEnd, 
            ID_Microscopy, year, month, season, Lon_deg_r, Lat_deg_r, site, year_site, 
            year_season_site, Site) %>% 
@@ -157,27 +157,27 @@ jars.v2 <- jars %>% separate_wider_regex(ST_ID,
 jars.v2 <- jars.v2 %>% unite(station_id, c("Year", "station"), remove = FALSE)
 
 # Input microscopy data
-input_visual_abund <- here("knb-lter-cce.313.1/Micoscropy_data.rds")
+input_visual_abund <- here("knb-lter-cce.313.1/Microscopy_data.rds")
 
-viz_d_abund <- readRDS(here(input_visual_abund))
+Microscopy_data <- readRDS(here(input_visual_abund))
 
 # Combine year, line, station in microscopy data
-viz_d_abund %>%
-  unite(station_id, c("year", "Line", "Station"), remove = FALSE) -> viz_d_abund
+Microscopy_data %>%
+  unite(station_id, c("year", "Line", "Station"), remove = FALSE) -> Microscopy_data
 
 # Import larval count data and combine year
 fish_larval_sample_metadata <- read.csv(here("eCalCOFI eDNA/calcofi_invert_data/pilot_84_calcofi_etoh/CalCOFI_eDNA_copy/data/larval_counts_20210305.csv")) %>% dplyr::select(year, line.station, line, station, standard.haul.factor, volume.filtered, proportion.sorted) %>% 
   mutate(., site = str_replace(line.station," ","_"),
          station_id = str_c(year,"_", site))
 
-viz_d_abund %>% 
+Microscopy_data %>% 
   left_join(fish_larval_sample_metadata)#  %>%
   
-viz_d_abund %>%  
-  dplyr::filter(ID_Microscopy == "Euphausia pacifica") -> viz_d_abund
+Microscopy_data %>%  
+  dplyr::filter(ID_Microscopy == "Euphausia pacifica") -> Microscopy_data
 
 # Merge jars with larval counts and microscopy data
-jars_counts <- jars.v2 %>% inner_join(viz_d_abund, by = "station_id")
+jars_counts <- jars.v2 %>% inner_join(Microscopy_data, by = "station_id")
 
 jars_counts_minimal <- jars_counts %>%
   select(sample, Jar, station_id, Notes, Year, Lat_Dec, Lon_Dec, Month, season, Site, ID_Microscopy, Count_permsq2 )
@@ -186,7 +186,7 @@ jars_counts_minimal <- jars_counts %>%
 
 ```{r}
 # ddPCR data
-ddpcr <- read.csv("/Users/nastassiapatin/OneDrive - SCCWRP/Experiments/ddPCR/krill assays/Jar_data/ddPCR Results/2025-06-16_NASTASSIAKRILL_COMBINED-NVP.csv", check.names = F)
+ddpcr <- read.csv("/Users/Home/OneDrive - UC San Diego/Experiments/ddPCR/krill assays/Jar_data/ddPCR Results/2025-06-16_NASTASSIAKRILL_COMBINED-NVP.csv", check.names = F)
 
 names(ddpcr) <- iconv(names(ddpcr), to = "ASCII", sub = "u")
 
