@@ -111,20 +111,25 @@ long_microscopy %>%
                                 str_detect(site, "93.3_30") ~ "San Diego Inshore",
                                 str_detect(site, "93.3_60") ~ "San Diego Offshore",
                                 TRUE ~ "other")) %>% 
+<<<<<<<< HEAD:ddPCR_NVP/20251210_ddPCR_Microscopy-NVP.Rmd
   filter(., season =="Spring") %>% 
+========
+  filter(., season == "Spring") %>%
+  filter(., ID_Microscopy == "Euphausia pacifica") %>%
+>>>>>>>> bea9589 (Added line-station conversion code and reorganized Sampling_design):ddPCR_NVP/20251119_Microscopy_data_organization-NVP.Rmd
   group_by(RowNumber, Date, Line, Station, Latitude, Longitude, TowBegin, TowEnd, 
            ID_Microscopy, year, month, season, Lon_deg_r, Lat_deg_r, site, year_site, 
            year_season_site, Site) %>% 
-    summarise(Count_permsq2 = sum(Count_permsq2)) -> Microscopy_data # combines all count_permsq2 values
+    summarise(Count_permsq2 = sum(Count_permsq2)) -> Microscopy_data_Epac # combines all count_permsq2 values
 
-saveRDS(Microscopy_data, file=here("knb-lter-cce.313.1", "Microscopy_data.rds"))
+saveRDS(Microscopy_data_Epac, file=here("knb-lter-cce.313.1", "Microscopy_data_Epac.rds"))
 ```
 
 
 ```{r}
 
 Microscopy_data %>% 
-  ggplot(aes(x=Date, y=log10(Count_permsq2), color=ID_Microscopy)) +geom_point() +facet_wrap(Site~.)
+  ggplot(aes(x=Date, y=log10(Count_permsq2), color=ID_Microscopy)) + geom_point() +facet_wrap(Site~.)
 
 ```
 
@@ -154,12 +159,19 @@ jars <- read.csv("calcofi_jars_metadata_20230720_v2.csv")
 jars.v2 <- jars %>% separate_wider_regex(ST_ID,
                                          patterns = c(yearmonth = "^[^_]+", "_" , station = ".*"))
 
-jars.v2 <- jars.v2 %>% unite(station_id, c("Year", "station"), remove = FALSE)
+jars.v2 <- jars.v2 %>% unite(station_id, c("Year", "station"), 
+                             remove = FALSE)
 
 # Input microscopy data
+<<<<<<<< HEAD:ddPCR_NVP/20251210_ddPCR_Microscopy-NVP.Rmd
 input_visual_abund <- here("knb-lter-cce.313.1/Microscopy_data.rds")
 
 Microscopy_data <- readRDS(here(input_visual_abund))
+========
+visual_abund_Epac <- here("knb-lter-cce.313.1/Microscopy_data_Epac.rds")
+
+viz_d_abund <- readRDS(visual_abund_Epac)
+>>>>>>>> bea9589 (Added line-station conversion code and reorganized Sampling_design):ddPCR_NVP/20251119_Microscopy_data_organization-NVP.Rmd
 
 # Combine year, line, station in microscopy data
 Microscopy_data %>%
@@ -170,6 +182,7 @@ fish_larval_sample_metadata <- read.csv(here("eCalCOFI eDNA/calcofi_invert_data/
   mutate(., site = str_replace(line.station," ","_"),
          station_id = str_c(year,"_", site))
 
+<<<<<<<< HEAD:ddPCR_NVP/20251210_ddPCR_Microscopy-NVP.Rmd
 Microscopy_data %>% 
   left_join(fish_larval_sample_metadata)#  %>%
   
@@ -178,6 +191,15 @@ Microscopy_data %>%
 
 # Merge jars with larval counts and microscopy data
 jars_counts <- jars.v2 %>% inner_join(Microscopy_data, by = "station_id")
+========
+viz_d_abund %>% 
+  left_join(fish_larval_sample_metadata) %>%  
+  dplyr::filter(ID_Microscopy == "Euphausia pacifica") -> viz_d_abund_larv
+
+# Merge jars with larval counts and microscopy data
+jars_counts <- jars.v2 %>% inner_join(viz_d_abund_larv, 
+                                      by = c("station_id", "season"))
+>>>>>>>> bea9589 (Added line-station conversion code and reorganized Sampling_design):ddPCR_NVP/20251119_Microscopy_data_organization-NVP.Rmd
 
 jars_counts_minimal <- jars_counts %>%
   select(sample, Jar, station_id, Notes, Year, Lat_Dec, Lon_Dec, Month, season, Site, ID_Microscopy, Count_permsq2 )
@@ -205,24 +227,29 @@ ddpcr.micro <- jars_counts_minimal %>%
   left_join(ddpcr.sub, by = )
 ```
 
-Plot
+Generate regressions and plots
 
 ```{r}
-p <- ggplot(ddpcr.micro, aes(x = Conc.copies.uL., 
-                             y = Count_permsq2, 
-                             color = Site)) + 
-    geom_point(size=3) +
-    scale_color_brewer(palette = "Paired") +
-    scale_y_log10() +
-    theme_classic()
+### Microscopy counts
 
-p <- ggplot(ddpcr.micro, aes(x = Count_permsq2, 
+# Linear regression
+lm_model_counts <- lm(Count_permsq2 ~ Conc.copies.uL., data = ddpcr.micro)
+r_squared_counts <- summary(lm_model_counts)$r.squared
+slope_counts <- coef(lm_model_counts)[2]
+pearsons_counts <- sqrt(r_squared_counts) * sign(slope_counts)
+  
+# Plot with Pearson's R displayed
+p1 <- ggplot(ddpcr.micro, aes(x = Count_permsq2, 
                              y = Conc.copies.uL.)) + 
     geom_point(size=3, aes(color = Site)) +
     scale_color_brewer(palette = "Paired") +
     scale_x_log10() +
     scale_y_log10() +
     geom_smooth(method="lm", color="black") +
+    annotate(geom="text", label = paste("Pearson's r = ", round(pearsons_counts, 2)),
+              color="black", x = min(ddpcr.micro$Count_permsq2) + 10,
+             y = max(ddpcr.micro$Conc.copies.uL.) - 1,
+             hjust=0, vjust=1) +
     theme_classic()
 
 ggsave("Epac_jars_ddpcr_microscopycounts_loglog_lm.png",

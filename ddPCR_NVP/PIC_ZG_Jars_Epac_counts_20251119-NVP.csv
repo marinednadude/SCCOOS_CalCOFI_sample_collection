@@ -1,0 +1,56 @@
+"sample","Jar","station_id","Notes","Year","Lat_Dec","Lon_Dec","Month","season","Site","ID_Microscopy","Count_permsq2"
+"X2000_4_80_60","0004_80_60","2000_80_60","low_normal",2000,34.148333,-121.156666,4,"Spring","Pt. Conception","Euphausia pacifica",1318.538
+"X2000_4_86.7_50","0004_86.7_50","2000_86.7_50","low_normal",2000,33.323333,-119.666666,4,"Spring","San Nicolas Island","Euphausia pacifica",1594.614
+"X2000_4_93.3_30","0004_93.3_30","2000_93.3_30","low_normal",2000,32.846666,-117.538333,4,"Spring","San Diego Inshore","Euphausia pacifica",550.434
+"X2000_4_93.3_60","0004_93.3_60","2000_93.3_60","low_normal",2000,31.85,-119.568333,4,"Spring","San Diego Offshore","Euphausia pacifica",32.978
+"X2001_4_80_60","0104_80_60","2001_80_60","full",2001,34.145,-121.161666,4,"Spring","Pt. Conception","Euphausia pacifica",6369.086
+"X2001_4_86.7_50","0104_86.7_50","2001_86.7_50","normal",2001,33.32,-119.66,4,"Spring","San Nicolas Island","Euphausia pacifica",1403.64
+"X2001_4_93.3_30","0104_93.3_30","2001_93.3_30","low_normal",2001,32.845,-117.531666,4,"Spring","San Diego Inshore","Euphausia pacifica",193.756
+"X2001_4_93.3_60","0104_93.3_60","2001_93.3_60","low_normal",2001,31.855,-119.568333,4,"Spring","San Diego Offshore","Euphausia pacifica",27.716
+"X2002_4_80_60","0204_80_60","2002_80_60","full",2002,34.146666,-121.155,4,"Spring","Pt. Conception","Euphausia pacifica",384.991
+"X2002_4_86.7_50","0204_86.7_50","2002_86.7_50","full",2002,33.323333,-119.656666,4,"Spring","San Nicolas Island","Euphausia pacifica",642.072
+"X2002_3_93.3_30","0204_93.3_30","2002_93.3_30","full",2002,32.848333,-117.531666,4,"Spring","San Diego Inshore","Euphausia pacifica",175.938
+"X2002_3_93.3_60","0204_93.3_60","2002_93.3_60","full",2002,31.846666,-119.571666,4,"Spring","San Diego Offshore","Euphausia pacifica",2059.75
+"X2003_4_93.3_30","0304_93.3_30","2003_93.3_30","normal",2003,32.846666,-117.531666,4,"Spring","San Diego Inshore","Euphausia pacifica",1318.358
+"X2003_4_93.3_60","0304_93.3_60","2003_93.3_60","normal",2003,31.846666,-119.571666,4,"Spring","San Diego Offshore","Euphausia pacifica",290.335
+"X2004_3_93.3_60","0404_93.3_60","2004_93.3_60","low_normal",2004,31.846666,-119.575,4,"Spring","San Diego Offshore","Euphausia pacifica",1532.535
+"X2005_4_93.3_30","0504_93.3_30","2005_93.3_30","normal_orange",2005,32.843333,-117.54,4,"Spring","San Diego Inshore","Euphausia pacifica",8454.71
+"X2005_4_93.3_60","0504_93.3_60","2005_93.3_60","low_normal",2005,31.848333,-119.58,4,"Spring","San Diego Offshore","Euphausia pacifica",28.424
+"X2006_4_80_60","0604_80_60","2006_80_60","low_normal_orange",2006,34.155,-121.155,4,"Spring","Pt. Conception","Euphausia pacifica",2812.18
+"X2006_4_93.3_30","0604_93.3_30","2006_93.3_30","low_normal_orange",2006,32.846666,-117.533333,4,"Spring","San Diego Inshore","Euphausia pacifica",1401.37
+"X2006_4_93.3_60","0604_93.3_60","2006_93.3_60","low_normal_orange",2006,31.846666,-119.576666,4,"Spring","San Diego Offshore","Euphausia pacifica",2194.965
+"X2007_4_80_60","0704_80_60","2007_80_60","normal",2007,34.148333,-121.15,4,"Spring","Pt. Conception","Euphausia pacifica",2137.808
+"X2007_4_80_60","0704_80_60_J2","2007_80_60","normal",2007,34.148333,-121.15,4,"Spring","Pt. Conception","Euphausia pacifica",2137.808
+"X2007_4_86.7_50","0704_86.7_50","2007_86.7_50","low_normal",2007,33.323333,-119.66,4,"Spring","San Nicolas Island","Euphausia pacifica",782.18
+"X2010_5_80_60","1004_80_60","2010_80_60","full_orange",2010,34.146667,-121.143333,4,"Spring","Pt. Conception","Euphausia pacifica",1073.65
+"X2011_4_93.3_30","1104_93.3_30","2011_93.3_30","low_normal",2011,32.848333,-117.528333,4,"Spring","San Diego Inshore","Euphausia pacifica",181.684
+"X2012_3_86.7_50","1203_86.7_50","2012_86.7_50","low_normal",2012,33.321667,-119.665,3,"Spring","San Nicolas Island","Euphausia pacifica",151.648
+"X2012_3_93.3_30","1203_93.3_30","2012_93.3_30","low_normal",2012,32.843333,-117.533333,3,"Spring","San Diego Inshore","Euphausia pacifica",733.285
+"X2012_3_93.3_60","1203_93.3_60","2012_93.3_60","low_normal",2012,31.845,-119.573333,3,"Spring","San Diego Offshore","Euphausia pacifica",6.897
+"X2013_4_86.7_50","1304_86.7_50","2013_86.7_50","normal",2013,33.3245,-119.66017,4,"Spring","San Nicolas Island","Euphausia pacifica",960.628
+"X2013_4_93.3_30","1304_93.3_30","2013_93.3_30","normal",2013,32.8385,-117.533,4,"Spring","San Diego Inshore","Euphausia pacifica",239.838
+"X2014_4_93.3_30","1404_93.3_30","2014_93.3_30","normal_organge",2014,32.84772,-117.53193,4,"Spring","San Diego Inshore","Euphausia pacifica",200.88
+"X2014_4_93.3_60","1404_93.3_60","2014_93.3_60","normal_organge",2014,31.84738,-119.56267,4,"Spring","San Diego Offshore","Euphausia pacifica",126.27
+"X2015_4_93.3_30","1504_93.3_30","2015_93.3_30","normal_orange",2015,32.84228,-117.53622,4,"Spring","San Diego Inshore","Euphausia pacifica",82.68
+"X2015_4_93.3_60","1504_93.3_60","2015_93.3_60","low_normal_orange",2015,31.84518,-119.56667,4,"Spring","San Diego Offshore","Euphausia pacifica",2.73
+"X2016_4_86.7_50","1604_86.7_50_J1","2016_86.7_50","full",2016,33.31567,-119.65623,4,"Spring","San Nicolas Island","Euphausia pacifica",3754.656
+"X2016_4_86.7_50","1604_86.7_50_J2","2016_86.7_50","full",2016,33.31567,-119.65623,4,"Spring","San Nicolas Island","Euphausia pacifica",3754.656
+"X2016_4_93.3_30","1604_93.3_30","2016_93.3_30","normal",2016,32.84232,-117.53212,4,"Spring","San Diego Inshore","Euphausia pacifica",47.443
+"X2016_4_93.3_60","1604_93.3_60","2016_93.3_60","normal",2016,31.84073,-119.57013,4,"Spring","San Diego Offshore","Euphausia pacifica",12.48
+"X2018_4_80_60","1804_80_60","2018_80_60","normal",2018,34.14462,-121.1617,4,"Spring","Pt. Conception","Euphausia pacifica",1292.886
+"X2018_4_93.3_30","1804_93.3_30","2018_93.3_30","low_normal_orange",2018,32.84637,-117.5232,4,"Spring","San Diego Inshore","Euphausia pacifica",46.833
+"X2018_4_93.3_60","1804_93.3_60","2018_93.3_60","low_normal_orange",2018,31.84667,-119.5725,4,"Spring","San Diego Offshore","Euphausia pacifica",34.506
+"X2019_4_93.3_30","1904_93.3_30","2019_93.3_30","normal_organge",2019,32.845,-117.52782,4,"Spring","San Diego Inshore","Euphausia pacifica",855.67
+"X2019_4_93.3_60","1904_93.3_60","2019_93.3_60","low_orange",2019,31.84682,-119.57432,4,"Spring","San Diego Offshore","Euphausia pacifica",164.3
+"X1996_4_80_60","9604_80_60","1996_80_60","normal",1996,34.151666,-121.148333,4,"Spring","Pt. Conception","Euphausia pacifica",3064.272
+"X1996_4_86.7_50","9604_86.7_50","1996_86.7_50","normal",1996,33.325,-119.661666,4,"Spring","San Nicolas Island","Euphausia pacifica",1533.753
+"X1996_4_93.3_30","9604_93.3_30","1996_93.3_30","normal",1996,32.848333,-117.526666,4,"Spring","San Diego Inshore","Euphausia pacifica",483.706
+"X1996_4_93.3_60","9604_93.3_60","1996_93.3_60","normal",1996,31.848333,-119.571666,4,"Spring","San Diego Offshore","Euphausia pacifica",47.719
+"X1998_4_80_60","9804_80_60","1998_80_60","low_normal",1998,34.151666,-121.145,4,"Spring","Pt. Conception","Euphausia pacifica",72.376
+"X1998_4_86.7_50","9804_86.7_50","1998_86.7_50","crust",1998,33.323333,-119.663333,4,"Spring","San Nicolas Island","Euphausia pacifica",86.846
+"X1998_4_93.3_30","9804_93.3_30","1998_93.3_30","crust",1998,32.848333,-117.528333,4,"Spring","San Diego Inshore","Euphausia pacifica",13.47
+"X1998_4_93.3_60","9804_93.3_60","1998_93.3_60","low_normal",1998,31.846666,-119.571666,4,"Spring","San Diego Offshore","Euphausia pacifica",33.926
+"X1999_4_80_60","9904_80_60","1999_80_60","low_normal",1999,34.153333,-121.146666,4,"Spring","Pt. Conception","Euphausia pacifica",674.204
+"X1999_4_86.7_50","9904_86.7_50","1999_86.7_50","low_normal",1999,33.325,-119.663333,4,"Spring","San Nicolas Island","Euphausia pacifica",196.686
+"X1999_4_93.3_30","9904_93.3_30","1999_93.3_30","low",1999,32.845,-117.53,4,"Spring","San Diego Inshore","Euphausia pacifica",631.133
+"X1999_4_93.3_60","9904_93.3_60","1999_93.3_60","low_normal",1999,31.85,-119.568333,4,"Spring","San Diego Offshore","Euphausia pacifica",526.475

@@ -1,0 +1,21 @@
+sample,Jar,Year,Month,station_id,Notes,Lat_Dec,Lon_Dec,season,Site,ID_Microscopy,Count_permsq2,No.m-2,mgC.m-2
+1996_4_80_60,9604_80_60,1996,4,1996_80_60,normal,34.1517,-121.1483,Winter,Pt. Conception,Euphausia pacifica,145.915,3064.27,126.2
+1996_4_86.7_50,9604_86.7_50,1996,4,1996_86.7_50,normal,33.325,-119.6617,Winter,San Nicholas Island,Euphausia pacifica,1113.035,1533.75,23.9
+1996_4_93.3_30,9604_93.3_30,1996,4,1996_93.3_30,normal,32.8483,-117.5267,Winter,San Diego Inshore,Euphausia pacifica,567.278,483.71,23.1
+1996_4_93.3_60,9604_93.3_60,1996,4,1996_93.3_60,normal,31.8483,-119.5717,Winter,San Diego Offshore,Euphausia pacifica,4.808,47.72,3.5
+1998_4_86.7_50,9804_86.7_50,1998,4,1998_86.7_50,crust,33.3233,-119.6633,Winter,San Nicholas Island,Euphausia pacifica,0,86.85,6.9
+1998_4_93.3_30,9804_93.3_30,1998,4,1998_93.3_30,crust,32.8483,-117.5283,Winter,San Diego Inshore,Euphausia pacifica,0,13.47,4.8
+1998_4_93.3_60,9804_93.3_60,1998,4,1998_93.3_60,low_normal,31.8467,-119.5717,Winter,San Diego Offshore,Euphausia pacifica,0,33.93,3.5
+1999_4_80_60,9904_80_60,1999,4,1999_80_60,low_normal,34.1533,-121.1467,Winter,Pt. Conception,Euphausia pacifica,160.638,674.20,136.3
+1999_4_86.7_50,9904_86.7_50,1999,4,1999_86.7_50,low_normal,33.325,-119.6633,Winter,San Nicholas Island,Euphausia pacifica,6.708,196.69,5.3
+1999_4_93.3_30,9904_93.3_30,1999,4,1999_93.3_30,low,32.845,-117.53,Winter,San Diego Inshore,Euphausia pacifica,642.44,631.13,57.2
+1999_4_93.3_60,9904_93.3_60,1999,4,1999_93.3_60,low_normal,31.85,-119.5683,Winter,San Diego Offshore,Euphausia pacifica,610.927,526.48,140.9
+2000_4_80_60,0004_80_60,2000,4,2000_80_60,low_normal,34.1483,-121.1567,Winter,Pt. Conception,Euphausia pacifica,104.392,1318.54,62.6
+2000_4_86.7_50,0004_86.7_50,2000,4,2000_86.7_50,low_normal,33.3233,-119.6667,Winter,San Nicholas Island,Euphausia pacifica,117.802,1594.62,24.7
+2000_4_93.3_30,0004_93.3_30,2000,4,2000_93.3_30,low_normal,32.8467,-117.5383,Winter,San Diego Inshore,Euphausia pacifica,63.971,550.44,288.4
+2000_4_93.3_60,0004_93.3_60,2000,4,2000_93.3_60,low_normal,31.85,-119.5683,Winter,San Diego Offshore,Euphausia pacifica,67.445,32.98,8
+2001_4_80_60,0104_80_60,2001,4,2001_80_60,full,34.145,-121.1617,Winter,Pt. Conception,Euphausia pacifica,80.721,6369.09,153
+2001_4_93.3_30,0104_93.3_30,2001,4,2001_93.3_30,low_normal,32.845,-117.5317,Winter,San Diego Inshore,Euphausia pacifica,72.888,193.76,21.7
+2002_3_93.3_30,0204_93.3_30,2002,4,2002_93.3_30,full,32.8483,-117.5317,Winter,San Diego Inshore,Euphausia pacifica,206.913,175.94,11
+2002_3_93.3_60,0204_93.3_60,2002,4,2002_93.3_60,full,31.8467,-119.5717,Winter,San Diego Offshore,Euphausia pacifica,73.792,2059.75,170.9
+2002_4_86.7_50,0204_86.7_50,2002,4,2002_86.7_50,full,33.3233,-119.6567,Winter,San Nicholas Island,Euphausia pacifica,31.842,642.07,10.1

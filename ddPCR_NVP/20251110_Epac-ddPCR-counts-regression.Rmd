@@ -1,0 +1,96 @@
+---
+title: "Krill ddPCR-microscopy regression"
+author: "Nastassia Patin"
+date: "2025-11-18"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(here)
+library(readxl)
+```
+
+```{r}
+# ddPCR data
+ddpcr <- read.csv("/Users/nastassiapatin/OneDrive - SCCWRP/Experiments/ddPCR/krill assays/Jar_data/ddPCR Results/2025-06-16_NASTASSIAKRILL_COMBINED-NVP.csv", 
+                  check.names = F)
+
+names(ddpcr) <- iconv(names(ddpcr), to = "ASCII", sub = "u")
+
+ddpcr.sub <- ddpcr %>% select(Sample.ID, Conc.copies.uL., Copies.20uLWell, Positives)
+
+ddpcr.sub <- ddpcr.sub %>% 
+  rename(Jar = Sample.ID) %>% 
+  mutate(Jar = str_replace_all(Jar, '_x2', '_J2'))
+
+```
+
+```{r}
+# Import Mark Ohman's count and biomass data
+ohman <- read.csv("PIC_ZG_Jars_counts_mdo_sorted_amended_15Nov2025-NVP.csv",
+                  stringsAsFactors=FALSE)
+```
+
+```{r}
+# Merge microscopy and ddPCR data
+
+ddpcr.micro <- ohman %>%
+  inner_join(ddpcr.sub, by = "Jar")
+```
+
+Calculate linear regression and plot
+
+```{r}
+### Microscopy counts
+
+# Linear regression
+lm_model_counts <- lm(No.m.2 ~ Conc.copies.uL., data = ddpcr.micro)
+r_squared_counts <- summary(lm_model_counts)$r.squared
+slope_counts <- coef(lm_model_counts)[2]
+pearsons_counts <- sqrt(r_squared_counts) * sign(slope_counts)
+  
+# Plot with Pearson's R displayed
+p1 <- ggplot(ddpcr.micro, aes(x = No.m.2, 
+                             y = Conc.copies.uL.)) + 
+    geom_point(size=3, aes(color = Site)) +
+    scale_color_brewer(palette = "Paired") +
+    scale_x_log10() +
+    scale_y_log10() +
+    geom_smooth(method="lm", color="black") +
+    annotate(geom="text", label = paste("Pearson's r = ", round(pearsons_counts, 2)),
+              color="black", x = min(ddpcr.micro$No.m.2) + 10,
+             y = max(ddpcr.micro$Conc.copies.uL.) - 1,
+             hjust=0, vjust=1) +
+    theme_classic()
+
+ggsave("Epac_jars_ddpcr_microscopycounts_loglog_lm.png",
+       width = 8, height = 6, units = "in", dpi=120)
+```
+
+```{r}
+### Biomass
+
+# Linear regression
+lm_model_mgC <- lm(mgC.m.2 ~ Conc.copies.uL., data = ddpcr.micro)
+r_squared_mgC <- summary(lm_model_mgC)$r.squared
+slope_mgC <- coef(lm_model_mgC)[2]
+pearsons_mgC <- sqrt(r_squared_mgC) * sign(slope_mgC)
+
+# Plot against biomass (mg C per m-sq)
+p2 <- ggplot(ddpcr.micro, aes(x = mgC.m.2, 
+                             y = Conc.copies.uL.)) + 
+    geom_point(size=3, aes(color = Site)) +
+    scale_color_brewer(palette = "Paired") +
+    scale_x_log10() +
+    scale_y_log10() +
+    geom_smooth(method="lm", color="black") +
+    annotate(geom="text", label = paste("Pearson's r = ", round(pearsons_mgC, 2)),
+             color="black", x = min(ddpcr.micro$mgC.m.2) + 1,
+             y = max(ddpcr.micro$Conc.copies.uL.) - 1,
+             hjust=0, vjust=1) +
+    theme_classic()
+
+ggsave("Epac_jars_ddpcr_microscopymgC_loglog_lm.png",
+       width = 8, height = 6, units = "in", dpi=120)
+```
